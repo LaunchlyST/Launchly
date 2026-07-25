@@ -87,10 +87,8 @@
 
         <aside class="tool-panel glass-panel" aria-live="polite">
           <div class="media-panel" data-panel-view="Media">
-            <div class="media-panel-head">
-              <strong data-tool-panel-title>Media</strong>
-              <input data-media-upload type="file" accept="video/*,image/*,audio/*" multiple hidden />
-            </div>
+            <input data-media-upload type="file" accept="video/*,image/*,audio/*" multiple hidden />
+            <span data-tool-panel-title hidden></span>
 
             <div class="media-subtabs" role="tablist">
               <button class="media-subtab active" data-media-subtab="local" role="tab" aria-selected="true">Local</button>
@@ -104,6 +102,15 @@
               <b>Import</b>
               <small>supports video, audio, photos</small>
             </button>
+
+            <div class="media-duo">
+              <div class="media-duo-box" data-media-duo-primary>
+                <span class="media-duo-label">First image</span>
+              </div>
+              <div class="media-duo-box is-empty" data-media-duo-secondary>
+                <span class="media-duo-label">Empty</span>
+              </div>
+            </div>
 
             <div class="am-search">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>

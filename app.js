@@ -5515,10 +5515,31 @@ function renderAssetControls() {
   });
 }
 
+/* Left box of the duo shows the first imported image; the right stays an
+   empty slot. Falls back to a label when nothing has been imported yet. */
+function renderMediaDuo() {
+  const box = document.querySelector("[data-media-duo-primary]");
+  if (!box) return;
+  const assets = editor.state.assetManager.assets ?? [];
+  const firstImage = assets.find((asset) => asset.type === "image") ?? assets[0];
+  const src = firstImage?.previewUrl ?? firstImage?.url ?? firstImage?.src;
+  const existing = box.querySelector("img");
+
+  if (!src) {
+    existing?.remove();
+    return;
+  }
+  const img = existing ?? document.createElement("img");
+  img.alt = firstImage.name ?? "Imported media";
+  if (img.getAttribute("src") !== src) img.src = src;
+  if (!existing) box.appendChild(img);
+}
+
 function renderAssetManager() {
   const target = document.querySelector("[data-asset-sections]");
   if (!target) return;
   renderAssetControls();
+  renderMediaDuo();
   document.querySelectorAll(".media-library > .media-section").forEach((section) => { section.hidden = true; });
   const assets = editor.filteredAssets();
   const folders = [...new Set(assets.map((asset) => asset.folder))];

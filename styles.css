@@ -9768,3 +9768,146 @@ button.media-dropzone,
   flex: 1 1 auto;
   min-height: 132px;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   REVERT: vertical tool rail (supersedes the horizontal tab
+   bar). Nine labels don't fit across the panel width, so the
+   last tabs were clipped; vertical gives each one full room.
+   ═══════════════════════════════════════════════════════════ */
+.workspace {
+  grid-template-columns: 64px minmax(240px, 25fr) minmax(400px, 45fr) minmax(300px, 30fr);
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.workspace > .tool-rail {
+  grid-column: 1;
+  grid-row: 1;
+  flex-direction: column;
+  align-items: stretch;
+  width: 64px;
+  height: auto;
+  padding: 8px 4px;
+  gap: 2px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  border-radius: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.workspace > .tool-panel {
+  grid-column: 2;
+  grid-row: 1;
+  border-radius: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.workspace > .center-stage {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+.workspace > .inspector {
+  grid-column: 4;
+  grid-row: 1;
+}
+
+/* Vertical rail item: icon above label, active marked on the left */
+.tool-rail .tool {
+  flex: 0 0 auto;
+  width: 100%;
+  min-width: 0;
+  height: 50px;
+  padding: 4px 2px;
+  border: 0;
+  border-left: 2px solid transparent;
+  border-bottom: 0;
+  border-radius: 6px;
+}
+
+.tool-rail .tool span {
+  font-size: 9px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.tool-rail .tool.active {
+  color: var(--accent);
+  border-bottom-color: transparent;
+  border-left-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+/* ── Two-box row: first image on the left, empty slot right ── */
+.media-duo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.media-duo-box {
+  position: relative;
+  display: grid;
+  place-items: center;
+  gap: 4px;
+  aspect-ratio: 1 / 1;
+  min-height: 84px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-0);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  overflow: hidden;
+}
+
+.media-duo-box.is-empty {
+  border-style: dashed;
+}
+
+.media-duo-box img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.media-duo-box .media-duo-label {
+  position: relative;
+  z-index: 1;
+}
+
+.media-duo-box:has(img) .media-duo-label {
+  display: none;
+}
+
+/* All nine rail tools must fit the column height without scrolling:
+   9 x 34px + 8 x 2px gap = 322px. */
+.tool-rail .tool {
+  height: 34px;
+  padding: 2px;
+  gap: 1px;
+}
+
+.tool-rail .tool svg {
+  width: 15px;
+  height: 15px;
+}
+
+.tool-rail .tool span {
+  font-size: 8px;
+  letter-spacing: -0.01em;
+}
+
+/* An earlier .tool rule sets min-height:54px, which beat the height
+   above and pushed 4 of the 9 tools out of view. */
+.tool-rail .tool {
+  min-height: 0;
+  height: 34px;
+  flex: 0 0 34px;
+}
