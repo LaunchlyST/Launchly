@@ -1,0 +1,1246 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Launchly Studio</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <script type="module" src="./app.js"></script>
+  </head>
+  <body>
+    <main class="studio-shell">
+      <section class="topbar glass-panel">
+        <div class="brand-mark">
+          <span class="brand-orbit"></span>
+          <div>
+            <strong>Launchly</strong>
+            <span>Video Studio</span>
+          </div>
+        </div>
+
+        <div class="project-meta" aria-label="Project information">
+          <strong>Untitled Campaign</strong>
+          <span><i></i> Saved just now</span>
+        </div>
+
+        <div class="top-actions">
+          <div class="history-actions" aria-label="History controls">
+            <button class="icon-button tooltip shortcut-tip" aria-label="Undo" data-tooltip="Undo" data-shortcut="Ctrl+Z" data-shortcut-action="undo" data-toast="Undo preview state">U</button>
+            <button class="icon-button tooltip shortcut-tip" aria-label="Redo" data-tooltip="Redo" data-shortcut="Ctrl+Shift+Z" data-shortcut-action="redo" data-toast="Redo preview state">R</button>
+          </div>
+          <button class="preview-button shortcut-tip" data-shortcut="Space" data-play-preview data-shortcut-action="playPause">Preview</button>
+          <button class="global-search-trigger shortcut-tip" data-open-global-search data-shortcut="Ctrl+K" aria-label="Open global search" aria-haspopup="dialog" aria-expanded="false"><span>Search</span><kbd>Ctrl K</kbd></button>
+          <button class="ai-command-trigger shortcut-tip" data-open-ai-command-bar data-shortcut="Ctrl+I" aria-label="Open AI command bar" aria-haspopup="dialog" aria-expanded="false"><span>AI Command</span><kbd>Ctrl I</kbd></button>
+          <button class="preview-button" data-open-project-manager>Projects</button>
+          <button class="preview-button" data-open-settings>Settings</button>
+          <button class="preview-button" data-open-shortcuts>Shortcuts</button>
+          <button class="export-button shortcut-tip" data-shortcut="Ctrl+E" data-shortcut-action="export" data-open-export>Export</button>
+          <div class="export-dropdown glass-panel" data-export-dropdown hidden>
+            <button data-export-modal-open>Open export modal</button>
+              <button data-toast="Review draft selected">Review draft</button>
+              <button data-toast="Social cutdown selected">Social cutdown</button>
+          </div>
+          <button class="profile-avatar tooltip" aria-label="User profile" data-tooltip="Profile">MA</button>
+        </div>
+      </section>
+
+      <section class="workspace">
+        <aside class="tool-rail glass-panel" aria-label="Creation tools">
+          <button class="tool active" aria-label="Media" data-label="Media" data-panel-copy="Import clips, arrange source trays, and review campaign assets.">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5v9a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5v-9Z"/><path d="m9 9 5 3-5 3V9Z"/></svg>
+            <span>Media</span>
+          </button>
+          <button class="tool" aria-label="Text" data-label="Text" data-panel-copy="Add titles, lower thirds, callouts, and polished campaign typography.">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6h14"/><path d="M12 6v12"/><path d="M8.5 18h7"/></svg>
+            <span>Text</span>
+          </button>
+          <button class="tool" aria-label="Captions" data-label="Captions" data-panel-copy="Style caption tracks, speaker labels, line breaks, and readable timing.">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6.5h14v9H9l-4 3v-12Z"/><path d="M8 10h4"/><path d="M8 13h8"/></svg>
+            <span>Captions</span>
+          </button>
+          <button class="tool" aria-label="Audio" data-label="Audio" data-panel-copy="Balance voice, music beds, atmosphere, fades, and presence controls.">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 14h3l4 4V6l-4 4H6v4Z"/><path d="M16 9.5a4 4 0 0 1 0 5"/><path d="M18.5 7a7 7 0 0 1 0 10"/></svg>
+            <span>Audio</span>
+          </button>
+          <button class="tool" aria-label="Brand" data-label="Brand" data-panel-copy="Apply approved colors, logos, type scale, and reusable visual systems.">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4 19 8v8l-7 4-7-4V8l7-4Z"/><path d="M9 10.5h6"/><path d="M9 13.5h4"/></svg>
+            <span>Brand</span>
+          </button>
+          <button class="tool" aria-label="Templates" data-label="Templates" data-panel-copy="Start from polished edit structures for campaigns, social clips, podcasts, and education.">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h6v6H5V5Z"/><path d="M13 5h6v6h-6V5Z"/><path d="M5 13h6v6H5v-6Z"/><path d="M13 13h6v6h-6v-6Z"/></svg>
+            <span>Templates</span>
+          </button>
+          <button class="tool" aria-label="Effects" data-label="Effects" data-panel-copy="Tune glow, grain, masks, speed ramps, depth, and cinematic polish.">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v4"/><path d="M12 17v4"/><path d="M3 12h4"/><path d="M17 12h4"/><path d="m6.5 6.5 2.8 2.8"/><path d="m14.7 14.7 2.8 2.8"/><path d="m17.5 6.5-2.8 2.8"/><path d="m9.3 14.7-2.8 2.8"/></svg>
+            <span>Effects</span>
+          </button>
+          <button class="tool" aria-label="Transitions" data-label="Transitions" data-panel-copy="Design scene changes, match cuts, wipes, overlays, and motion bridges.">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h7v10H4V7Z"/><path d="M13 7h7v10h-7V7Z"/><path d="m10 12 4-3v6l-4-3Z"/></svg>
+            <span>Transitions</span>
+          </button>
+          <div class="tool-divider"></div>
+          <button class="tool ai-tool" aria-label="AI Tools" data-label="AI Tools" data-panel-copy="Explore local smart-edit workflows, pacing ideas, caption cleanup, and scene suggestions.">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4 14 9l5 2-5 2-2 5-2-5-5-2 5-2 2-5Z"/><path d="M18 4v3"/><path d="M16.5 5.5h3"/></svg>
+            <span>AI Tools</span>
+          </button>
+        </aside>
+
+        <aside class="tool-panel glass-panel" aria-live="polite">
+          <div class="media-panel" data-panel-view="Media">
+            <div class="media-panel-head">
+              <strong data-tool-panel-title>Media</strong>
+              <input data-media-upload type="file" accept="video/*,image/*,audio/*" multiple hidden />
+            </div>
+
+            <div class="media-subtabs" role="tablist">
+              <button class="media-subtab active" data-media-subtab="local" role="tab" aria-selected="true">Local</button>
+              <button class="media-subtab" data-media-subtab="import" role="tab" aria-selected="false">Import</button>
+              <button class="media-subtab" data-media-subtab="ai" role="tab" aria-selected="false">AI Generated</button>
+              <button class="media-subtab" data-media-subtab="library" role="tab" aria-selected="false">Library</button>
+            </div>
+
+            <button type="button" class="media-dropzone" data-upload-trigger>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <b>Import</b>
+              <small>supports video, audio, photos</small>
+            </button>
+
+            <div class="am-search">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="search" placeholder="Search assets..." data-am-search />
+            </div>
+
+            <div class="am-filters" role="tablist">
+              <button class="am-filter-pill active" data-am-filter="all" data-am-section="all">All <em class="am-count" data-am-count="all">0</em></button>
+              <button class="am-filter-pill" data-am-filter="video" data-am-section="video">Video <em class="am-count" data-am-count="video">0</em></button>
+              <button class="am-filter-pill" data-am-filter="image" data-am-section="image">Image <em class="am-count" data-am-count="image">0</em></button>
+              <button class="am-filter-pill" data-am-filter="audio" data-am-section="audio">Audio <em class="am-count" data-am-count="audio">0</em></button>
+            </div>
+
+            <div class="media-library" data-media-library>
+              <div class="panel-loading" data-loading-state hidden>Indexing media...</div>
+              <div data-asset-sections></div>
+              <div class="panel-empty">No assets yet. Import files or drag &amp; drop to get started.</div>
+            </div>
+          </div>
+
+          <div class="templates-panel" data-panel-view="Templates" hidden>
+            <div class="templates-panel-head">
+              <div>
+                <span>Template System</span>
+                <strong>Production Starters</strong>
+              </div>
+              <button data-save-user-template>Save Current</button>
+            </div>
+
+            <label class="template-search">
+              <span>Search</span>
+              <input data-template-search type="search" placeholder="Search intro, TikTok, product ads..." />
+            </label>
+
+            <div class="template-category-tabs" data-template-categories aria-label="Template categories"></div>
+
+            <div class="template-save-row">
+              <input data-user-template-name type="text" placeholder="Name this template" />
+              <select data-user-template-category aria-label="Saved template category">
+                <option>Intro</option>
+                <option>Outro</option>
+                <option>Titles</option>
+                <option>YouTube</option>
+                <option>TikTok</option>
+                <option>Instagram</option>
+                <option>Lower thirds</option>
+                <option>Product ads</option>
+                <option>Podcast</option>
+                <option>Education</option>
+                <option>Business</option>
+                <option>Gaming</option>
+              </select>
+            </div>
+
+            <div class="template-library" data-template-library></div>
+            <div class="template-empty" data-template-empty hidden>No templates match this search.</div>
+          </div>
+
+          <div class="ai-panel" data-panel-view="AI Tools" hidden>
+            <div class="ai-panel-head">
+              <div>
+                <span>AI Assistant</span>
+                <strong>Production Tools</strong>
+              </div>
+              <button data-ai-queue-toggle>Queue</button>
+            </div>
+
+            <label class="ai-command">
+              <span>Command the edit</span>
+              <textarea rows="3" data-ai-command>Turn this video into a fast 30-second product advert.</textarea>
+              <button data-ai-apply-command>Apply Instruction</button>
+            </label>
+
+            <div class="ai-category-tabs" data-ai-categories></div>
+            <div class="ai-tool-grid" data-ai-tool-grid></div>
+            <div class="ai-settings-panel" data-ai-settings hidden></div>
+            <div class="ai-queue-panel" data-ai-queue hidden></div>
+          </div>
+        </aside>
+
+        <section class="center-stage">
+          <div class="viewer">
+            <div class="video-frame">
+              <div class="safe-zone-overlay"></div>
+              <div class="guide-overlay"></div>
+              <div class="render-scanline"></div>
+              <div class="frame-glow"></div>
+              <div class="ambient-ring"></div>
+              <div class="canvas-text-overlay" data-canvas-text-overlay hidden>
+                <div class="canvas-text-content" data-canvas-text-content contenteditable="false" spellcheck="false">Text layer</div>
+                <div class="canvas-text-handles" data-canvas-text-handles hidden>
+                  <span class="ct-handle ct-nw"></span>
+                  <span class="ct-handle ct-ne"></span>
+                  <span class="ct-handle ct-sw"></span>
+                  <span class="ct-handle ct-se"></span>
+                  <span class="ct-rotate-handle"></span>
+                </div>
+              </div>
+              <div class="preview-resize-handle" data-preview-resize title="Drag to resize"></div>
+            </div>
+          </div>
+
+          <div class="transport">
+            <div class="timecode">
+              <span data-timecode>00:00:00</span>
+              <small>/ <span data-total-duration>00:03:10</span></small>
+            </div>
+
+            <div class="transport-buttons">
+              <button data-step="-1" title="Previous frame" aria-label="Previous frame">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/></svg>
+              </button>
+              <button class="play" data-play-preview>Play</button>
+              <button data-step="1" title="Next frame" aria-label="Next frame">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
+              </button>
+            </div>
+
+            <div class="canvas-toolbar">
+              <div class="ct-group">
+                <button data-canvas-preset="9:16">9:16</button>
+                <button class="active" data-canvas-preset="16:9">16:9</button>
+                <button data-canvas-preset="4K">4K</button>
+              </div>
+              <div class="ct-divider"></div>
+              <button data-zoom-fit class="ct-fit">Fit</button>
+              <button data-fullscreen-preview class="ct-fullscreen" title="Fullscreen" aria-label="Fullscreen">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="canvas-toolbar stage-offscreen" hidden aria-hidden="true">
+            <span data-preview-status>GPU smooth</span>
+            <span data-preview-fps>60 fps</span>
+            <span data-preview-frame>Frame 180</span>
+            <span data-preview-resolution>1920×1080</span>
+            <span data-preview-gpu>WebGL 2.0</span>
+            <button data-zoom-preset="50">50%</button>
+            <button data-zoom-preset="75">75%</button>
+            <button class="active" data-zoom-preset="100">100%</button>
+            <button data-zoom-preset="125">125%</button>
+            <button data-overlay-toggle="safe">Safe Zones</button>
+            <button data-overlay-toggle="guides">Guides</button>
+            <select data-playback-speed aria-label="Playback speed">
+              <option value="0.5">0.5x</option>
+              <option value="0.75">0.75x</option>
+              <option value="1" selected>1x</option>
+              <option value="1.25">1.25x</option>
+              <option value="1.5">1.5x</option>
+              <option value="2">2x</option>
+            </select>
+            <input data-preview-volume type="range" min="0" max="100" value="82" aria-label="Preview volume" />
+            <input data-canvas-zoom type="range" min="70" max="125" value="100" aria-label="Canvas zoom" />
+          </div>
+        </section>
+
+        <aside class="inspector glass-panel">
+          <div class="inspector-scroll">
+            <div class="score-row">
+              <span class="score-row-label">Precision score</span>
+              <span class="score-row-value"><strong data-score>96</strong><em>Studio ready</em></span>
+              <button class="score-row-reset" data-reset-controls>Reset</button>
+            </div>
+
+            <details class="inspector-section color-grade-section" open>
+              <summary><span>Color Grade</span><em>14</em></summary>
+              <div class="color-grade-actions">
+                <select data-color-preset aria-label="Color preset">
+                  <option value="neutral">Neutral</option>
+                  <option value="cinematic">Cinematic</option>
+                  <option value="daylight">Daylight</option>
+                  <option value="moody">Moody</option>
+                </select>
+                <button data-color-action="reset">Reset</button>
+                <button data-color-action="copy">Copy</button>
+                <button data-color-action="paste">Paste</button>
+                <button data-color-action="keyframe">Keyframe</button>
+              </div>
+              <div class="color-grade-grid">
+                <div class="control-group"><label>Exposure <span data-color-value="exposure">0</span></label><input data-color-grade="exposure" type="range" min="-50" max="50" value="0" /></div>
+                <div class="control-group"><label>Contrast <span data-color-value="contrast">0</span></label><input data-color-grade="contrast" type="range" min="-50" max="50" value="0" /></div>
+                <div class="control-group"><label>Brightness <span data-color-value="brightness">0</span></label><input data-color-grade="brightness" type="range" min="-50" max="50" value="0" /></div>
+                <div class="control-group"><label>Saturation <span data-color-value="saturation">0</span></label><input data-color-grade="saturation" type="range" min="-50" max="50" value="0" /></div>
+                <div class="control-group"><label>Highlights <span data-color-value="highlights">0</span></label><input data-color-grade="highlights" type="range" min="-50" max="50" value="0" /></div>
+                <div class="control-group"><label>Shadows <span data-color-value="shadows">0</span></label><input data-color-grade="shadows" type="range" min="-50" max="50" value="0" /></div>
+                <div class="control-group"><label>Whites <span data-color-value="whites">0</span></label><input data-color-grade="whites" type="range" min="-50" max="50" value="0" /></div>
+                <div class="control-group"><label>Blacks <span data-color-value="blacks">0</span></label><input data-color-grade="blacks" type="range" min="-50" max="50" value="0" /></div>
+                <div class="control-group"><label>Temperature <span data-color-value="temperature">0</span></label><input data-color-grade="temperature" type="range" min="-50" max="50" value="0" /></div>
+                <div class="control-group"><label>Tint <span data-color-value="tint">0</span></label><input data-color-grade="tint" type="range" min="-50" max="50" value="0" /></div>
+                <div class="control-group"><label>Gamma <span data-color-value="gamma">1.00</span></label><input data-color-grade="gamma" type="range" min="50" max="150" value="100" /></div>
+                <div class="control-group"><label>Vibrance <span data-color-value="vibrance">0</span></label><input data-color-grade="vibrance" type="range" min="-50" max="50" value="0" /></div>
+                <div class="control-group"><label>Curves <span data-color-value="curves">0</span></label><input data-color-grade="curves" type="range" min="-50" max="50" value="0" /></div>
+                <div class="control-group"><label>Color Wheels <span data-color-value="colorWheels">0</span></label><input data-color-grade="colorWheels" type="range" min="-50" max="50" value="0" /></div>
+              </div>
+            </details>
+
+            <details class="inspector-section" open>
+              <summary><span>Motion Controls</span><em>4</em></summary>
+              <div class="control-group"><label>Motion softness <span data-value-for="motion">34%</span></label><input data-control="motion" type="range" min="0" max="100" value="34" /></div>
+              <div class="control-group"><label>Camera stability <span data-value-for="stability">72%</span></label><input data-control="stability" type="range" min="0" max="100" value="72" /></div>
+              <div class="control-group"><label>Auto reframing <span data-value-for="reframing">On</span></label><input data-control="reframing" type="range" min="0" max="100" value="88" /></div>
+              <div class="control-group"><label>Subject tracking <span data-value-for="tracking">92%</span></label><input data-control="tracking" type="range" min="0" max="100" value="92" /></div>
+            </details>
+
+            <details class="inspector-section" open>
+              <summary><span>Audio Controls</span><em>4</em></summary>
+              <div class="control-group"><label>Voice presence <span data-value-for="voice">Studio</span></label><input data-control="voice" type="range" min="0" max="100" value="78" /></div>
+              <div class="control-group"><label>Background noise removal <span data-value-for="noise">64%</span></label><input data-control="noise" type="range" min="0" max="100" value="64" /></div>
+              <div class="control-group"><label>Music balance <span data-value-for="music">-8 dB</span></label><input data-control="music" type="range" min="0" max="100" value="44" /></div>
+              <div class="control-group"><label>Auto ducking <span data-value-for="ducking">On</span></label><input data-control="ducking" type="range" min="0" max="100" value="76" /></div>
+            </details>
+
+            <details class="inspector-section selected-layer-section" open>
+              <summary><span>Selected Layer</span><em>Text</em></summary>
+              <div class="selected-layer-card">
+                <div class="layer-identity">
+                  <strong>Hero title</strong>
+                  <span>Text layer</span>
+                </div>
+                <div class="layer-switches">
+                  <button class="mini-toggle active" aria-pressed="true" data-layer-action="hide">Visible</button>
+                  <button class="mini-toggle" aria-pressed="false" data-layer-action="lock">Lock</button>
+                  <button class="mini-toggle" aria-pressed="false" data-layer-action="solo">Solo</button>
+                </div>
+                <div class="layer-actions">
+                  <button data-layer-action="group">Group</button>
+                  <button data-layer-action="ungroup">Ungroup</button>
+                  <button data-layer-action="duplicate">Duplicate</button>
+                  <button class="danger" data-layer-action="delete">Delete</button>
+                </div>
+                <div class="layer-manager-toolbar">
+                  <button data-layer-action="move-up">Up</button>
+                  <button data-layer-action="move-down">Down</button>
+                  <button data-layer-color="Ice">Ice</button>
+                  <button data-layer-color="Mint">Mint</button>
+                  <button data-layer-color="Amber">Amber</button>
+                </div>
+                <div class="precision-layer-list" data-layer-manager></div>
+                <div class="clip-property-grid">
+                  <label>Position X <span data-clip-value="positionX">0</span><input data-clip-prop="positionX" type="range" min="-120" max="120" value="0" /></label>
+                  <label>Position Y <span data-clip-value="positionY">0</span><input data-clip-prop="positionY" type="range" min="-80" max="80" value="0" /></label>
+                  <label>Anchor X <span data-clip-value="anchorX">50%</span><input data-clip-prop="anchorX" type="range" min="0" max="100" value="50" /></label>
+                  <label>Anchor Y <span data-clip-value="anchorY">50%</span><input data-clip-prop="anchorY" type="range" min="0" max="100" value="50" /></label>
+                  <label>Scale <span data-clip-value="scale">100%</span><input data-clip-prop="scale" type="range" min="25" max="200" value="100" /></label>
+                  <label>Rotation <span data-clip-value="rotate">0 deg</span><input data-clip-prop="rotate" type="range" min="-180" max="180" value="0" /></label>
+                  <label>Motion Blur <span data-clip-value="motionBlur">0%</span><input data-clip-prop="motionBlur" type="range" min="0" max="100" value="0" /></label>
+                  <label>Opacity <span data-clip-value="opacity">100%</span><input data-clip-prop="opacity" type="range" min="0" max="100" value="100" /></label>
+                  <label>Speed <span data-clip-value="speed">1.00x</span><input data-clip-prop="speed" type="range" min="25" max="200" value="100" /></label>
+                  <label>Volume <span data-clip-value="volume">100%</span><input data-clip-prop="volume" type="range" min="0" max="150" value="100" /></label>
+                  <label>Fade In <span data-clip-value="fadeIn">0.0s</span><input data-clip-prop="fadeIn" type="range" min="0" max="300" value="0" /></label>
+                  <label>Fade Out <span data-clip-value="fadeOut">0.0s</span><input data-clip-prop="fadeOut" type="range" min="0" max="300" value="0" /></label>
+                  <label>Crop <span data-clip-value="crop">0%</span><input data-clip-prop="crop" type="range" min="0" max="35" value="0" /></label>
+                  <label>Blur <span data-clip-value="blur">0px</span><input data-clip-prop="blur" type="range" min="0" max="20" value="0" /></label>
+                  <label>Shadow <span data-clip-value="shadow">24%</span><input data-clip-prop="shadow" type="range" min="0" max="100" value="24" /></label>
+                  <label>Border <span data-clip-value="border">1px</span><input data-clip-prop="border" type="range" min="0" max="8" value="1" /></label>
+                  <label>Color <span data-clip-value="color">Neutral</span><input data-clip-prop="color" type="range" min="0" max="100" value="50" /></label>
+                  <label class="property-select">Blend Mode
+                    <select data-clip-prop="blendMode" aria-label="Blend mode">
+                      <option value="normal">Normal</option>
+                      <option value="screen">Screen</option>
+                      <option value="multiply">Multiply</option>
+                      <option value="overlay">Overlay</option>
+                      <option value="soft-light">Soft Light</option>
+                    </select>
+                  </label>
+                  <label class="property-select">Motion Ease
+                    <select data-clip-prop="easingPreset" aria-label="Motion easing preset">
+                      <option value="linear">Linear</option>
+                      <option value="smooth" selected>Smooth</option>
+                      <option value="cinematic">Cinematic</option>
+                      <option value="snappy">Snappy</option>
+                      <option value="gentle">Gentle</option>
+                    </select>
+                  </label>
+                  <div class="clip-property-actions">
+                    <button data-prop-action="flipX">Flip H</button>
+                    <button data-prop-action="flipY">Flip V</button>
+                    <button data-prop-action="reverse">Reverse</button>
+                    <button data-prop-action="crop">Crop</button>
+                    <button data-prop-action="keyframe">Keyframe</button>
+                    <button data-prop-action="videoTransition">V Transition</button>
+                    <button data-prop-action="audioFade">Audio Fade</button>
+                  </div>
+                </div>
+                <div class="text-editor" data-text-editor>
+                  <div class="text-editor-head">
+                    <strong>Text Studio</strong>
+                    <span data-text-keyframe-count>0 keyframes</span>
+                    <span data-text-clip-count>0 text layers</span>
+                  </div>
+                  <label class="text-field">Layer Copy
+                    <textarea data-text-content rows="2" aria-label="Text layer copy">Make every frame feel intentional.</textarea>
+                  </label>
+                  <div class="text-control-grid">
+                    <label>Type
+                      <select data-text-kind aria-label="Text type">
+                        <option value="title">Title</option>
+                        <option value="subtitle">Subtitle</option>
+                        <option value="caption">Caption</option>
+                        <option value="lower-third">Lower Third</option>
+                      </select>
+                    </label>
+                    <label>Font
+                      <select data-text-style="fontFamily" aria-label="Font family">
+                        <option value="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif">Inter</option>
+                        <option value="'Segoe UI', ui-sans-serif, system-ui, sans-serif">Segoe UI</option>
+                        <option value="'Aptos Display', Aptos, ui-sans-serif, system-ui, sans-serif">Aptos Display</option>
+                        <option value="Georgia, 'Times New Roman', serif">Editorial Serif</option>
+                        <option value="'Courier New', Courier, monospace">Mono</option>
+                        <option value="'Arial Black', Arial, sans-serif">Arial Black</option>
+                        <option value="Impact, 'Arial Black', sans-serif">Impact</option>
+                      </select>
+                    </label>
+                    <label>Weight
+                      <select data-text-style="fontWeight" aria-label="Font weight">
+                        <option value="400">Regular</option>
+                        <option value="500">Medium</option>
+                        <option value="600">Semibold</option>
+                        <option value="700">Bold</option>
+                        <option value="800" selected>Heavy</option>
+                        <option value="900">Black</option>
+                      </select>
+                    </label>
+                    <label>Template
+                      <select data-text-template aria-label="Text template">
+                        <option value="editorial">Editorial Title</option>
+                        <option value="subtitleClean">Clean Subtitle</option>
+                        <option value="captionGlass">Glass Caption</option>
+                        <option value="lowerThird">Lower Third</option>
+                      </select>
+                    </label>
+                  </div>
+                  <div class="text-range-grid">
+                    <label>Size <span data-text-value="fontSize">54px</span><input data-text-style="fontSize" type="range" min="12" max="120" value="54" /></label>
+                    <label>Spacing <span data-text-value="letterSpacing">0px</span><input data-text-style="letterSpacing" type="range" min="-20" max="120" value="0" /></label>
+                    <label>Line Height <span data-text-value="lineHeight">1.1</span><input data-text-style="lineHeight" type="range" min="50" max="300" value="110" /></label>
+                    <label>Para Spacing <span data-text-value="paragraphSpacing">0px</span><input data-text-style="paragraphSpacing" type="range" min="0" max="40" value="0" /></label>
+                    <label>Stroke <span data-text-value="strokeWidth">0px</span><input data-text-style="strokeWidth" type="range" min="0" max="8" value="0" /></label>
+                    <label>Shadow <span data-text-value="shadow">36%</span><input data-text-style="shadow" type="range" min="0" max="100" value="36" /></label>
+                    <label>Glow <span data-text-value="glow">6%</span><input data-text-style="glow" type="range" min="0" max="100" value="6" /></label>
+                    <label>Background <span data-text-value="backgroundOpacity">0%</span><input data-text-style="backgroundOpacity" type="range" min="0" max="100" value="0" /></label>
+                  </div>
+                  <div class="text-range-grid">
+                    <label>Position X <span data-text-value="posX">50%</span><input data-text-style="posX" type="range" min="0" max="100" value="50" /></label>
+                    <label>Position Y <span data-text-value="posY">50%</span><input data-text-style="posY" type="range" min="0" max="100" value="50" /></label>
+                    <label>Scale <span data-text-value="scale">100%</span><input data-text-style="scale" type="range" min="10" max="300" value="100" /></label>
+                    <label>Rotation <span data-text-value="rotation">0°</span><input data-text-style="rotation" type="range" min="-180" max="180" value="0" /></label>
+                  </div>
+                  <div class="text-color-grid">
+                    <label>Text Colour <input data-text-style="color" type="color" value="#f7f2ea" aria-label="Text colour" /></label>
+                    <label>Stroke Colour <input data-text-style="strokeColor" type="color" value="#070c11" aria-label="Stroke colour" /></label>
+                    <label>BG Colour <input data-text-style="backgroundColor" type="color" value="#080d13" aria-label="Background colour" /></label>
+                  </div>
+                  <div class="text-align-controls" role="group" aria-label="Text alignment">
+                    <button type="button" data-text-align="left">Left</button>
+                    <button type="button" data-text-align="center">Center</button>
+                    <button type="button" data-text-align="right">Right</button>
+                  </div>
+                  <div class="text-control-grid">
+                    <label>Enter Animation
+                      <select data-text-animation aria-label="Text enter animation">
+                        <option value="none">None</option>
+                        <option value="fade">Fade In</option>
+                        <option value="slide-up">Slide Up</option>
+                        <option value="scale-in">Scale In</option>
+                        <option value="soft-reveal">Soft Reveal</option>
+                        <option value="typewriter">Typewriter</option>
+                        <option value="bounce-in">Bounce In</option>
+                        <option value="blur-reveal">Blur Reveal</option>
+                        <option value="wipe-right">Wipe Right</option>
+                      </select>
+                    </label>
+                    <button type="button" data-text-action="template">Apply Template</button>
+                    <button type="button" data-text-action="background">Toggle Background</button>
+                    <button type="button" data-text-action="keyframe">Keyframe Text</button>
+                    <button type="button" data-text-add class="btn-accent">+ Add Text</button>
+                    <button type="button" data-text-delete class="btn-ghost">Delete Layer</button>
+                  </div>
+                </div>
+                <div class="caption-editor" data-caption-editor>
+                  <div class="caption-editor-head">
+                    <strong>Caption Studio</strong>
+                    <span data-caption-status>4 captions</span>
+                  </div>
+                  <div class="caption-search-row">
+                    <input data-caption-search type="search" placeholder="Search captions" aria-label="Search captions" />
+                    <input data-caption-replace type="text" placeholder="Replace" aria-label="Replace captions" />
+                    <button type="button" data-caption-action="replace">Replace</button>
+                  </div>
+                  <div class="caption-control-grid">
+                    <label>Mode
+                      <select data-caption-mode aria-label="Caption mode">
+                        <option value="sentence">Sentence</option>
+                        <option value="word">Word by word</option>
+                      </select>
+                    </label>
+                    <label>Track
+                      <select data-caption-track aria-label="Caption track"></select>
+                    </label>
+                    <label>Speaker
+                      <select data-caption-speaker aria-label="Speaker">
+                        <option value="Narrator" data-color="#bfeeff">Narrator</option>
+                        <option value="Host" data-color="#9de7c6">Host</option>
+                        <option value="Customer" data-color="#ffd47a">Customer</option>
+                        <option value="Guest" data-color="#ff9ab6">Guest</option>
+                      </select>
+                    </label>
+                    <label>Template
+                      <select data-caption-template aria-label="Caption template">
+                        <option value="glass">Glass Lower</option>
+                        <option value="editorial">Editorial Clean</option>
+                        <option value="speaker">Speaker Badge</option>
+                      </select>
+                    </label>
+                  </div>
+                  <div class="caption-timing-grid">
+                    <label>Start <span data-caption-value="start">0.00s</span><input data-caption-timing="start" type="range" min="0" max="190" step="0.03" value="0" /></label>
+                    <label>Duration <span data-caption-value="duration">4.00s</span><input data-caption-timing="duration" type="range" min="0.1" max="20" step="0.03" value="4" /></label>
+                  </div>
+                  <div class="caption-control-grid">
+                    <label>Animation
+                      <select data-caption-animation aria-label="Caption animation">
+                        <option value="none">None</option>
+                        <option value="fade">Fade</option>
+                        <option value="rise">Rise</option>
+                        <option value="karaoke">Karaoke</option>
+                        <option value="pop">Pop</option>
+                      </select>
+                    </label>
+                    <label>Export
+                      <select data-caption-export-format aria-label="Caption export format">
+                        <option value="srt">SRT</option>
+                        <option value="vtt">WebVTT</option>
+                        <option value="json">JSON</option>
+                      </select>
+                    </label>
+                    <button type="button" class="caption-toggle active" data-caption-action="safe-zone">Safe Zones</button>
+                    <button type="button" data-caption-action="new-track">New Track</button>
+                    <button type="button" data-caption-action="add" class="btn-accent">+ Add Caption</button>
+                    <button type="button" data-caption-action="template">Apply Template</button>
+                    <button type="button" data-caption-action="export">Export Captions</button>
+                    <button type="button" data-caption-action="split">Split Here</button>
+                    <button type="button" data-caption-action="merge">Merge All</button>
+                    <button type="button" data-caption-import-btn class="btn-accent">Import SRT/VTT</button>
+                    <button type="button" data-caption-generate-btn class="btn-ghost">Generate Captions (AI)</button>
+                  </div>
+                  <div class="caption-global-style-grid">
+                    <label>Global Size <input type="number" data-caption-global-style="fontSize" min="12" max="120" value="28" /></label>
+                    <label>Global Color <input type="color" data-caption-global-style="color" value="#ffffff" /></label>
+                  </div>
+                  <div class="caption-word-list" data-caption-words></div>
+                  <div class="caption-export-preview" data-caption-export-preview hidden></div>
+                </div>
+                <div class="audio-editor" data-audio-editor>
+                  <div class="audio-editor-head">
+                    <strong>Audio Engine</strong>
+                    <span data-audio-status>Real-time</span>
+                  </div>
+                  <div class="audio-meter-strip">
+                    <span data-audio-meter style="--level: 42%"></span>
+                    <em data-audio-peak>-6.2 dB</em>
+                  </div>
+                  <div class="audio-control-grid">
+                    <label>Volume <span data-audio-value="volume">100%</span><input data-audio-param="volume" type="range" min="0" max="200" value="100" /></label>
+                    <label>Pan <span data-audio-value="pan">C</span><input data-audio-param="pan" type="range" min="-100" max="100" value="0" /></label>
+                    <label>Fade In <span data-audio-value="fadeIn">0.0s</span><input data-audio-param="fadeIn" type="range" min="0" max="500" value="0" /></label>
+                    <label>Fade Out <span data-audio-value="fadeOut">0.0s</span><input data-audio-param="fadeOut" type="range" min="0" max="500" value="0" /></label>
+                    <label>Noise Reduction <span data-audio-value="noiseReduction">0%</span><input data-audio-param="noiseReduction" type="range" min="0" max="100" value="0" /></label>
+                    <label>Voice Enhance <span data-audio-value="voiceEnhance">0%</span><input data-audio-param="voiceEnhance" type="range" min="0" max="100" value="0" /></label>
+                  </div>
+                  <div class="audio-eq-grid">
+                    <label>Low <span data-audio-value="eq.low">0 dB</span><input data-audio-eq="low" type="range" min="-24" max="24" value="0" /></label>
+                    <label>Mid <span data-audio-value="eq.mid">0 dB</span><input data-audio-eq="mid" type="range" min="-24" max="24" value="0" /></label>
+                    <label>High <span data-audio-value="eq.high">0 dB</span><input data-audio-eq="high" type="range" min="-24" max="24" value="0" /></label>
+                  </div>
+                  <div class="audio-control-grid">
+                    <button type="button" data-audio-toggle="compressor">Compressor</button>
+                    <button type="button" data-audio-toggle="limiter">Limiter</button>
+                    <button type="button" data-audio-action="mute">Mute</button>
+                    <button type="button" data-audio-action="solo">Solo</button>
+                    <button type="button" data-audio-action="keyframe">Keyframe Mix</button>
+                    <button type="button" data-audio-action="reset">Reset Chain</button>
+                  </div>
+                  <div class="audio-waveform-preview" data-audio-waveform-preview></div>
+                </div>
+                <div class="keyframe-editor" data-keyframe-editor>
+                  <div class="keyframe-head">
+                    <strong>Keyframes</strong>
+                    <span data-keyframe-count>0</span>
+                  </div>
+                  <div class="keyframe-controls">
+                    <select data-keyframe-property aria-label="Keyframe property">
+                      <option value="position">Position</option>
+                      <option value="scale">Scale</option>
+                      <option value="rotation">Rotation</option>
+                      <option value="opacity">Opacity</option>
+                      <option value="crop">Crop</option>
+                      <option value="blur">Blur</option>
+                      <option value="volume">Volume</option>
+                    </select>
+                    <select data-keyframe-easing aria-label="Keyframe easing">
+                      <option value="linear">Linear</option>
+                      <option value="ease-in">Ease In</option>
+                      <option value="ease-out" selected>Ease Out</option>
+                      <option value="ease-in-out">Ease In Out</option>
+                    </select>
+                    <button data-keyframe-action="add">Add</button>
+                    <button data-keyframe-action="delete">Delete</button>
+                    <button data-keyframe-action="copy">Copy</button>
+                    <button data-keyframe-action="paste">Paste</button>
+                    <button data-keyframe-action="left">-1f</button>
+                    <button data-keyframe-action="right">+1f</button>
+                  </div>
+                  <div class="keyframe-list" data-keyframe-list></div>
+                </div>
+                <div class="transition-editor" data-transition-editor>
+                  <div class="transition-head">
+                    <strong>Transitions</strong>
+                    <span data-transition-count>0</span>
+                  </div>
+                  <div class="transition-controls">
+                    <select data-transition-name aria-label="Transition type">
+                      <option value="fade">Fade</option>
+                      <option value="cross-dissolve" selected>Cross Dissolve</option>
+                      <option value="dip-black">Dip To Black</option>
+                      <option value="dip-white">Dip To White</option>
+                      <option value="slide">Slide</option>
+                      <option value="push">Push</option>
+                      <option value="zoom">Zoom</option>
+                      <option value="wipe">Wipe</option>
+                      <option value="blur">Blur</option>
+                      <option value="spin">Spin</option>
+                    </select>
+                    <div class="transition-direction-grid" data-transition-direction-grid>
+                      <button class="transition-dir-btn active" data-dir="left" aria-label="Direction left">←</button>
+                      <button class="transition-dir-btn" data-dir="right" aria-label="Direction right">→</button>
+                      <button class="transition-dir-btn" data-dir="up" aria-label="Direction up">↑</button>
+                      <button class="transition-dir-btn" data-dir="down" aria-label="Direction down">↓</button>
+                    </div>
+                    <select data-transition-easing aria-label="Easing curve">
+                      <option value="linear">Linear</option>
+                      <option value="ease-in">Ease In</option>
+                      <option value="ease-out">Ease Out</option>
+                      <option value="ease-in-out" selected>Ease In-Out</option>
+                    </select>
+                    <label>Duration <span data-transition-duration-value>0.60s</span><input data-transition-duration type="range" min="10" max="300" value="60" /></label>
+                    <button data-transition-action="add">Add</button>
+                    <button data-transition-action="remove">Remove</button>
+                    <button data-transition-action="duplicate">Duplicate</button>
+                  </div>
+                  <div class="transition-presets" data-transition-presets>
+                    <strong>Presets</strong>
+                    <div class="transition-preset-row" data-transition-preset-row>
+                      <button class="transition-preset-btn" data-transition-preset="cinematic">Cinematic</button>
+                      <button class="transition-preset-btn" data-transition-preset="social">Social</button>
+                      <button class="transition-preset-btn" data-transition-preset="clean">Clean</button>
+                      <button class="transition-preset-btn" data-transition-preset="vintage">Vintage</button>
+                      <button class="transition-preset-btn" data-transition-preset="energetic">Energetic</button>
+                    </div>
+                  </div>
+                  <div class="transition-list" data-transition-list></div>
+                  <div class="transition-preview-thumb" data-transition-preview-thumb>
+                    <div class="transition-preview-box" data-transition-preview-box></div>
+                  </div>
+                </div>
+                <div class="effects-editor" data-effects-editor>
+                  <div class="effects-head">
+                    <strong>Effects Stack</strong>
+                    <span data-effects-count>0</span>
+                  </div>
+                  <div class="effects-controls">
+                    <select data-effect-type aria-label="Effect type">
+                      <option value="blur">Blur</option>
+                      <option value="sharpen">Sharpen</option>
+                      <option value="glow">Glow</option>
+                      <option value="shadow">Shadow</option>
+                      <option value="vignette">Vignette</option>
+                      <option value="noise">Noise</option>
+                      <option value="film-grain">Film Grain</option>
+                      <option value="bloom">Bloom</option>
+                      <option value="lut">LUT</option>
+                      <option value="rgb-split">RGB Split</option>
+                      <option value="chromatic-aberration">Chromatic Aberration</option>
+                    </select>
+                    <button data-effect-action="add">Add</button>
+                    <button data-effect-action="toggle">Enable</button>
+                    <button data-effect-action="up">Up</button>
+                    <button data-effect-action="down">Down</button>
+                    <button data-effect-action="duplicate">Duplicate</button>
+                    <button data-effect-action="remove">Remove</button>
+                  </div>
+                  <label class="effect-param-control">Amount <span data-effect-param-value>0</span><input data-effect-param="amount" type="range" min="0" max="100" value="0" /></label>
+                  <label class="effect-lut-control" data-effect-lut-control hidden>LUT
+                    <select data-effect-lut aria-label="LUT preset">
+                      <option value="None">None</option>
+                      <option value="Cinematic Cool">Cinematic Cool</option>
+                      <option value="Morning Glass">Morning Glass</option>
+                      <option value="Soft Commercial">Soft Commercial</option>
+                      <option value="Clean Product">Clean Product</option>
+                      <option value="Warm Documentary">Warm Documentary</option>
+                    </select>
+                  </label>
+                  <button class="effect-keyframe" data-effect-action="keyframe">Keyframe Parameter</button>
+                  <div class="effects-list" data-effects-list></div>
+                </div>
+              </div>
+            </details>
+          </div>
+        </aside>
+      </section>
+
+      <section class="storyline glass-panel">
+        <div class="timeline-resizer" data-timeline-resizer></div>
+        <div class="timeline-meta">
+          <div>
+            <strong>Narrative Flow</strong>
+            <span data-timeline-status>Snap on · Magnetic editing on</span>
+          </div>
+          <div class="timeline-controls">
+            <button data-timeline-action="undo" title="Undo (Ctrl+Z)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1,4 1,10 7,10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+            </button>
+            <button data-timeline-action="redo" title="Redo (Ctrl+Shift+Z)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23,4 23,10 17,10"/><path d="M20.49 15a9 9 0 1 1-2.13-9.36L23 10"/></svg>
+            </button>
+            <div class="tc-divider"></div>
+            <button data-timeline-action="split" title="Split at Playhead (S)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="2" x2="12" y2="22"/><polyline points="8,6 12,2 16,6"/><polyline points="8,18 12,22 16,18"/></svg>
+              Split
+            </button>
+            <button data-timeline-action="ripple-delete" title="Ripple Delete (Shift+Del)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              Delete
+            </button>
+            <div class="tc-divider"></div>
+            <button data-zoom="-1" title="Zoom Out">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+            </button>
+            <button data-zoom="1" title="Zoom In">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+            </button>
+            <button data-zoom-fit title="Zoom to Fit" class="tc-action">Fit</button>
+            <button data-zoom-selection title="Zoom to Selection" class="tc-action">Sel</button>
+            <div class="tc-divider"></div>
+            <button class="toggle-pill active" data-toggle-timeline="snap" aria-pressed="true">Snap</button>
+            <button class="toggle-pill active" data-toggle-timeline="magnetic" aria-pressed="true">Magnetic</button>
+          </div>
+        </div>
+
+        <div class="tl-markers-bar" data-tl-markers>
+          <button class="tl-marker-add" data-tl-add-marker title="Add marker at playhead">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+          <div class="tl-marker-list" data-tl-marker-list></div>
+        </div>
+
+        <div class="timeline-editor" style="--zoom: 1">
+          <div class="timeline-track-head ruler-spacer"></div>
+          <div class="timeline-scroll" data-timeline-scroll>
+            <div class="timeline-ruler" data-timeline-ruler></div>
+            <div class="timeline-canvas">
+              <div class="snap-guide" data-snap-guide hidden></div>
+              <div class="alignment-guides" data-alignment-guides></div>
+              <div class="marquee-selection" data-marquee hidden></div>
+              <div class="timeline-empty-state" data-timeline-empty-state>
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                <span>Drag & drop media here to start</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="timeline-track-head" style="--track-color: #70e4ff">
+            <button class="track-collapse" aria-label="Collapse Video">-</button>
+            <span class="track-color-dot"></span>
+            <strong>Video</strong>
+            <span class="track-id">V1</span>
+            <div class="track-actions">
+              <button class="track-mini active" data-toast="Video visibility toggled" aria-pressed="true" title="Toggle visibility">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+               <button class="track-mini" data-toast="Video lock toggled" aria-pressed="false" title="Toggle lock">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              </button>
+              <button class="track-mini" data-toast="Video solo toggled" aria-pressed="false" title="Solo track">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4m10-10h-4M6 12H2m15.07-5.07l-2.83 2.83M9.76 14.24l-2.83 2.83m0-10.14l2.83 2.83m4.48 4.48l2.83 2.83"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="track-lane" data-track-lane data-track-id="video"></div>
+
+          <div class="timeline-track-head" style="--track-color: #9de7c6">
+            <button class="track-collapse" aria-label="Collapse B-roll">-</button>
+            <span class="track-color-dot"></span>
+            <strong>B-roll</strong>
+            <span class="track-id">B1</span>
+            <div class="track-actions">
+              <button class="track-mini active" data-toast="B-roll visibility toggled" aria-pressed="true" title="Toggle visibility">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+               <button class="track-mini" data-toast="B-roll lock toggled" aria-pressed="false" title="Toggle lock">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              </button>
+              <button class="track-mini" data-toast="B-roll solo toggled" aria-pressed="false" title="Solo track">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4m10-10h-4M6 12H2m15.07-5.07l-2.83 2.83M9.76 14.24l-2.83 2.83m0-10.14l2.83 2.83m4.48 4.48l2.83 2.83"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="track-lane" data-track-lane data-track-id="broll"></div>
+
+          <div class="timeline-track-head" style="--track-color: #b9a4ff">
+            <button class="track-collapse" aria-label="Collapse Text">-</button>
+            <span class="track-color-dot"></span>
+            <strong>Text</strong>
+            <span class="track-id">T1</span>
+            <div class="track-actions">
+              <button class="track-mini active" data-toast="Text visibility toggled" aria-pressed="true" title="Toggle visibility">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+               <button class="track-mini" data-toast="Text lock toggled" aria-pressed="false" title="Toggle lock">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              </button>
+              <button class="track-mini" data-toast="Text solo toggled" aria-pressed="false" title="Solo track">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4m10-10h-4M6 12H2m15.07-5.07l-2.83 2.83M9.76 14.24l-2.83 2.83m0-10.14l2.83 2.83m4.48 4.48l2.83 2.83"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="track-lane" data-track-lane data-track-id="text"></div>
+
+          <div class="timeline-track-head" style="--track-color: #ffd47a">
+            <button class="track-collapse" aria-label="Collapse Captions">-</button>
+            <span class="track-color-dot"></span>
+            <strong>Captions</strong>
+            <span class="track-id">C1</span>
+            <div class="track-actions">
+              <button class="track-mini active" data-toast="Caption visibility toggled" aria-pressed="true" title="Toggle visibility">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+               <button class="track-mini" data-toast="Caption lock toggled" aria-pressed="false" title="Toggle lock">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              </button>
+              <button class="track-mini" data-toast="Caption solo toggled" aria-pressed="false" title="Solo track">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4m10-10h-4M6 12H2m15.07-5.07l-2.83 2.83M9.76 14.24l-2.83 2.83m0-10.14l2.83 2.83m4.48 4.48l2.83 2.83"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="track-lane captions-lane" data-track-lane data-track-id="captions"></div>
+
+          <div class="timeline-track-head" style="--track-color: #70e4ff">
+            <button class="track-collapse" aria-label="Collapse Voice">-</button>
+            <span class="track-color-dot"></span>
+            <strong>Voice</strong>
+            <span class="track-id">A1</span>
+            <div class="track-actions">
+              <button class="track-mini active" data-toast="Voice visibility toggled" aria-pressed="true" title="Toggle visibility">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+               <button class="track-mini" data-toast="Voice lock toggled" aria-pressed="false" title="Toggle lock">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              </button>
+              <button class="track-mini" data-toast="Voice solo toggled" aria-pressed="false" title="Solo track">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4m10-10h-4M6 12H2m15.07-5.07l-2.83 2.83M9.76 14.24l-2.83 2.83m0-10.14l2.83 2.83m4.48 4.48l2.83 2.83"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="track-lane audio-lane" data-track-lane data-track-id="voice"></div>
+
+          <div class="timeline-track-head" style="--track-color: #ffd47a">
+            <button class="track-collapse" aria-label="Collapse Music">-</button>
+            <span class="track-color-dot"></span>
+            <strong>Music</strong>
+            <span class="track-id">A2</span>
+            <div class="track-actions">
+              <button class="track-mini active" data-toast="Music visibility toggled" aria-pressed="true" title="Toggle visibility">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+               <button class="track-mini" data-toast="Music lock toggled" aria-pressed="false" title="Toggle lock">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              </button>
+              <button class="track-mini" data-toast="Music solo toggled" aria-pressed="false" title="Solo track">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4m10-10h-4M6 12H2m15.07-5.07l-2.83 2.83M9.76 14.24l-2.83 2.83m0-10.14l2.83 2.83m4.48 4.48l2.83 2.83"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="track-lane audio-lane" data-track-lane data-track-id="music"></div>
+
+          <div class="timeline-track-head" style="--track-color: #ff9ab6">
+            <button class="track-collapse" aria-label="Collapse Sound Effects">-</button>
+            <span class="track-color-dot"></span>
+            <strong>SFX</strong>
+            <span class="track-id">S1</span>
+            <div class="track-actions">
+              <button class="track-mini active" data-toast="SFX visibility toggled" aria-pressed="true" title="Toggle visibility">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+               <button class="track-mini" data-toast="SFX lock toggled" aria-pressed="false" title="Toggle lock">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              </button>
+              <button class="track-mini" data-toast="SFX solo toggled" aria-pressed="false" title="Solo track">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4m10-10h-4M6 12H2m15.07-5.07l-2.83 2.83M9.76 14.24l-2.83 2.83m0-10.14l2.83 2.83m4.48 4.48l2.83 2.83"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="track-lane" data-track-lane data-track-id="sfx"></div>
+
+          <div class="timeline-track-head" style="--track-color: #b9a4ff">
+            <button class="track-collapse" aria-label="Collapse Effects">-</button>
+            <span class="track-color-dot"></span>
+            <strong>Effects</strong>
+            <span class="track-id">FX1</span>
+            <div class="track-actions">
+              <button class="track-mini active" data-toast="Effects visibility toggled" aria-pressed="true" title="Toggle visibility">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+               <button class="track-mini" data-toast="Effects lock toggled" aria-pressed="false" title="Toggle lock">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              </button>
+              <button class="track-mini" data-toast="Effects solo toggled" aria-pressed="false" title="Solo track">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4m10-10h-4M6 12H2m15.07-5.07l-2.83 2.83M9.76 14.24l-2.83 2.83m0-10.14l2.83 2.83m4.48 4.48l2.83 2.83"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="track-lane" data-track-lane data-track-id="effects"></div>
+
+          <div class="timeline-playhead" data-cursor>
+            <span class="playhead-hit" aria-hidden="true"></span>
+            <button type="button" aria-label="Drag playhead"></button>
+          </div>
+        </div>
+
+        <div class="tl-bookmarks-bar" data-tl-bookmarks>
+          <div class="tl-bookmark-list" data-tl-bookmark-list></div>
+        </div>
+      </section>
+
+      <div class="clip-edit-tooltip glass-panel" data-clip-edit-tooltip hidden>
+        <span class="clip-edit-tooltip-action" data-clip-edit-tooltip-action></span>
+        <span class="clip-edit-tooltip-time" data-clip-edit-tooltip-time></span>
+        <span class="clip-edit-tooltip-delta" data-clip-edit-tooltip-delta></span>
+      </div>
+
+      <div class="notification-stack" role="status" aria-live="polite" data-notification-stack></div>
+      <div class="error-center glass-panel" data-error-center hidden>
+        <div class="error-center-head">
+          <strong>Recovery Center</strong>
+          <button data-error-center-close aria-label="Close recovery center">Close</button>
+        </div>
+        <div class="error-list" data-error-list></div>
+      </div>
+      <div class="context-menu glass-panel" data-context-menu hidden>
+      </div>
+      <div class="global-search-backdrop" data-global-search aria-hidden="true" hidden>
+        <section class="global-search-modal glass-panel" role="dialog" aria-modal="true" aria-labelledby="global-search-title">
+          <div class="global-search-input">
+            <span aria-hidden="true"></span>
+            <input data-global-search-input type="search" autocomplete="off" placeholder="Search media, effects, shortcuts, projects..." aria-label="Global search" />
+            <button data-close-global-search aria-label="Close global search">Close</button>
+          </div>
+          <div class="global-search-filters" data-global-search-filters aria-label="Search filters"></div>
+          <div class="global-search-head">
+            <div>
+              <span>Command Center</span>
+              <h2 id="global-search-title">Global Search</h2>
+            </div>
+            <strong data-global-search-count>0 results</strong>
+          </div>
+          <div class="global-search-results" data-global-search-results></div>
+          <div class="global-search-empty" data-global-search-empty hidden>
+            <strong>No matching editor items</strong>
+            <span>Try a different keyword or switch the filter back to All.</span>
+          </div>
+          <div class="global-search-footer">
+            <span>Enter opens result</span>
+            <span>Esc closes</span>
+            <span>Ctrl K opens search</span>
+          </div>
+        </section>
+      </div>
+      <div class="ai-command-backdrop" data-ai-command-backdrop aria-hidden="true" hidden>
+        <section class="ai-command-modal glass-panel" role="dialog" aria-modal="true" aria-labelledby="ai-command-title">
+          <div class="ai-command-shell">
+            <div class="ai-command-input-row">
+              <span class="ai-command-mark" aria-hidden="true"></span>
+              <input data-ai-command-input type="text" autocomplete="off" placeholder="Tell Launchly what to prepare..." aria-label="AI command" />
+              <button data-ai-command-run>Prepare</button>
+              <button data-ai-command-close aria-label="Close AI command bar">Close</button>
+            </div>
+            <div class="ai-command-head">
+              <div>
+                <span>Local Command Bar</span>
+                <h2 id="ai-command-title">AI Edit Instructions</h2>
+              </div>
+              <strong>No APIs connected</strong>
+            </div>
+            <div class="ai-command-suggestions" data-ai-command-suggestions></div>
+            <div class="ai-command-preview" data-ai-command-preview>
+              <strong>Ready for an instruction</strong>
+              <span>Commands create local edit plans only. Nothing is sent to an AI service.</span>
+            </div>
+            <div class="ai-command-history" data-ai-command-history></div>
+            <div class="ai-command-footer">
+              <span>Enter prepares</span>
+              <span>Esc closes</span>
+              <span>Ctrl I opens command bar</span>
+            </div>
+          </div>
+        </section>
+      </div>
+      <div class="media-hover-preview glass-panel" data-media-preview hidden>
+        <div class="media-hover-thumb" data-media-preview-thumb>
+          <i data-media-preview-playhead></i>
+          <button data-media-preview-play aria-label="Toggle media hover playback">Play</button>
+          <em data-media-preview-time>00:00</em>
+        </div>
+        <input data-media-preview-scrub type="range" min="0" max="100" value="0" aria-label="Scrub media preview" />
+        <div class="media-preview-audio" data-media-preview-audio><span></span></div>
+        <div class="media-preview-title">
+          <strong data-media-preview-title></strong>
+          <span data-media-preview-subtitle></span>
+        </div>
+        <div class="media-preview-zoom" data-media-preview-zoom hidden>
+          <button data-image-zoom="-1">Zoom -</button>
+          <b data-image-zoom-value>100%</b>
+          <button data-image-zoom="1">Zoom +</button>
+        </div>
+        <div class="media-preview-meta" data-media-preview-meta></div>
+      </div>
+      <div class="modal-backdrop" data-export-modal hidden>
+        <section class="export-modal glass-panel" role="dialog" aria-modal="true" aria-labelledby="export-title">
+          <div class="export-modal-head">
+            <div>
+              <span>Export Studio</span>
+              <h2 id="export-title">Untitled Campaign</h2>
+            </div>
+            <button data-close-export aria-label="Close export modal">Close</button>
+          </div>
+          <div class="export-window-grid">
+            <section class="export-settings">
+              <div class="export-options" data-export-resolution>
+                <button data-resolution="720">720p</button>
+                <button class="active" data-resolution="1080">1080p</button>
+                <button data-resolution="1440">1440p</button>
+                <button data-resolution="2160">4K</button>
+              </div>
+              <div class="export-control-grid">
+                <label>Format
+                  <select data-export-format>
+                    <option selected>MP4</option>
+                    <option>MOV</option>
+                    <option>WEBM</option>
+                  </select>
+                </label>
+                <label>FPS
+                  <select data-export-fps>
+                    <option>24</option>
+                    <option>25</option>
+                    <option selected>30</option>
+                    <option>50</option>
+                    <option>60</option>
+                  </select>
+                </label>
+                <label>Codec
+                  <select data-export-codec>
+                    <option selected>H.264</option>
+                    <option>HEVC</option>
+                    <option>ProRes</option>
+                    <option>AV1</option>
+                    <option>VP9</option>
+                  </select>
+                </label>
+                <label>Bitrate <span data-export-bitrate-value>18 Mbps</span>
+                  <input data-export-bitrate type="range" min="1" max="240" value="18" />
+                </label>
+              </div>
+              <div class="export-summary">
+                <span>Format: <b data-export-format-label>MP4</b></span>
+                <span>Duration: <b data-export-duration>03:10</b></span>
+                <span>Estimate: <b data-file-size-estimate>428 MB</b></span>
+              </div>
+              <div class="export-error" data-export-error hidden></div>
+              <div class="export-progress-card">
+                <div>
+                  <strong data-export-current-name>Ready to export</strong>
+                  <span data-export-current-status>No render job running</span>
+                </div>
+                <div class="export-progress"><span data-export-progress style="--progress: 0%"></span></div>
+                <div class="export-actions">
+                  <button class="export-confirm" data-queue-export>Queue Export</button>
+                  <button class="export-cancel" data-cancel-export disabled>Cancel</button>
+                </div>
+              </div>
+            </section>
+            <aside class="export-side">
+              <section>
+                <div class="export-side-head"><strong>Export Queue</strong><span data-export-queue-count>0 jobs</span></div>
+                <div class="export-queue" data-export-queue>
+                  <div class="export-empty">No queued exports.</div>
+                </div>
+              </section>
+              <section>
+                <div class="export-side-head"><strong>Recent Exports</strong><span>Local history</span></div>
+                <div class="recent-exports" data-recent-exports>
+                  <article><strong>Launchly_Teaser_1080p.mp4</strong><span>Today · 126 MB · Completed</span></article>
+                  <article><strong>Campaign_Review_720p.mp4</strong><span>Yesterday · 64 MB · Completed</span></article>
+                </div>
+              </section>
+              <section>
+                <div class="export-side-head"><strong>Render History</strong><span data-render-history-count>0 events</span></div>
+                <div class="recent-exports render-history" data-render-history>
+                  <div class="export-empty">No render history yet.</div>
+                </div>
+              </section>
+            </aside>
+          </div>
+        </section>
+      </div>
+      <div class="modal-backdrop" data-project-modal hidden>
+        <section class="project-modal glass-panel" role="dialog" aria-modal="true" aria-labelledby="project-title">
+          <div class="export-modal-head">
+            <div>
+              <span>Project Library</span>
+              <h2 id="project-title">Manage Projects</h2>
+            </div>
+            <button data-close-project aria-label="Close project manager">Close</button>
+          </div>
+          <div class="project-window-grid">
+            <section class="project-main">
+              <div class="project-manager-actions">
+                <button data-project-action="create">Create Project</button>
+                <button data-project-folder-action="create">New Folder</button>
+                <button data-project-action="manual-save">Manual Save</button>
+                <button data-project-action="save-as">Save As</button>
+                <button data-project-action="export">Export Project</button>
+                <label class="project-import">Import Project<input data-project-import type="file" accept=".json,application/json" /></label>
+              </div>
+              <div class="project-file-toolbar">
+                <label>Search<input data-project-search type="search" placeholder="Search projects and folders" /></label>
+                <label>Sort<select data-project-sort><option value="recent">Recent</option><option value="name">Name</option><option value="created">Created</option><option value="duration">Duration</option></select></label>
+                <div class="project-view-tabs" aria-label="Project filters">
+                  <button class="active" data-project-view="all" aria-selected="true">All</button>
+                  <button data-project-view="recent" aria-selected="false">Recent</button>
+                  <button data-project-view="favorites" aria-selected="false">Favorites</button>
+                  <button data-project-view="recycle" aria-selected="false">Recycle Bin</button>
+                </div>
+              </div>
+              <div class="project-settings-panel">
+                <label>Name<input data-project-name value="Untitled Campaign" /></label>
+                <label>FPS<select data-project-setting="fps"><option>24</option><option selected>30</option><option>60</option></select></label>
+                <label>Resolution<select data-project-setting="resolution"><option value="1920x1080">1080p</option><option value="2560x1440">1440p</option><option value="3840x2160" selected>4K</option></select></label>
+                <label>Color<select data-project-setting="colorSpace"><option selected>Rec.709</option><option>Display P3</option><option>HDR10</option></select></label>
+              </div>
+              <div class="project-breadcrumbs" data-project-breadcrumbs></div>
+              <div class="project-grid" data-project-grid></div>
+            </section>
+            <aside class="project-side">
+              <section>
+                <div class="export-side-head"><strong>Folders</strong><span data-project-folder-count>0 folders</span></div>
+                <div class="project-folder-tree" data-project-folder-tree></div>
+              </section>
+              <section>
+                <div class="export-side-head"><strong>Recent Projects</strong><span data-project-count>0 projects</span></div>
+                <div class="recent-exports" data-recent-projects></div>
+              </section>
+              <section>
+                <div class="export-side-head"><strong>Recycle Bin</strong><span data-project-bin-count>0 deleted</span></div>
+                <div class="recent-exports" data-project-recycle></div>
+              </section>
+              <section>
+                <div class="export-side-head"><strong>Crash Recovery</strong><span data-recovery-count>0 snapshots</span></div>
+                <div class="recent-exports" data-recovery-list></div>
+              </section>
+              <section>
+                <div class="export-side-head"><strong>Version History</strong><span data-version-count>0 versions</span></div>
+                <div class="version-comment-row">
+                  <input data-version-comment type="text" placeholder="Version comment" />
+                  <button data-version-action="manual">Checkpoint</button>
+                </div>
+                <div class="recent-exports version-history" data-version-history></div>
+              </section>
+              <section>
+                <div class="export-side-head"><strong>Sync Readiness</strong><span data-sync-side-status>Local only</span></div>
+                <div class="recent-exports sync-side-list" data-sync-side-list></div>
+              </section>
+            </aside>
+          </div>
+        </section>
+      </div>
+      <div class="modal-backdrop" data-shortcuts-modal hidden>
+        <section class="shortcuts-modal glass-panel" role="dialog" aria-modal="true" aria-labelledby="shortcuts-title">
+          <div class="export-modal-head">
+            <div>
+              <span>Keyboard</span>
+              <h2 id="shortcuts-title">Desktop Shortcuts</h2>
+            </div>
+            <button data-close-shortcuts aria-label="Close shortcuts">Close</button>
+          </div>
+          <div class="shortcuts-list" data-shortcuts-list></div>
+          <div class="project-manager-actions">
+            <button data-shortcuts-reset>Reset Defaults</button>
+          </div>
+        </section>
+      </div>
+      <div class="modal-backdrop" data-settings-modal hidden>
+        <section class="settings-modal glass-panel" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+          <div class="export-modal-head">
+            <div>
+              <span>Studio Preferences</span>
+              <h2 id="settings-title">Settings</h2>
+            </div>
+            <button data-close-settings aria-label="Close settings">Close</button>
+          </div>
+          <div class="settings-window">
+            <nav class="settings-nav" aria-label="Settings sections">
+              <button class="active" data-settings-section="theme" aria-selected="true">Theme</button>
+              <button data-settings-section="language" aria-selected="false">Language</button>
+              <button data-settings-section="autosave" aria-selected="false">Autosave</button>
+              <button data-settings-section="playback" aria-selected="false">Playback Quality</button>
+              <button data-settings-section="timeline" aria-selected="false">Timeline Options</button>
+              <button data-settings-section="shortcuts" aria-selected="false">Keyboard Shortcuts</button>
+              <button data-settings-section="performance" aria-selected="false">Performance</button>
+              <button data-settings-section="plugins" aria-selected="false">Plugins</button>
+              <button data-settings-section="storage" aria-selected="false">Storage</button>
+              <button data-settings-section="sync" aria-selected="false">Cloud Sync</button>
+              <button data-settings-section="errors" aria-selected="false">Recovery</button>
+              <button data-settings-section="export" aria-selected="false">Export Defaults</button>
+              <button data-settings-section="ai" aria-selected="false">AI Settings</button>
+              <button data-settings-section="notifications" aria-selected="false">Notifications</button>
+              <button data-settings-section="account" aria-selected="false">Account</button>
+            </nav>
+            <section class="settings-content" data-settings-content></section>
+          </div>
+          <div class="settings-footer">
+            <span data-settings-status>Preferences saved locally</span>
+            <button data-settings-reset>Reset Settings</button>
+          </div>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>
