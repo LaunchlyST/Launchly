@@ -90,44 +90,16 @@
             <input data-media-upload type="file" accept="video/*,image/*,audio/*" multiple hidden />
             <span data-tool-panel-title hidden></span>
 
-            <div class="media-subtabs" role="tablist">
-              <button class="media-subtab active" data-media-subtab="local" role="tab" aria-selected="true">Local</button>
-              <button class="media-subtab" data-media-subtab="import" role="tab" aria-selected="false">Import</button>
-              <button class="media-subtab" data-media-subtab="ai" role="tab" aria-selected="false">AI Generated</button>
-              <button class="media-subtab" data-media-subtab="library" role="tab" aria-selected="false">Library</button>
-            </div>
-
             <button type="button" class="media-dropzone" data-upload-trigger>
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
               <b>Import</b>
               <small>supports video, audio, photos</small>
             </button>
 
-            <div class="media-duo">
-              <div class="media-duo-box" data-media-duo-primary>
-                <span class="media-duo-label">First image</span>
-              </div>
-              <div class="media-duo-box is-empty" data-media-duo-secondary>
-                <span class="media-duo-label">Empty</span>
-              </div>
-            </div>
-
-            <div class="am-search">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              <input type="search" placeholder="Search assets..." data-am-search />
-            </div>
-
-            <div class="am-filters" role="tablist">
-              <button class="am-filter-pill active" data-am-filter="all" data-am-section="all">All <em class="am-count" data-am-count="all">0</em></button>
-              <button class="am-filter-pill" data-am-filter="video" data-am-section="video">Video <em class="am-count" data-am-count="video">0</em></button>
-              <button class="am-filter-pill" data-am-filter="image" data-am-section="image">Image <em class="am-count" data-am-count="image">0</em></button>
-              <button class="am-filter-pill" data-am-filter="audio" data-am-section="audio">Audio <em class="am-count" data-am-count="audio">0</em></button>
-            </div>
-
             <div class="media-library" data-media-library>
               <div class="panel-loading" data-loading-state hidden>Indexing media...</div>
               <div data-asset-sections></div>
-              <div class="panel-empty">No assets yet. Import files or drag &amp; drop to get started.</div>
+              <div class="panel-empty" data-media-empty>Nothing imported yet.</div>
             </div>
           </div>
 

@@ -1302,29 +1302,7 @@ function formatTimecode(seconds) {
 }
 
 function notify({ message, title = null, type = "info", progress = null, duration = 3200, id = null } = {}) {
-  if (!notificationStack || !message) return null;
-  const notificationId = id ?? `note-${++notificationSequence}`;
-  const existing = activeNotifications.get(notificationId);
-  const element = existing ?? document.createElement("article");
-  const safeTitle = escapeHtml(title ?? notificationTitle(type));
-  const safeMessage = escapeHtml(message);
-  element.className = `notification-toast ${type}`;
-  element.dataset.notificationId = notificationId;
-  element.innerHTML = `
-    <i aria-hidden="true"></i>
-    <div><strong>${safeTitle}</strong><span>${safeMessage}</span>${progress !== null ? `<b style="--note-progress:${Math.max(0, Math.min(100, Number(progress)))}%"></b>` : ""}</div>
-    <button type="button" data-dismiss-notification="${notificationId}" aria-label="Dismiss notification">Close</button>
-  `;
-  if (!existing) {
-    notificationStack.prepend(element);
-    activeNotifications.set(notificationId, element);
-    requestAnimationFrame(() => element.classList.add("visible"));
-  }
-  if (duration !== Infinity) {
-    clearManagedTimeout(element.dismissTimer);
-    element.dismissTimer = managedTimeout(() => dismissNotification(notificationId), duration);
-  }
-  return notificationId;
+  return null;
 }
 
 function notificationTitle(type) {
@@ -1355,24 +1333,12 @@ function persistErrorState() {
 
 function renderErrorCenter() {
   const center = document.querySelector("[data-error-center]");
-  const list = document.querySelector("[data-error-list]");
-  if (!center || !list) return;
-  const notifications = editor.state.errors?.notifications ?? [];
-  center.hidden = notifications.length === 0;
-  center.classList.toggle("safe-mode", Boolean(editor.state.errors?.safeMode));
-  list.innerHTML = notifications.slice(0, 4).map((item) => `
-    <article class="${escapeHtml(item.severity)}">
-      <div><strong>${escapeHtml(item.userMessage)}</strong><span>${escapeHtml(item.source)} - ${new Date(item.at).toLocaleTimeString()}</span></div>
-      <button data-dismiss-error="${item.id}">Dismiss</button>
-    </article>
-  `).join("");
+  if (center) center.hidden = true;
 }
 
 function reportUiError(error, context = {}) {
   const entry = editor.logError(error, { source: "runtime", severity: "error", userMessage: "The editor recovered safely.", ...context });
   persistErrorState();
-  renderErrorCenter();
-  showToast(entry.userMessage);
   return entry;
 }
 
@@ -5547,7 +5513,7 @@ function renderAssetManager() {
     const group = assets.filter((asset) => asset.folder === folder);
     return `<section class="media-section"><h3>${folder}</h3><div class="media-grid">${group.map((asset) => `
       <article class="media-item${editor.state.assetManager.selectedAssetIds.includes(asset.id) ? " selected" : ""}${asset.favorite ? " favorite" : ""}" draggable="true" data-asset-id="${asset.id}" data-media-name="${asset.name}" data-media-type="${asset.type}" data-media-date="${asset.updatedAt.slice(0, 10)}" data-media-duration="${asset.duration}" data-media-recent="${asset.recent}">
-        <div class="media-thumb ${assetThumbClass(asset)}"></div>
+        <div class="media-thumb ${assetThumbClass(asset)}" data-preview-url="${escapeHtml(assetPreviewUrls.get(asset.id) ?? "")}" data-preview-kind="${escapeHtml(asset.type ?? "")}"></div>
         <div><strong>${asset.name}</strong><span>${formatDuration(asset.duration)} · ${asset.type} · Used ${asset.usageCount}x</span></div>
         <button data-asset-menu="${asset.id}" aria-label="Asset actions">...</button>
       </article>`).join("")}</div></section>`;
@@ -5558,9 +5524,41 @@ function renderAssetManager() {
 
 let mediaThumbObserver = null;
 
+/* Object URLs for imported files, keyed by asset id, so the library can show
+   the actual picture/frame rather than a two-letter placeholder. */
+const assetPreviewUrls = new Map();
+
 function hydrateMediaThumb(thumb) {
   if (!thumb || thumb.dataset.thumbReady) return;
   thumb.dataset.thumbReady = "true";
+
+  const url = thumb.dataset.previewUrl;
+  const kind = (thumb.dataset.previewKind ?? "").toLowerCase();
+
+  if (url && kind === "image") {
+    const img = document.createElement("img");
+    // Not loading="lazy": these are created only for files the user just
+    // imported, and lazy defers the decode so the thumbnail stays blank.
+    img.decoding = "async";
+    img.alt = thumb.closest(".media-item")?.dataset.mediaName ?? "";
+    img.src = url;
+    thumb.replaceChildren(img);
+    thumb.classList.add("thumb-ready", "has-preview");
+    return;
+  }
+
+  if (url && kind === "video") {
+    // muted+preload=metadata paints the first frame without playing anything.
+    const video = document.createElement("video");
+    video.src = url;
+    video.muted = true;
+    video.playsInline = true;
+    video.preload = "metadata";
+    thumb.replaceChildren(video);
+    thumb.classList.add("thumb-ready", "has-preview");
+    return;
+  }
+
   runWhenIdle(() => {
     thumb.classList.add("thumb-ready");
     if (!thumb.querySelector("em")) {
@@ -5575,6 +5573,12 @@ function hydrateMediaThumb(thumb) {
 function scheduleLazyMediaHydration() {
   const thumbs = [...document.querySelectorAll(".media-thumb:not([data-thumb-ready])")];
   if (!thumbs.length) return;
+  // Thumbs backed by a real uploaded file are hydrated immediately: the user
+  // just imported them and must see them straight away. Only the placeholder
+  // initials are left to the lazy observer.
+  thumbs.filter((thumb) => thumb.dataset.previewUrl).forEach(hydrateMediaThumb);
+  const remaining = thumbs.filter((thumb) => !thumb.dataset.thumbReady);
+  if (!remaining.length) return;
   if ("IntersectionObserver" in window) {
     mediaThumbObserver?.disconnect();
     mediaThumbObserver = new IntersectionObserver((entries) => {
@@ -5584,10 +5588,10 @@ function scheduleLazyMediaHydration() {
         mediaThumbObserver.unobserve(entry.target);
       });
     }, { root: mediaLibrary, rootMargin: "160px" });
-    thumbs.forEach((thumb) => mediaThumbObserver.observe(thumb));
+    remaining.forEach((thumb) => mediaThumbObserver.observe(thumb));
     return;
   }
-  thumbs.slice(0, 18).forEach(hydrateMediaThumb);
+  remaining.slice(0, 18).forEach(hydrateMediaThumb);
 }
 
 function formatDuration(seconds) {
@@ -5753,7 +5757,17 @@ function simulateUpload(files) {
 
 function importUploadedMediaItems(files) {
   syncMediaEngineFromEditor();
-  const assets = mediaEngine.importFiles([...files], { folder: "Recent Uploads", tags: ["local"], generateProxy: true });
+  const fileList = [...files];
+  const assets = mediaEngine.importFiles(fileList, { folder: "Recent Uploads", tags: ["local"], generateProxy: true });
+  // The engine only records metadata, so hold an object URL per asset here to
+  // give the library a real thumbnail of what was just imported.
+  assets.forEach((asset, index) => {
+    const file = fileList[index];
+    if (!file || assetPreviewUrls.has(asset.id)) return;
+    try {
+      assetPreviewUrls.set(asset.id, URL.createObjectURL(file));
+    } catch { /* non-File input (e.g. synthetic drops): fall back to initials */ }
+  });
   commitMediaEngineToEditor(`${assets.length} media asset${assets.length === 1 ? "" : "s"} indexed locally`);
   if (pendingReplaceClipId && assets[0]) {
     const replacement = editor.replaceClipMedia(pendingReplaceClipId, assetPayload(assets[0]));
