@@ -29,10 +29,15 @@ export interface Clip {
   shadow: number;
   border: number;
   thumbnail?: string;
+  thumbnails?: string[];
   waveform?: number[];
   width?: number;
   height?: number;
   fps?: number;
+  sourceStart?: number;
+  sourceDuration?: number;
+  hasEmbeddedAudio?: boolean;
+  audioDetached?: boolean;
 }
 
 export interface Track {

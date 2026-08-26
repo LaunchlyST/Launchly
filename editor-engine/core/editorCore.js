@@ -15,8 +15,20 @@ import { createPluginState, disablePlugin, installMarketplacePlugin, loadPlugin,
 import { clearNotification, createErrorState, createRecoveryPoint, logEditorError, scanMissingMedia } from "../system/errorSystem.js";
 
 function clone(value) {
-  if (typeof structuredClone === "function") return structuredClone(value);
-  return JSON.parse(JSON.stringify(value));
+  // State can carry non-cloneable members (engine methods, cache providers),
+  // which make structuredClone throw DataCloneError and abort the caller —
+  // that was breaking every undo snapshot taken on a timeline drop. Fall back
+  // to a JSON round-trip, which simply drops functions from the snapshot.
+  if (typeof structuredClone === "function") {
+    try {
+      return structuredClone(value);
+    } catch { /* fall through to JSON */ }
+  }
+  try {
+    return JSON.parse(JSON.stringify(value));
+  } catch {
+    return value;
+  }
 }
 
 function fastHash(obj) {
@@ -132,16 +144,9 @@ function createWaveform(seed = 1, samples = 96) {
   });
 }
 
+/* The library starts empty: it shows only media the user actually imports. */
 function defaultAssets() {
-  return [
-    createAsset({ name: "Launch hero shot", type: "Video", folder: "Project Media", tags: ["hero", "campaign"], duration: 18, usageCount: 3, updatedAt: "2026-07-21T10:00:00.000Z" }),
-    createAsset({ name: "Product macro", type: "Video", folder: "Project Media", tags: ["product", "macro"], duration: 9, usageCount: 1, updatedAt: "2026-07-20T10:00:00.000Z" }),
-    createAsset({ name: "City dawn plate", type: "Image", folder: "Stock Library", tags: ["city", "plate"], duration: 0, recent: false, updatedAt: "2026-07-18T10:00:00.000Z" }),
-    createAsset({ name: "Soft UI texture", type: "Image", folder: "Stock Library", tags: ["texture", "glass"], duration: 0, usageCount: 2, recent: false, updatedAt: "2026-07-16T10:00:00.000Z" }),
-    createAsset({ name: "Brand motion plate", type: "Video", folder: "AI Generated", tags: ["generated", "brand"], duration: 6, usageCount: 1, recent: false, source: "generated", updatedAt: "2026-07-19T10:00:00.000Z" }),
-    createAsset({ name: "Narration clean", type: "Audio", folder: "Recent Uploads", tags: ["voice", "clean"], duration: 72, usageCount: 1, updatedAt: "2026-07-21T11:00:00.000Z" }),
-    createAsset({ name: "Logo transparent", type: "Image", folder: "Recent Uploads", tags: ["logo", "brand"], duration: 0, updatedAt: "2026-07-21T12:00:00.000Z" }),
-  ];
+  return [];
 }
 
 export class EditorCore {

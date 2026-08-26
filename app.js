@@ -5515,7 +5515,7 @@ function renderAssetManager() {
       <article class="media-item${editor.state.assetManager.selectedAssetIds.includes(asset.id) ? " selected" : ""}${asset.favorite ? " favorite" : ""}" draggable="true" data-asset-id="${asset.id}" data-media-name="${asset.name}" data-media-type="${asset.type}" data-media-date="${asset.updatedAt.slice(0, 10)}" data-media-duration="${asset.duration}" data-media-recent="${asset.recent}">
         <div class="media-thumb ${assetThumbClass(asset)}" data-preview-url="${escapeHtml(assetPreviewUrls.get(asset.id) ?? "")}" data-preview-kind="${escapeHtml(asset.type ?? "")}"></div>
         <div><strong>${asset.name}</strong><span>${formatDuration(asset.duration)} · ${asset.type} · Used ${asset.usageCount}x</span></div>
-        <button data-asset-menu="${asset.id}" aria-label="Asset actions">...</button>
+        <button class="asset-menu-hidden" data-asset-menu="${asset.id}" tabindex="-1" aria-hidden="true"></button>
       </article>`).join("")}</div></section>`;
   }).join("");
   mediaLibrary.classList.toggle("empty", assets.length === 0);
@@ -5769,6 +5769,13 @@ function importUploadedMediaItems(files) {
     } catch { /* non-File input (e.g. synthetic drops): fall back to initials */ }
   });
   commitMediaEngineToEditor(`${assets.length} media asset${assets.length === 1 ? "" : "s"} indexed locally`);
+  // Clear any active folder/type/search filter, otherwise a freshly imported
+  // file lands in "Recent Uploads" and is silently filtered out of view.
+  const searchInput = document.querySelector("[data-am-search]");
+  if (searchInput) searchInput.value = "";
+  // "All" is the pass-through sentinel in filterAssets, not null/undefined:
+  // any other value here filters every asset out of the library.
+  editor.setAssetFilter({ query: "", folder: "All", type: "All", tag: "All", favoritesOnly: false });
   if (pendingReplaceClipId && assets[0]) {
     const replacement = editor.replaceClipMedia(pendingReplaceClipId, assetPayload(assets[0]));
     if (replacement) {
@@ -5943,19 +5950,88 @@ function applyContextAction(action) {
   if (action === "move-folder") { editor.moveAssetsToFolder(selectedAssets, "Project Media"); renderAssetManager(); showToast("Moved to Project Media"); }
 }
 
+/* Clicking an imported asset previews it in the centre canvas. The preview is
+   temporary: after ASSET_PREVIEW_MS it clears and the canvas goes back to
+   showing whatever the timeline holds at the playhead. */
+const ASSET_PREVIEW_MS = 6000;
+let assetPreviewTimer = null;
+
+function clearAssetPreview() {
+  clearManagedTimeout(assetPreviewTimer);
+  assetPreviewTimer = null;
+  const layer = document.querySelector("[data-asset-preview]");
+  if (!layer) return;
+  layer.hidden = true;
+  layer.replaceChildren();
+}
+
+function showAssetPreview(assetId) {
+  const layer = document.querySelector("[data-asset-preview]");
+  const asset = editor.state.assetManager.assets.find((entry) => entry.id === assetId);
+  if (!layer || !asset) return;
+
+  const url = assetPreviewUrls.get(assetId);
+  const kind = (asset.type ?? "").toLowerCase();
+  clearManagedTimeout(assetPreviewTimer);
+
+  if (url && kind === "image") {
+    const img = document.createElement("img");
+    img.decoding = "async";
+    img.alt = asset.name ?? "";
+    img.src = url;
+    layer.replaceChildren(img);
+  } else if (url && kind === "video") {
+    const video = document.createElement("video");
+    video.src = url;
+    video.muted = true;
+    video.playsInline = true;
+    video.autoplay = true;
+    video.loop = true;
+    layer.replaceChildren(video);
+  } else {
+    // Audio, or media with no retained file: show its name rather than nothing.
+    const label = document.createElement("span");
+    label.className = "asset-preview-label";
+    label.textContent = asset.name ?? "Preview unavailable";
+    layer.replaceChildren(label);
+  }
+
+  layer.hidden = false;
+  assetPreviewTimer = managedTimeout(clearAssetPreview, ASSET_PREVIEW_MS);
+}
+
 mediaLibrary?.addEventListener("click", (event) => {
   const item = event.target.closest(".media-item");
   if (!item) return;
-  if (event.target.closest("[data-asset-menu]")) {
-    contextAssetId = item.dataset.assetId;
-    editor.selectAsset(contextAssetId, { additive: true });
-    renderAssetManager();
-    const rect = event.target.getBoundingClientRect();
-    openContextMenu(rect.left, rect.bottom + 6, { target: "asset", assetId: contextAssetId });
-    return;
-  }
+
   editor.selectAsset(item.dataset.assetId, { additive: event.ctrlKey || event.metaKey, range: event.shiftKey });
+  // Deliberately NOT re-rendering the grid here. Rebuilding it would replace
+  // the element under the cursor, so a second click landed on a different
+  // node and the dblclick (delete) never fired. Just restyle selection.
+  const selected = new Set(editor.state.assetManager.selectedAssetIds);
+  mediaLibrary.querySelectorAll(".media-item").forEach((el) => {
+    el.classList.toggle("selected", selected.has(el.dataset.assetId));
+  });
+  showAssetPreview(item.dataset.assetId);
+});
+
+/* Double-click an imported item to remove it. */
+mediaLibrary?.addEventListener("dblclick", (event) => {
+  const item = event.target.closest(".media-item");
+  if (!item) return;
+  event.preventDefault();
+
+  const assetId = item.dataset.assetId;
+  const asset = editor.state.assetManager.assets.find((entry) => entry.id === assetId);
+  const previewUrl = assetPreviewUrls.get(assetId);
+  if (previewUrl) {
+    URL.revokeObjectURL(previewUrl);
+    assetPreviewUrls.delete(assetId);
+  }
+  clearAssetPreview();
+  editor.deleteAssets([assetId]);
   renderAssetManager();
+  showToast(`${asset?.name ?? "Asset"} deleted`);
 });
 
 mediaLibrary?.addEventListener("dragstart", (event) => {

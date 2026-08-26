@@ -1,336 +1,292 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { ToolRail } from './components/ToolRail';
-import { ToolPanel } from './components/ToolPanel';
-import { CenterStage } from './components/CenterStage';
-import { Inspector } from './components/Inspector';
-import { Timeline } from './components/Timeline';
-import { TopBar } from './components/TopBar';
-import { ExportModal } from './components/ExportModal';
-import { ProjectManager } from './components/ProjectManager';
-import { SettingsPanel } from './components/SettingsPanel';
-import { GlobalSearch } from './components/GlobalSearch';
-import { AICommandBar } from './components/AICommandBar';
-import { MediaPreview } from './components/MediaPreview';
-import { ContextMenu } from './components/ContextMenu';
+import React, { useCallback, useEffect, useRef } from 'react';
+import { EditorLayout } from './components/layout/EditorLayout';
+import { EditorToolbar } from './components/layout/EditorToolbar';
+import { MediaPanel } from './components/media/MediaPanel';
+import { VideoPreview } from './components/preview/VideoPreview';
+import { Timeline } from './components/timeline/Timeline';
 import { ToastContainer } from './components/Toast';
 import { useEditorStore } from './store/editorStore';
-import { useShortcut, useClickOutside } from './hooks';
+import { importMediaFiles } from './lib/mediaImport';
+import { useShortcut } from './hooks';
+import { getAspectRatioById } from './config/aspectRatios';
 import './Editor.css';
-
-const TOOLS = [
-  { id: 'media', label: 'Media', icon: 'M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5v9a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5v-9Z', icon2: 'm9 9 5 3-5 3V9Z' },
-  { id: 'text', label: 'Text', icon: 'M5 6h14', icon2: 'M12 6v12', icon3: 'M8.5 18h7' },
-  { id: 'captions', label: 'Captions', icon: 'M5 6.5h14v9H9l-4 3v-12Z', icon2: 'M8 10h4', icon3: 'M8 13h8' },
-  { id: 'audio', label: 'Audio', icon: 'M6 14h3l4 4V6l-4 4H6v4Z', icon2: 'M16 9.5a4 4 0 0 1 0 5', icon3: 'M18.5 7a7 7 0 0 1 0 10' },
-  { id: 'brand', label: 'Brand', icon: 'M12 4 19 8v8l-7 4-7-4V8l7-4Z', icon2: 'M9 10.5h6', icon3: 'M9 13.5h4' },
-  { id: 'templates', label: 'Templates', icon: 'M5 5h6v6H5V5Z', icon2: 'M13 5h6v6h-6V5Z', icon3: 'M5 13h6v6H5v-6Z', icon4: 'M13 13h6v6h-6v-6Z' },
-  { id: 'effects', label: 'Effects', icon: 'M12 3v4', icon2: 'M12 17v4', icon3: 'M3 12h4', icon4: 'M17 12h4', icon5: 'm6.5 6.5 2.8 2.8', icon6: 'm14.7 14.7 2.8 2.8', icon7: 'm17.5 6.5-2.8 2.8', icon8: 'm9.3 14.7-2.8 2.8' },
-  { id: 'transitions', label: 'Transitions', icon: 'M4 7h7v10H4V7Z', icon2: 'M13 7h7v10h-7V7Z', icon3: 'm10 12 4-3v6l-4-3Z' },
-  { id: 'ai-tools', label: 'AI Tools', icon: 'M12 4 14 9l5 2-5 2-2 5-2-5-5-2 5-2 2-5Z', icon2: 'M18 4v3', icon3: 'M16.5 5.5h3', ai: true },
-] as const;
-
-type ToolId = typeof TOOLS[number]['id'];
+import './styles/launchly-new.css';
 
 export function Editor() {
   const {
-    activeTool,
-    setActiveTool,
-    openPanels,
-    setOpenPanels,
-    exportModalOpen,
-    setExportModalOpen,
-    projectManagerOpen,
-    setProjectManagerOpen,
-    settingsOpen,
-    setSettingsOpen,
-    shortcutsOpen,
-    setShortcutsOpen,
-    globalSearchOpen,
-    setGlobalSearchOpen,
-    aiCommandOpen,
-    setAiCommandOpen,
-    toasts,
-    addToast,
-    contextMenu,
-    setContextMenu,
-    timelineHeight,
-    setTimelineHeight,
-    canvasZoom,
-    setCanvasZoom,
-    playbackSpeed,
-    setPlaybackSpeed,
-    previewVolume,
-    setPreviewVolume,
-    playing,
-    setPlaying,
-    currentTime,
-    setCurrentTime,
-    duration,
-    setDuration,
-    fps,
-    setFps,
-    projectName,
-    setProjectName,
     clips,
     setClips,
     tracks,
     setTracks,
     selectedClipIds,
     setSelectedClipIds,
-    history,
-    setHistory,
-    historyIndex,
-    setHistoryIndex,
-    snapEnabled,
-    setSnapEnabled,
-    magneticTimeline,
-    setMagneticTimeline,
-    waveformsEnabled,
-    setWaveformsEnabled,
-    thumbnailsEnabled,
-    setThumbnailsEnabled,
-    safeZonesEnabled,
-    setSafeZonesEnabled,
-    guidesEnabled,
-    setGuidesEnabled,
-    gridEnabled,
-    setGridEnabled,
-    performanceMode,
-    setPerformanceMode,
-    gpuRendering,
-    setGpuRendering,
-    backgroundRendering,
-    setBackgroundRendering,
-    proxyMedia,
-    setProxyMedia,
-    aiLocalOnly,
-    setAiLocalOnly,
-    aiSuggestions,
-    setAiSuggestions,
-    aiPreviewQuality,
-    setAiPreviewQuality,
-    notifyExports,
-    setNotifyExports,
-    notifyAutosave,
-    setNotifyAutosave,
-    notifyWarnings,
-    setNotifyWarnings,
-    syncPrepared,
-    setSyncPrepared,
-    syncOfflineMode,
-    setSyncOfflineMode,
-    syncBackgroundQueue,
-    setSyncBackgroundQueue,
-    syncConflictStrategy,
-    setSyncConflictStrategy,
-    syncUploadPolicy,
-    setSyncUploadPolicy,
-    syncDownloadPolicy,
-    setSyncDownloadPolicy,
-  } = useEditorStore();
+    currentTime,
+    setCurrentTime,
+    duration,
+    setDuration,
+    playing,
+    setPlaying,
+    fps,
+    aspectRatio,
+    setAspectRatio,
+    isMuted,
+    setIsMuted,
+    aiModel,
+    setAiModel,
+    aiPrompt,
+    setAiPrompt,
+    mediaAssets,
+    setMediaAssets,
+    toasts,
+    addToast,
+    removeToast,
+  } = useEditorStore() as any;
 
-  const timelineRef = useRef<HTMLDivElement>(null);
-  const [timelineDragging, setTimelineDragging] = useState(false);
-  const [timelineStartY, setTimelineStartY] = useState(0);
+  const timelineClips = clips;
+  const libraryAssets = mediaAssets.length > 0 ? mediaAssets : clips; // fallback for migrated state
+
+  // Playback tick
+  const rafRef = useRef<number | null>(null);
+  const lastTickRef = useRef<number>(0);
 
   useEffect(() => {
-    const handleResize = (e: MouseEvent) => {
-      if (!timelineDragging) return;
-      const deltaY = timelineStartY - e.clientY;
-      const newHeight = Math.max(150, Math.min(window.innerHeight * 0.7, timelineHeight + deltaY));
-      setTimelineHeight(newHeight);
-    };
-    const handleMouseUp = () => {
-      setTimelineDragging(false);
-      document.removeEventListener('mousemove', handleResize);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-    if (timelineDragging) {
-      document.addEventListener('mousemove', handleResize);
-      document.addEventListener('mouseup', handleMouseUp);
+    if (!playing) {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      return;
     }
+    const tick = (now: number) => {
+      if (!lastTickRef.current) lastTickRef.current = now;
+      const delta = (now - lastTickRef.current) / 1000;
+      lastTickRef.current = now;
+      setCurrentTime((prev: number) => {
+        const next = prev + delta;
+        if (next >= duration) {
+          setPlaying(false);
+          return duration;
+        }
+        return next;
+      });
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
     return () => {
-      document.removeEventListener('mousemove', handleResize);
-      document.removeEventListener('mouseup', handleMouseUp);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      lastTickRef.current = 0;
     };
-  }, [timelineDragging, timelineStartY, timelineHeight, setTimelineHeight]);
+  }, [playing, duration, setCurrentTime, setPlaying]);
 
-  const handleTimelineMouseDown = (e: React.MouseEvent) => {
-    if (e.target === timelineRef.current || (e.target as HTMLElement).classList.contains('timeline-handle')) {
-      setTimelineDragging(true);
-      setTimelineStartY(e.clientY);
+  useEffect(() => {
+    if (!playing) lastTickRef.current = 0;
+  }, [playing]);
+
+  // Keep duration in sync with clips
+  useEffect(() => {
+    const maxEnd = clips.reduce((max: number, c: any) => Math.max(max, c.timelineStart + c.duration), 0);
+    const nextDuration = Math.max(30, maxEnd + 5);
+    if (Math.abs(nextDuration - duration) > 0.5) setDuration(nextDuration);
+  }, [clips, duration, setDuration]);
+
+  const ensureTrack = useCallback(
+    (type: 'video' | 'audio' | 'text') => {
+      const existing = tracks.find((t: any) => t.type === type);
+      if (existing) return existing.id;
+      // create new track with compact label V1/T1/A1
+      const count = tracks.filter((t: any) => t.type === type).length;
+      const labelMap: Record<string, string> = { video: `V${count + 1}`, audio: `A${count + 1}`, text: `T${count + 1}` };
+      const nameMap: Record<string, string> = { video: 'Video', audio: 'Audio', text: 'Text' };
+      const colorMap: Record<string, string> = { video: '#70e4ff', audio: '#ffd47a', text: '#b9a4ff' };
+      const newTrack: any = {
+        id: `${type}-${Date.now()}-${Math.random().toString(36).slice(2, 4)}`,
+        name: nameMap[type],
+        type,
+        order: tracks.length,
+        visible: true,
+        locked: false,
+        muted: false,
+        solo: false,
+        height: type === 'audio' ? 60 : 56,
+        color: colorMap[type],
+        label: labelMap[type],
+      };
+      setTracks((prev: any[]) => [...prev, newTrack]);
+      return newTrack.id;
+    },
+    [tracks, setTracks]
+  );
+
+  const handleUpload = useCallback(
+    async (files: FileList | null) => {
+      if (!files || files.length === 0) return;
+      // Use dummy track ids for import — library doesn't need real tracks
+      const result = await importMediaFiles(files, 'video-1', 'audio-1', clips);
+
+      if (result.clips.length > 0) {
+        // Add to media library as source assets (reset timelineStart for library)
+        const libraryClips = result.clips.map((c: any) => ({
+          ...c,
+          id: `media-${Date.now()}-${Math.random().toString(36).slice(2, 6)}-${c.id}`,
+          timelineStart: 0,
+        }));
+        setMediaAssets((prev: any[]) => [...prev, ...libraryClips]);
+        addToast(`Added ${result.clips.length} media file${result.clips.length > 1 ? 's' : ''}`, { type: 'success' });
+      }
+    },
+    [clips, setMediaAssets, addToast]
+  );
+
+  const handleMediaDragStart = useCallback((e: React.DragEvent, clip: any) => {
+    e.dataTransfer.effectAllowed = 'copy';
+    e.dataTransfer.setData('application/x-launchly-clip', JSON.stringify(clip));
+    // Also set a text fallback
+    e.dataTransfer.setData('text/plain', clip.name);
+  }, []);
+
+  const handleDeleteMedia = useCallback(
+    (clip: any) => {
+      // Remove from library
+      setMediaAssets((prev: any[]) => prev.filter((c) => c.id !== clip.id));
+      // Fallback migrated state: library was clips, so also remove there if needed
+      if (mediaAssets.length === 0) {
+        setClips((prev: any[]) => prev.filter((c) => c.id !== clip.id));
+      }
+      // Revoke object URL if present
+      if (clip.src && clip.src.startsWith('blob:')) {
+        try { URL.revokeObjectURL(clip.src); } catch {}
+      }
+      addToast(`Deleted ${clip.name}`, { type: 'info' });
+    },
+    [setMediaAssets, setClips, mediaAssets.length, addToast]
+  );
+
+  const handleDropMedia = useCallback(
+    (sourceClip: any, dropTime: number) => {
+      // Determine target track type and ensure it exists
+      const trackType = sourceClip.type === 'audio' ? 'audio' : sourceClip.type === 'text' || sourceClip.type === 'caption' ? 'text' : 'video';
+      const targetTrackId = ensureTrack(trackType as any);
+
+      const newClip = {
+        ...sourceClip,
+        id: `clip-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        trackId: targetTrackId,
+        timelineStart: dropTime,
+        start: sourceClip.start ?? 0,
+        sourceStart: sourceClip.sourceStart ?? 0,
+        sourceDuration: sourceClip.sourceDuration ?? sourceClip.duration,
+        hasEmbeddedAudio: sourceClip.hasEmbeddedAudio ?? false,
+        audioDetached: false,
+      };
+
+      setClips((prev: any[]) => [...prev, newClip]);
+      setSelectedClipIds([newClip.id]);
+      setCurrentTime(dropTime);
+      addToast(`Added ${sourceClip.name} to timeline`, { type: 'success' });
+    },
+    [ensureTrack, setClips, setSelectedClipIds, setCurrentTime, addToast]
+  );
+
+  const handlePreviewDrop = useCallback(
+    (e: React.DragEvent) => {
       e.preventDefault();
-    }
-  };
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        handleUpload(e.dataTransfer.files);
+        return;
+      }
+      try {
+        const data = JSON.parse(e.dataTransfer.getData('application/x-launchly-clip'));
+        if (data?.id) {
+          // Drop on preview = add to timeline at currentTime
+          handleDropMedia(data, currentTime);
+        }
+      } catch {}
+    },
+    [handleUpload, handleDropMedia, currentTime]
+  );
 
-  const undo = useCallback(() => {
-    if (historyIndex > 0) {
-      const prevState = history[historyIndex - 1];
-      setClips(prevState.clips);
-      setTracks(prevState.tracks);
-      setSelectedClipIds(prevState.selectedClipIds);
-      setCurrentTime(prevState.currentTime);
-      setHistoryIndex(historyIndex - 1);
-      addToast('Undo', { type: 'info' });
+  const handleAiSend = useCallback(() => {
+    if (!aiPrompt.trim()) {
+      addToast('Type an instruction for the AI', { type: 'warning' });
+      return;
     }
-  }, [history, historyIndex, setClips, setTracks, setSelectedClipIds, setCurrentTime, setHistoryIndex, addToast]);
+    const modelLabel = aiModel === 'claude' ? 'Claude' : 'ChatGPT';
+    addToast(`[${modelLabel}] ${aiPrompt.slice(0, 60)}${aiPrompt.length > 60 ? '…' : ''}`, { type: 'info', title: 'AI queued' });
+    // Keep prompt so user can iterate; clear optionally
+    // setAiPrompt('');
+  }, [aiPrompt, aiModel, addToast]);
 
-  const redo = useCallback(() => {
-    if (historyIndex < history.length - 1) {
-      const nextState = history[historyIndex + 1];
-      setClips(nextState.clips);
-      setTracks(nextState.tracks);
-      setSelectedClipIds(nextState.selectedClipIds);
-      setCurrentTime(nextState.currentTime);
-      setHistoryIndex(historyIndex + 1);
-      addToast('Redo', { type: 'info' });
-    }
-  }, [history, historyIndex, setClips, setTracks, setSelectedClipIds, setCurrentTime, setHistoryIndex, addToast]);
-
-  const saveHistory = useCallback((newState: Partial<{ clips: any[]; tracks: any[]; selectedClipIds: string[]; currentTime: number }>) => {
-    const state = {
-      clips: newState.clips ?? clips,
-      tracks: newState.tracks ?? tracks,
-      selectedClipIds: newState.selectedClipIds ?? selectedClipIds,
-      currentTime: newState.currentTime ?? currentTime,
-    };
-    const newHistory = history.slice(0, historyIndex + 1);
-    newHistory.push(state);
-    if (newHistory.length > 50) newHistory.shift();
-    setHistory(newHistory);
-    setHistoryIndex(newHistory.length - 1);
-  }, [clips, tracks, selectedClipIds, currentTime, history, historyIndex, setHistory, setHistoryIndex]);
+  const handleMuteToggle = useCallback(() => {
+    setIsMuted(!isMuted);
+    addToast(isMuted ? 'Audio enabled' : 'Muted', { type: 'info' });
+  }, [isMuted, setIsMuted, addToast]);
 
   useShortcut(' ', () => setPlaying(!playing));
-  useShortcut('ctrl+z', undo);
-  useShortcut('ctrl+shift+z', redo);
-  useShortcut('ctrl+e', () => setExportModalOpen(true));
-  useShortcut('ctrl+k', () => setGlobalSearchOpen(true));
-  useShortcut('ctrl+i', () => setAiCommandOpen(true));
+  useShortcut('Delete', () => {
+    if (selectedClipIds.length > 0) {
+      setClips((prev: any[]) => prev.filter((c) => !selectedClipIds.includes(c.id)));
+      setSelectedClipIds([]);
+    }
+  });
+
+  // Resolve aspect ratio for preview frame styling
+  const aspectPreset = getAspectRatioById(aspectRatio);
 
   return (
-    <div className="editor-shell" onMouseDown={handleTimelineMouseDown}>
-      <TopBar
-        projectName={projectName}
-        onProjectNameChange={setProjectName}
-        onUndo={undo}
-        onRedo={redo}
-        canUndo={historyIndex > 0}
-        canRedo={historyIndex < history.length - 1}
-        playing={playing}
-        onPlayToggle={() => setPlaying(!playing)}
-        onExport={() => setExportModalOpen(true)}
-        onProjectManager={() => setProjectManagerOpen(true)}
-        onSettings={() => setSettingsOpen(true)}
-        onShortcuts={() => setShortcutsOpen(true)}
-        onGlobalSearch={() => setGlobalSearchOpen(true)}
-        onAiCommand={() => setAiCommandOpen(true)}
-        exportModalOpen={exportModalOpen}
-        projectManagerOpen={projectManagerOpen}
-        settingsOpen={settingsOpen}
-        shortcutsOpen={shortcutsOpen}
-        globalSearchOpen={globalSearchOpen}
-        aiCommandOpen={aiCommandOpen}
-        setExportModalOpen={setExportModalOpen}
-        setProjectManagerOpen={setProjectManagerOpen}
-        setSettingsOpen={setSettingsOpen}
-        setShortcutsOpen={setShortcutsOpen}
-        setGlobalSearchOpen={setGlobalSearchOpen}
-        setAiCommandOpen={setAiCommandOpen}
-      />
-
-      <div className="workspace">
-        <ToolRail
-          tools={TOOLS}
-          activeTool={activeTool}
-          onToolChange={setActiveTool}
-          openPanels={openPanels}
-          onPanelToggle={setOpenPanels}
-        />
-
-        <div className="center-column">
-          <CenterStage
-            canvasZoom={canvasZoom}
-            onCanvasZoomChange={setCanvasZoom}
-            playbackSpeed={playbackSpeed}
-            onPlaybackSpeedChange={setPlaybackSpeed}
-            previewVolume={previewVolume}
-            onPreviewVolumeChange={setPreviewVolume}
-            playing={playing}
-            onPlayToggle={() => setPlaying(!playing)}
-            currentTime={currentTime}
-            onCurrentTimeChange={setCurrentTime}
-            duration={duration}
-            onDurationChange={setDuration}
-            fps={fps}
-            onFpsChange={setFps}
-            safeZonesEnabled={safeZonesEnabled}
-            onSafeZonesToggle={setSafeZonesEnabled}
-            guidesEnabled={guidesEnabled}
-            onGuidesToggle={setGuidesEnabled}
-            gridEnabled={gridEnabled}
-            onGridToggle={setGridEnabled}
-            clips={clips}
+    <div className="launchly-editor-root">
+      <EditorLayout
+        leftPanel={
+          <MediaPanel
+            clips={libraryAssets}
+            onUpload={handleUpload}
+            onDragStart={handleMediaDragStart}
+            onDelete={handleDeleteMedia}
+            onSelectMedia={(clip) => {
+              // Optional: selecting media shows in preview? Keep timeline selection
+            }}
+            selectedClipIds={selectedClipIds}
+            aiPrompt={aiPrompt}
+            onAiPromptChange={setAiPrompt}
+            aiModel={aiModel}
+            onAiModelChange={setAiModel}
+            onAiSend={handleAiSend}
+          />
+        }
+        preview={
+          <VideoPreview
+            clips={timelineClips}
             tracks={tracks}
             selectedClipIds={selectedClipIds}
-            onClipsChange={(c) => { setClips(c); saveHistory({ clips: c }); }}
-            onTracksChange={(t) => { setTracks(t); saveHistory({ tracks: t }); }}
-            onSelectionChange={(ids) => { setSelectedClipIds(ids); saveHistory({ selectedClipIds: ids }); }}
-            onTimeChange={(time) => { setCurrentTime(time); saveHistory({ currentTime: time }); }}
+            currentTime={currentTime}
+            duration={duration}
+            playing={playing}
+            onPlayToggle={() => setPlaying(!playing)}
+            aspectRatio={aspectRatio}
+            isMuted={isMuted}
+            onDrop={handlePreviewDrop}
           />
-
-          <div
-            ref={timelineRef}
-            className="timeline-resize-handle"
-            onMouseDown={handleTimelineMouseDown}
-            role="separator"
-            aria-label="Resize timeline"
-            aria-orientation="horizontal"
-          >
-            <div className="timeline-handle" />
-          </div>
-
+        }
+        toolbar={
+          <EditorToolbar
+            aspectRatio={aspectRatio}
+            onAspectRatioChange={setAspectRatio}
+            isMuted={isMuted}
+            onMuteToggle={handleMuteToggle}
+          />
+        }
+        timeline={
           <Timeline
-            height={timelineHeight}
-            clips={clips}
+            clips={timelineClips}
             tracks={tracks}
             selectedClipIds={selectedClipIds}
             currentTime={currentTime}
             duration={duration}
-            fps={fps}
-            playing={playing}
-            snapEnabled={snapEnabled}
-            magneticTimeline={magneticTimeline}
-            waveformsEnabled={waveformsEnabled}
-            thumbnailsEnabled={thumbnailsEnabled}
-            onClipsChange={(c) => { setClips(c); saveHistory({ clips: c }); }}
-            onTracksChange={(t) => { setTracks(t); saveHistory({ tracks: t }); }}
-            onSelectionChange={(ids) => { setSelectedClipIds(ids); saveHistory({ selectedClipIds: ids }); }}
-            onTimeChange={(time) => { setCurrentTime(time); saveHistory({ currentTime: time }); }}
-            onPlayToggle={() => setPlaying(!playing)}
-            onZoomChange={(zoom) => {}}
+            isMuted={isMuted}
+            onClipsChange={setClips}
+            onTracksChange={setTracks as any}
+            onSelectionChange={setSelectedClipIds}
+            onTimeChange={setCurrentTime}
+            onDropMedia={handleDropMedia}
           />
-        </div>
-
-        <Inspector
-          clips={clips}
-          tracks={tracks}
-          selectedClipIds={selectedClipIds}
-          onClipsChange={(c) => { setClips(c); saveHistory({ clips: c }); }}
-          onTracksChange={(t) => { setTracks(t); saveHistory({ tracks: t }); }}
-          onSelectionChange={(ids) => { setSelectedClipIds(ids); saveHistory({ selectedClipIds: ids }); }}
-          canvasZoom={canvasZoom}
-          onCanvasZoomChange={setCanvasZoom}
-        />
-      </div>
-
-      <ExportModal open={exportModalOpen} onClose={() => setExportModalOpen(false)} />
-      <ProjectManager open={projectManagerOpen} onClose={() => setProjectManagerOpen(false)} />
-      <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
-      <GlobalSearch open={globalSearchOpen} onClose={() => setGlobalSearchOpen(false)} />
-      <AICommandBar open={aiCommandOpen} onClose={() => setAiCommandOpen(false)} />
-      <MediaPreview />
-      <ContextMenu />
+        }
+      />
       <ToastContainer toasts={toasts} />
     </div>
   );

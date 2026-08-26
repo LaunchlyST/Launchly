@@ -32,10 +32,15 @@ export interface Clip {
   textContent?: string;
   textStyle?: Record<string, any>;
   thumbnail?: string;
+  thumbnails?: string[];
   waveform?: number[];
   width?: number;
   height?: number;
   fps?: number;
+  sourceStart?: number;
+  sourceDuration?: number;
+  hasEmbeddedAudio?: boolean;
+  audioDetached?: boolean;
 }
 
 export interface Track {
@@ -229,93 +234,36 @@ export interface EditorState {
 
   syncDownloadPolicy: 'manual' | 'open' | 'online';
   setSyncDownloadPolicy: (policy: 'manual' | 'open' | 'online') => void;
+
+  // New simplified editor state
+  aspectRatio: string;
+  setAspectRatio: (ratio: string) => void;
+
+  isMuted: boolean;
+  setIsMuted: (muted: boolean) => void;
+
+  aiModel: string;
+  setAiModel: (model: string) => void;
+
+  aiPrompt: string;
+  setAiPrompt: (prompt: string) => void;
+
+  // Media library (source assets) — separate from timeline clips for clean DnD
+  mediaAssets: Clip[];
+  setMediaAssets: (assets: Clip[] | ((prev: Clip[]) => Clip[])) => void;
+
+  // Timeline zoom — non-linear visible duration
+  timelineZoomValue: number; // 0..100, non-linear
+  setTimelineZoomValue: (v: number) => void;
+  timelineVisibleSeconds: number; // derived from zoom, e.g. 5..3600 (+ extended)
+  setTimelineVisibleSeconds: (s: number) => void;
+  timelineExtendedUnlocked: boolean;
+  setTimelineExtendedUnlocked: (v: boolean) => void;
 }
 
-const defaultTracks: Track[] = [
-  { id: 'video-1', name: 'Video 1', type: 'video', order: 0, visible: true, locked: false, muted: false, solo: false, height: 80, color: '#70e4ff' },
-  { id: 'video-2', name: 'Video 2', type: 'video', order: 1, visible: true, locked: false, muted: false, solo: false, height: 80, color: '#8ff7c8' },
-  { id: 'audio-1', name: 'Audio 1', type: 'audio', order: 2, visible: true, locked: false, muted: false, solo: false, height: 60, color: '#ffd47a' },
-  { id: 'audio-2', name: 'Audio 2', type: 'audio', order: 3, visible: true, locked: false, muted: false, solo: false, height: 60, color: '#ff8cad' },
-  { id: 'text-1', name: 'Text 1', type: 'text', order: 4, visible: true, locked: false, muted: false, solo: false, height: 60, color: '#b9a4ff' },
-];
+const defaultTracks: Track[] = [];
 
-const defaultClips: Clip[] = [
-  {
-    id: 'clip-1',
-    name: 'Hero B-roll',
-    type: 'video',
-    src: '/media/hero-broll.mp4',
-    trackId: 'video-1',
-    timelineStart: 0,
-    start: 0,
-    duration: 18,
-    layer: 0,
-    hidden: false,
-    locked: false,
-    solo: false,
-    opacity: 1,
-    transform: { scale: 1, rotate: 0, position: { x: 0, y: 0 } },
-    speed: 1,
-    blendMode: 'normal',
-    volume: 1,
-    fadeIn: 0,
-    fadeOut: 0,
-    crop: 0,
-    blur: 0,
-    shadow: 0,
-    border: 0,
-  },
-  {
-    id: 'clip-2',
-    name: 'Product Macro',
-    type: 'video',
-    src: '/media/product-macro.mp4',
-    trackId: 'video-1',
-    timelineStart: 18,
-    start: 0,
-    duration: 9,
-    layer: 0,
-    hidden: false,
-    locked: false,
-    solo: false,
-    opacity: 1,
-    transform: { scale: 1, rotate: 0, position: { x: 0, y: 0 } },
-    speed: 1,
-    blendMode: 'normal',
-    volume: 1,
-    fadeIn: 0,
-    fadeOut: 0,
-    crop: 0,
-    blur: 0,
-    shadow: 0,
-    border: 0,
-  },
-  {
-    id: 'clip-3',
-    name: 'Voiceover',
-    type: 'audio',
-    src: '/media/narration.mp3',
-    trackId: 'audio-1',
-    timelineStart: 0,
-    start: 0,
-    duration: 72,
-    layer: 0,
-    hidden: false,
-    locked: false,
-    solo: false,
-    opacity: 1,
-    transform: { scale: 1, rotate: 0, position: { x: 0, y: 0 } },
-    speed: 1,
-    blendMode: 'normal',
-    volume: 1,
-    fadeIn: 0.5,
-    fadeOut: 0.5,
-    crop: 0,
-    blur: 0,
-    shadow: 0,
-    border: 0,
-  },
-];
+const defaultClips: Clip[] = [];
 
 export const useEditorStore = create<EditorState>()(
   persist(
@@ -325,7 +273,7 @@ export const useEditorStore = create<EditorState>()(
       setActiveTool: (tool) => set({ activeTool: tool }),
 
       openPanels: { media: true },
-      setOpenPanels: (panels) => set((state) => ({ openPanels: typeof panels === 'function' ? panels(state.openPanels) : panels }))),
+      setOpenPanels: (panels) => set((state) => ({ openPanels: typeof panels === 'function' ? panels(state.openPanels) : panels })),
 
       exportModalOpen: false,
       setExportModalOpen: (open) => set({ exportModalOpen: open }),
@@ -390,13 +338,13 @@ export const useEditorStore = create<EditorState>()(
         const newClips = typeof clips === 'function' ? clips(state.clips) : clips;
         if (newClips === state.clips) return state;
         return { clips: newClips };
-      })),
+      }),
 
       tracks: defaultTracks,
-      setTracks: (tracks) => set((state) => ({ tracks: typeof tracks === 'function' ? tracks(state.tracks) : tracks }))),
+      setTracks: (tracks) => set((state) => ({ tracks: typeof tracks === 'function' ? tracks(state.tracks) : tracks })),
 
       selectedClipIds: [],
-      setSelectedClipIds: (ids) => set((state) => ({ selectedClipIds: typeof ids === 'function' ? ids(state.selectedClipIds) : ids }))),
+      setSelectedClipIds: (ids) => set((state) => ({ selectedClipIds: typeof ids === 'function' ? ids(state.selectedClipIds) : ids })),
 
       // History
       history: [],
@@ -477,6 +425,28 @@ export const useEditorStore = create<EditorState>()(
 
       syncDownloadPolicy: 'manual',
       setSyncDownloadPolicy: (policy) => set({ syncDownloadPolicy: policy }),
+
+      aspectRatio: 'youtube',
+      setAspectRatio: (ratio) => set({ aspectRatio: ratio }),
+
+      isMuted: false,
+      setIsMuted: (muted) => set({ isMuted: muted }),
+
+      aiModel: 'chatgpt',
+      setAiModel: (model) => set({ aiModel: model }),
+
+      aiPrompt: '',
+      setAiPrompt: (prompt) => set({ aiPrompt: prompt }),
+
+      mediaAssets: [],
+      setMediaAssets: (assets) => set((state) => ({ mediaAssets: typeof assets === 'function' ? (assets as any)(state.mediaAssets) : assets })),
+
+      timelineZoomValue: 30,
+      setTimelineZoomValue: (v) => set({ timelineZoomValue: Math.max(0, Math.min(100, v)) }),
+      timelineVisibleSeconds: 30,
+      setTimelineVisibleSeconds: (s) => set({ timelineVisibleSeconds: s }),
+      timelineExtendedUnlocked: false,
+      setTimelineExtendedUnlocked: (v) => set({ timelineExtendedUnlocked: v }),
     }),
     {
       name: 'launchly-editor-state',
@@ -512,6 +482,14 @@ export const useEditorStore = create<EditorState>()(
         syncConflictStrategy: state.syncConflictStrategy,
         syncUploadPolicy: state.syncUploadPolicy,
         syncDownloadPolicy: state.syncDownloadPolicy,
+        aspectRatio: (state as any).aspectRatio,
+        isMuted: (state as any).isMuted,
+        aiModel: (state as any).aiModel,
+        aiPrompt: (state as any).aiPrompt,
+        mediaAssets: (state as any).mediaAssets,
+        timelineZoomValue: (state as any).timelineZoomValue,
+        timelineVisibleSeconds: (state as any).timelineVisibleSeconds,
+        timelineExtendedUnlocked: (state as any).timelineExtendedUnlocked,
       }),
     }
   )

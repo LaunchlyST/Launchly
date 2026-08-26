@@ -294,6 +294,18 @@ export async function importMediaFile(
 
   const clipId = `clip-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
+  // For video, create ONE linked clip with embedded audio (no separate audio clip)
+  const hasEmbeddedAudio = !isAudio && !isImage && waveform.length > 0;
+
+  // Generate thumbnail strip for video (keep single thumb + try multi if possible)
+  let thumbnails: string[] | undefined = undefined;
+  if (!isImage && !isAudio && file.type.startsWith('video/')) {
+    try {
+      const thumbs = await generateVideoThumbnails(file, 4);
+      if (thumbs.length) thumbnails = thumbs;
+    } catch {}
+  }
+
   const videoClip: Clip = {
     id: clipId,
     name: file.name,
@@ -302,7 +314,7 @@ export async function importMediaFile(
     trackId: isAudio ? audioTrackId : videoTrackId,
     timelineStart,
     start: 0,
-    duration,
+    duration: isImage ? 4 : duration,
     layer: 0,
     hidden: false,
     locked: false,
@@ -319,50 +331,26 @@ export async function importMediaFile(
     shadow: 0,
     border: 0,
     thumbnail: thumbnail || undefined,
+    thumbnails,
     waveform: waveform.length > 0 ? waveform : undefined,
     width,
     height,
     fps,
-  };
+    sourceStart: 0,
+    sourceDuration: isImage ? undefined : duration,
+    hasEmbeddedAudio,
+    audioDetached: false,
+  } as any;
 
+  // No separate audio clip for video — stays linked
   let audioClip: Clip | null = null;
-
-  if (!isAudio && !isImage) {
-    const audioClipId = `clip-audio-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    audioClip = {
-      id: audioClipId,
-      name: `${file.name} (audio)`,
-      type: 'audio',
-      src,
-      trackId: audioTrackId,
-      timelineStart,
-      start: 0,
-      duration,
-      layer: 0,
-      hidden: false,
-      locked: false,
-      solo: false,
-      opacity: 1,
-      transform: { scale: 1, rotate: 0, position: { x: 0, y: 0 } },
-      speed: 1,
-      blendMode: 'normal',
-      volume: 0.8,
-      fadeIn: 0,
-      fadeOut: 0,
-      crop: 0,
-      blur: 0,
-      shadow: 0,
-      border: 0,
-      waveform: waveform.length > 0 ? waveform : undefined,
-    };
-  }
 
   return {
     videoClip,
     audioClip,
     thumbnail,
     waveform,
-    duration,
+    duration: isImage ? 4 : duration,
     width,
     height,
     fps,
@@ -383,6 +371,7 @@ export async function importMediaFiles(
     try {
       const result = await importMediaFile(file, videoTrackId, audioTrackId, currentTime);
       clips.push(result.videoClip);
+      // audioClip is now null for linked video — do not duplicate
       if (result.audioClip) {
         clips.push(result.audioClip);
       }
