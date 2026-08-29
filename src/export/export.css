@@ -1,0 +1,113 @@
+/* export — styles for this section only.
+   Imported from src/app-shell/Editor.tsx in cascade order. */
+
+.export-btn {
+  width: auto !important;
+  padding: 0 16px !important;
+  background: var(--accent-cyan, #70e4ff) !important;
+  color: #000 !important;
+  font-weight: 600 !important;
+  font-size: 12px !important;
+  border-radius: 8px !important;
+}
+
+.export-btn:hover {
+  opacity: 0.9;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal {
+  width: 90%;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.modal-header h2 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary, #e8e8ec);
+}
+
+.modal-close {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary, #8b8b9e);
+  cursor: pointer;
+  border-radius: 6px;
+  font-size: 18px;
+}
+
+.modal-close:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary, #e8e8ec);
+}
+
+.modal-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.modal-body label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-secondary, #8b8b9e);
+}
+
+.modal-body select {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: var(--text-primary, #e8e8ec);
+  font-size: 13px;
+  outline: none;
+}
+
+.modal-body select:focus {
+  border-color: rgba(112, 228, 255, 0.3);
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 16px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.export-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+}

@@ -1,0 +1,61 @@
+/* top-bar — styles for this section only.
+   Imported from src/app-shell/Editor.tsx in cascade order. */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 48px;
+  padding: 0 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
+  gap: 16px;
+}
+
+.topbar-left,
+.topbar-center,
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.topbar-left {
+  flex: 1;
+}
+
+.topbar-logo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: var(--accent-cyan, #70e4ff);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.topbar button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary, #8b8b9e);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.topbar button:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary, #e8e8ec);
+}
+
+.topbar button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}

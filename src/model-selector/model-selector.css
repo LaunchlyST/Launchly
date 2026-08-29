@@ -1,0 +1,307 @@
+/* model-selector — styles for this section only.
+   Imported from src/app-shell/Editor.tsx in cascade order. */
+
+
+
+/* Model Selector — light */
+
+
+.model-selector { position: relative; flex-shrink: 0; }
+
+
+
+.model-selector__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--launchly-border);
+  background: rgba(255,255,255,0.8);
+  color: var(--launchly-text);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 150ms ease;
+  box-shadow: var(--launchly-shadow-soft);
+}
+
+
+
+.model-selector__trigger:hover { background: #FFFFFF; border-color: var(--launchly-border-strong); }
+
+
+
+.model-selector__icon { font-size: 12px; }
+
+
+.model-selector__label { font-size: 11px; }
+
+
+
+.model-selector__dropdown {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  min-width: 160px;
+  padding: 6px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--launchly-border);
+  box-shadow: var(--launchly-shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 20;
+}
+
+
+
+.model-selector__option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--launchly-text);
+  font-size: 12px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 150ms ease;
+}
+
+
+
+.model-selector__option:hover { background: rgba(15,23,42,0.05); }
+
+
+.model-selector__option.active { background: var(--launchly-accent-soft); color: var(--launchly-accent); }
+
+/* Model Selector — light */
+
+.model-selector { position: relative; flex-shrink: 0; }
+
+.model-selector__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--launchly-border);
+  background: rgba(255,255,255,0.8);
+  color: var(--launchly-text);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 150ms ease;
+  box-shadow: var(--launchly-shadow-soft);
+}
+
+.model-selector__trigger:hover { background: #FFFFFF; border-color: var(--launchly-border-strong); }
+
+.model-selector__icon { font-size: 12px; }
+
+.model-selector__label { font-size: 11px; }
+
+.model-selector__dropdown {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  min-width: 160px;
+  padding: 6px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--launchly-border);
+  box-shadow: var(--launchly-shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 20;
+}
+
+.model-selector__option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--launchly-text);
+  font-size: 12px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 150ms ease;
+}
+
+.model-selector__option:hover { background: rgba(15,23,42,0.05); }
+
+.model-selector__option.active { background: var(--launchly-accent-soft); color: var(--launchly-accent); }
+
+/* ── Model curve — a 3D carousel of models riding one curved path ───────── */
+
+.model-curve {
+  position: relative;
+  width: 100%;
+  height: 96px;
+  cursor: grab;
+  user-select: none;
+  touch-action: pan-y;
+  outline: none;
+  border-radius: 16px;
+  overflow: hidden;
+  /* The curve fades at the sides, so cards dissolve as they travel back. */
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 18%, #000 82%, transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0%, #000 18%, #000 82%, transparent 100%);
+}
+
+.model-curve:active { cursor: grabbing; }
+
+.model-curve.is-locked { cursor: default; }
+
+.model-curve:focus-visible { box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.16); }
+
+.model-curve__track {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  pointer-events: none;
+  opacity: 0.85;
+  transition: opacity 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.model-curve__line { transition: stroke-width 240ms ease; }
+
+/* Engaged — the path brightens so you can see the track the models ride. */
+
+.model-curve.is-open .model-curve__track { opacity: 1; }
+
+.model-curve.is-open .model-curve__line { stroke-width: 2.4; }
+
+/* Origin of the curve: the front seat sits here, at the low point. */
+
+.model-curve__stage {
+  position: absolute;
+  left: 50%;
+  top: 54px;
+  width: 0;
+  height: 0;
+}
+
+.model-curve__card {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  min-width: 118px;
+  padding: 9px 16px 8px;
+  border-radius: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+  font: inherit;
+  text-align: center;
+
+  /* Cloudy white glass, matching the editor */
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 5px 16px rgba(15, 23, 42, 0.10), 0 1px 2px rgba(15, 23, 42, 0.05);
+
+  /* Every seat change is a glide along the curve — never a pop. */
+  transition:
+    transform 460ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 380ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 380ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 280ms ease,
+    border-color 280ms ease;
+  will-change: transform, opacity, filter;
+}
+
+/* The front seat — crisp, raised, unmistakably the selected model. */
+
+.model-curve__card.is-front {
+  background: rgba(255, 255, 255, 0.94);
+  border-color: rgba(255, 255, 255, 1);
+  box-shadow:
+    0 10px 26px rgba(15, 23, 42, 0.14),
+    0 2px 5px rgba(15, 23, 42, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+/* Seats behind sit back in the haze until you reach for them. */
+
+.model-curve__card.is-behind {
+  background: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.07);
+}
+
+.model-curve.is-open .model-curve__card.is-behind:hover {
+  filter: blur(0) !important;
+  opacity: 0.94 !important;
+  border-color: rgba(8, 145, 178, 0.35);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.12);
+}
+
+.model-curve__name {
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #0F172A;
+  line-height: 1.15;
+}
+
+/* Logo sits centred UNDER the name, never beside it */
+
+.model-curve__logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94A3B8;
+  opacity: 0.9;
+}
+
+.model-curve__card.is-front .model-curve__logo { color: #64748B; }
+
+/* Locked — held in place, with a small confirmation */
+
+.model-curve__lock {
+  position: absolute;
+  left: 50%;
+  bottom: 9px;
+  transform: translateX(-50%) scale(0.7);
+  display: flex;
+  color: #64748B;
+  opacity: 0;
+  transition: opacity 240ms ease, transform 240ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none;
+  z-index: 30;
+}
+
+.model-curve.is-locked .model-curve__lock { opacity: 0.75; transform: translateX(-50%) scale(1); }
+
+.model-curve.is-locked .model-curve__card.is-front {
+  border-color: rgba(15, 23, 42, 0.14);
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.14), 0 0 0 3px rgba(15, 23, 42, 0.05);
+}
+
+.model-curve.is-pulsing .model-curve__card.is-front { animation: model-lock-pulse 480ms cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+@keyframes model-lock-pulse {
+  0%, 100% { box-shadow: 0 10px 26px rgba(15, 23, 42, 0.14), 0 0 0 0 rgba(8, 145, 178, 0.30); }
+  40% { box-shadow: 0 10px 26px rgba(15, 23, 42, 0.14), 0 0 0 7px rgba(8, 145, 178, 0.14); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .model-curve__card { transition: opacity 200ms ease; }
+  .model-curve.is-pulsing .model-curve__card.is-front { animation: none; }
+}

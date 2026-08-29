@@ -1,0 +1,255 @@
+/* app-shell — styles for this section only.
+   Imported from src/app-shell/Editor.tsx in cascade order. */
+
+
+
+/* Root */
+
+
+.launchly-editor-root {
+  height: 100vh;
+  overflow: hidden;
+  background: var(--launchly-bg-gradient);
+  color: var(--launchly-text);
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+
+
+.launchly-editor {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+
+
+.launchly-editor__main {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  gap: var(--sp-4);
+  padding: var(--sp-4);
+}
+
+
+
+/* Panels — frosted glass raised off a cloudy workbench */
+
+
+.launchly-editor__left {
+  width: 336px;
+  min-width: 296px;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  background: var(--launchly-panel);
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  border: 1px solid var(--launchly-border);
+  border-radius: var(--launchly-radius-xl);
+  overflow: hidden;
+  box-shadow: var(--launchly-shadow), var(--launchly-inset-hairline);
+}
+
+
+
+.launchly-editor__center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: var(--sp-3);
+  overflow: hidden;
+}
+
+
+
+.launchly-editor__preview-area {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  background:
+    radial-gradient(1000px 480px at 50% 120%, rgba(255, 255, 255, 0.55), transparent 70%),
+    var(--launchly-workspace);
+  border: 1px solid var(--launchly-border);
+  border-radius: var(--launchly-radius-xl);
+  overflow: hidden;
+  display: flex;
+  box-shadow: var(--launchly-shadow), var(--launchly-inset-hairline);
+}
+
+
+/* Faint workbench grid so the space around the canvas reads as a surface */
+
+
+.launchly-editor__preview-area::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--launchly-workspace-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--launchly-workspace-grid) 1px, transparent 1px);
+  background-size: 28px 28px;
+  -webkit-mask-image: radial-gradient(circle at 50% 46%, #000 20%, transparent 78%);
+  mask-image: radial-gradient(circle at 50% 46%, #000 20%, transparent 78%);
+  pointer-events: none;
+}
+
+
+
+.launchly-editor__toolbar-area {
+  flex-shrink: 0;
+}
+
+
+
+.launchly-editor__timeline-area {
+  height: 306px;
+  min-height: 224px;
+  max-height: 54vh;
+  flex-shrink: 0;
+  background: var(--launchly-panel);
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  border: 1px solid var(--launchly-border);
+  border-radius: var(--launchly-radius-xl);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--launchly-shadow), var(--launchly-inset-hairline);
+}
+
+
+
+/* Responsive */
+
+
+@media (max-width: 900px) {
+  .launchly-editor__main { flex-direction: column; }
+  .launchly-editor__left { width: 100%; max-width: none; height: 320px; }
+}
+
+/* ===== from EditorLayout.css ===== */
+
+.editor-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--bg-primary, #0a0a0f);
+  color: var(--text-primary, #e8e8ec);
+  font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
+}
+
+.center-column {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Root */
+
+.launchly-editor-root {
+  height: 100vh;
+  overflow: hidden;
+  background: var(--launchly-bg-gradient);
+  color: var(--launchly-text);
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.launchly-editor {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.launchly-editor__main {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  gap: 14px;
+  padding: 14px;
+}
+
+/* Panels — frosted glass */
+
+.launchly-editor__left {
+  width: 320px;
+  min-width: 280px;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  background: var(--launchly-panel);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--launchly-border);
+  border-radius: var(--launchly-radius-xl);
+  overflow: hidden;
+  box-shadow: var(--launchly-shadow);
+}
+
+.launchly-editor__center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 14px;
+  overflow: hidden;
+}
+
+.launchly-editor__preview-area {
+  flex: 1;
+  min-height: 0;
+  background: var(--launchly-panel);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--launchly-border);
+  border-radius: var(--launchly-radius-xl);
+  overflow: hidden;
+  display: flex;
+  box-shadow: var(--launchly-shadow);
+}
+
+.launchly-editor__toolbar-area {
+  flex-shrink: 0;
+}
+
+.launchly-editor__timeline-area {
+  height: 220px;
+  min-height: 180px;
+  max-height: 42vh;
+  flex-shrink: 0;
+  background: var(--launchly-panel);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--launchly-border);
+  border-radius: var(--launchly-radius-xl);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--launchly-shadow);
+}
+
+/* Responsive */
+
+@media (max-width: 900px) {
+  .launchly-editor__main { flex-direction: column; }
+  .launchly-editor__left { width: 100%; max-width: none; height: 320px; }
+}
+
+/* ── Toolbar above the timeline ───────────────────────────────────────── */
+
+.launchly-editor__toolbar-area { margin: 10px 0 8px; }
+
+/* ── Timeline shell ───────────────────────────────────────────────────── */
+
+.launchly-editor__timeline-area {
+  height: 244px;
+  min-height: 200px;
+}

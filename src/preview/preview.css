@@ -1,0 +1,1258 @@
+/* preview — styles for this section only.
+   Imported from src/app-shell/Editor.tsx in cascade order. */
+
+
+
+/* Video Preview — outer light glass, inner video preserves colors */
+
+
+.video-preview {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  position: relative;
+  background: transparent;
+  overflow: hidden;
+  z-index: 1;
+}
+
+
+
+.video-preview__frame-wrap {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+
+.video-preview__frame {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  max-height: 56vh;
+  background: #000;
+  border-radius: 14px;
+  overflow: hidden;
+  /* Grounded: contact shadow + soft ambient bloom so it sits on the workbench */
+  box-shadow:
+    0 2px 6px rgba(15, 23, 42, 0.10),
+    0 28px 70px rgba(15, 23, 42, 0.22),
+    0 0 0 1px rgba(15, 23, 42, 0.06),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  border: 1px solid transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: box-shadow var(--launchly-dur-lg) var(--launchly-ease);
+}
+
+
+
+.video-preview__video,
+.video-preview__image { width: 100%; height: 100%; object-fit: contain; display: block; background: #000; }
+
+
+
+.video-preview__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 32px;
+  text-align: center;
+  color: var(--launchly-muted);
+}
+
+
+
+.video-preview__empty-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: #FFFFFF;
+  border: 1px solid var(--launchly-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--launchly-subtle);
+  box-shadow: var(--launchly-shadow-soft);
+}
+
+
+
+.video-preview__empty-title { font-size: 15px; font-weight: 700; color: var(--launchly-text); margin: 0; }
+
+
+.video-preview__empty-subtitle { font-size: 13px; font-weight: 500; color: var(--launchly-muted); margin: 2px 0 0; }
+
+
+.video-preview__empty-hint { font-size: 11px; color: var(--launchly-subtle); margin: 4px 0 0; max-width: 300px; line-height: 1.5; }
+
+
+
+.video-preview__audio { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 24px; color: var(--launchly-muted); }
+
+
+
+.video-preview__audio-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 14px;
+  background: #FFFBEB;
+  border: 1px solid rgba(217,119,6,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #D97706;
+}
+
+
+
+.video-preview__audio-name { font-size: 13px; font-weight: 600; color: var(--launchly-text); }
+
+
+
+.video-preview__audio-wave { display: flex; align-items: flex-end; gap: 2px; height: 32px; }
+
+
+.video-preview__audio-wave span { width: 3px; background: #F59E0B; border-radius: 1px; }
+
+
+
+.video-preview__text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; padding: 24px; pointer-events: none; }
+
+
+
+.video-preview__corner-handle {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.85);
+  border: 1px solid var(--launchly-border);
+  color: var(--launchly-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: nwse-resize;
+  box-shadow: var(--launchly-shadow-soft);
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+
+
+.video-preview__frame:hover .video-preview__corner-handle { opacity: 1; }
+
+
+.video-preview__corner-handle:active { background: #FFFFFF; }
+
+
+
+/* Limit feedback — progressive color + bounce */
+
+
+.video-preview__frame.limit-near {
+  border-color: rgba(16, 185, 129, 0.35);
+  box-shadow: 0 16px 48px rgba(16,185,129,0.12);
+}
+
+
+.video-preview__frame.limit-limit {
+  border-color: rgba(244, 114, 182, 0.55);
+  box-shadow: 0 16px 48px rgba(244,114,182,0.18);
+}
+
+
+.preview-limit-indicator {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(17,24,39,0.9);
+  color: #FFFFFF;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+  z-index: 3;
+}
+
+
+.preview-limit-indicator.near { background: rgba(16,185,129,0.92); }
+
+
+.preview-limit-indicator.limit { background: rgba(244,114,182,0.95); animation: limit-pulse 400ms ease; }
+
+
+
+.video-preview__play {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--launchly-border);
+  background: #FFFFFF;
+  color: var(--launchly-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 150ms ease;
+  box-shadow: var(--launchly-shadow);
+}
+
+
+
+.video-preview__play:hover { transform: translateX(-50%) scale(1.05); box-shadow: var(--launchly-shadow-hover); }
+
+/* ===== Empty Workspace – Premium Creative Start ===== */
+
+.empty-workspace {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  z-index: 2;
+  background: linear-gradient(180deg, rgba(10, 13, 18, 0.98) 0%, rgba(8, 10, 14, 1) 100%);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Top bar */
+
+.ew-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  flex-shrink: 0;
+}
+
+.ew-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ew-logo {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent-cyan, #70e4ff);
+  letter-spacing: -0.3px;
+}
+
+.ew-separator {
+  color: rgba(255, 255, 255, 0.1);
+  font-size: 14px;
+  font-weight: 300;
+}
+
+.ew-project-name {
+  font-size: 12px;
+  color: var(--text-secondary, #8b8b9e);
+}
+
+.ew-topbar-right {
+  display: flex;
+  gap: 4px;
+}
+
+.ew-topbar-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-tertiary, #5a5a6e);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ew-topbar-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary, #8b8b9e);
+}
+
+/* Hero – Upload */
+
+.ew-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 24px 32px;
+  gap: 20px;
+}
+
+.ew-dropzone {
+  position: relative;
+  width: 100%;
+  max-width: 560px;
+  padding: 48px 32px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.015);
+  transition: all 0.25s ease;
+}
+
+.ew-dropzone-border {
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  border: 1.5px dashed rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+  transition: border-color 0.25s ease;
+}
+
+.ew-dropzone:hover .ew-dropzone-border {
+  border-color: rgba(112, 228, 255, 0.2);
+}
+
+.ew-dropzone.drag-over .ew-dropzone-border {
+  border-color: rgba(112, 228, 255, 0.5);
+  border-style: solid;
+}
+
+.ew-dropzone.drag-over {
+  background: rgba(112, 228, 255, 0.03);
+}
+
+.ew-dropzone-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  position: relative;
+  z-index: 1;
+}
+
+.ew-upload-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: rgba(112, 228, 255, 0.06);
+  border: 1px solid rgba(112, 228, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-cyan, #70e4ff);
+  transition: all 0.25s ease;
+}
+
+.ew-dropzone:hover .ew-upload-icon {
+  background: rgba(112, 228, 255, 0.1);
+  border-color: rgba(112, 228, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.ew-upload-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  border-radius: 10px;
+  border: none;
+  background: var(--accent-cyan, #70e4ff);
+  color: #0a0d12;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  letter-spacing: 0.1px;
+}
+
+.ew-upload-btn:hover {
+  background: #8edff0;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(112, 228, 255, 0.25);
+}
+
+.ew-upload-btn:active {
+  transform: translateY(0);
+}
+
+.ew-drop-hint {
+  font-size: 12px;
+  color: var(--text-tertiary, #5a5a6e);
+}
+
+/* Quick row */
+
+.ew-quick-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.ew-quick {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text-secondary, #8b8b9e);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ew-quick:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary, #e8e8ec);
+}
+
+.ew-quick.accent {
+  border-color: rgba(185, 164, 255, 0.2);
+  color: var(--accent-violet, #b9a4ff);
+}
+
+.ew-quick.accent:hover {
+  background: rgba(185, 164, 255, 0.08);
+  border-color: rgba(185, 164, 255, 0.3);
+}
+
+.ew-quick-divider {
+  width: 1px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.06);
+  margin: 0 4px;
+}
+
+/* Grid sections */
+
+.ew-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  padding: 0 32px 24px;
+  flex: 1;
+  min-height: 0;
+}
+
+.ew-section {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ew-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.ew-section-head h3 {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-tertiary, #5a5a6e);
+  font-weight: 600;
+}
+
+.ew-section-link {
+  font-size: 10px;
+  color: var(--accent-cyan, #70e4ff);
+  background: none;
+  border: none;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+
+.ew-section-link:hover {
+  opacity: 1;
+}
+
+/* Cards */
+
+.ew-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.ew-card {
+  display: flex;
+  flex-direction: column;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+
+.ew-card:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.08);
+  transform: translateY(-1px);
+}
+
+.ew-card-thumb {
+  width: 100%;
+  aspect-ratio: 16/9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.ew-card-thumb.template {
+  background: linear-gradient(135deg, rgba(112, 228, 255, 0.08) 0%, rgba(143, 247, 200, 0.05) 100%);
+}
+
+.ew-card-thumb.template span {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent-cyan, #70e4ff);
+  opacity: 0.5;
+}
+
+.ew-card-thumb.ai {
+  background: linear-gradient(135deg, rgba(185, 164, 255, 0.08) 0%, rgba(255, 140, 173, 0.05) 100%);
+  color: var(--accent-violet, #b9a4ff);
+  opacity: 0.5;
+}
+
+.ew-card-thumb.stock {
+  background: linear-gradient(135deg, rgba(255, 212, 122, 0.08) 0%, rgba(255, 140, 173, 0.04) 100%);
+  color: var(--accent-amber, #ffd47a);
+  opacity: 0.5;
+}
+
+.ew-card.empty .ew-card-thumb {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.ew-card-title {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-primary, #e8e8ec);
+  padding: 8px 10px 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ew-card-sub {
+  font-size: 10px;
+  color: var(--text-tertiary, #5a5a6e);
+  padding: 0 10px 8px;
+}
+
+/* Footer */
+
+.ew-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  flex-shrink: 0;
+}
+
+.ew-shortcuts {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ew-shortcut {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: var(--text-tertiary, #5a5a6e);
+}
+
+.ew-shortcut kbd {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-family: inherit;
+  font-size: 9px;
+  color: var(--text-secondary, #8b8b9e);
+  line-height: 1.4;
+}
+
+.ew-formats {
+  font-size: 10px;
+  color: var(--text-tertiary, #5a5a6e);
+  opacity: 0.4;
+}
+
+.center-stage {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+.preview-hud {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: flex;
+  gap: 8px;
+  z-index: 5;
+}
+
+.preview-hud span {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.5);
+  color: var(--text-secondary, #8b8b9e);
+  font-family: monospace;
+}
+
+.scene-card {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.scene-kicker {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--accent-cyan, #70e4ff);
+  margin-bottom: 8px;
+}
+
+.scene-card h1 {
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--text-primary, #e8e8ec);
+  max-width: 400px;
+  line-height: 1.3;
+}
+
+.scene-card p {
+  font-size: 14px;
+  color: var(--text-secondary, #8b8b9e);
+  margin-top: 8px;
+  max-width: 360px;
+}
+
+.focus-chip,
+.meter-chip {
+  position: absolute;
+  bottom: 16px;
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(6px);
+  color: var(--text-secondary, #8b8b9e);
+  z-index: 5;
+}
+
+.focus-chip {
+  right: 16px;
+}
+
+.meter-chip {
+  right: 120px;
+}
+
+.transport {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
+}
+
+.timecode {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-family: monospace;
+  font-size: 14px;
+  color: var(--text-primary, #e8e8ec);
+}
+
+.timecode small {
+  color: var(--text-tertiary, #5a5a6e);
+  font-size: 12px;
+}
+
+.transport-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.transport-buttons button {
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: none;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary, #8b8b9e);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.transport-buttons button:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary, #e8e8ec);
+}
+
+.transport-buttons button.play {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--accent-cyan, #70e4ff);
+  color: #000;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.transport-buttons button.play:hover {
+  opacity: 0.9;
+}
+
+.preview-controls {
+  display: flex;
+  gap: 12px;
+  margin-left: auto;
+  align-items: center;
+}
+
+.preview-controls label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-tertiary, #5a5a6e);
+}
+
+.preview-controls select,
+.preview-controls input[type='range'] {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 3px 6px;
+  color: var(--text-primary, #e8e8ec);
+  font-size: 11px;
+}
+
+.preview-controls input[type='range'] {
+  width: 60px;
+  height: 3px;
+  -webkit-appearance: none;
+  outline: none;
+}
+
+.preview-controls input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent-cyan, #70e4ff);
+  cursor: pointer;
+}
+
+.stage-header {
+  display: flex;
+  gap: 8px;
+  padding: 8px 12px;
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+
+.canvas-toolbar {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.canvas-toolbar button {
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-tertiary, #5a5a6e);
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.canvas-toolbar button:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-primary, #e8e8ec);
+}
+
+.canvas-toolbar button.active {
+  background: rgba(112, 228, 255, 0.1);
+  color: var(--accent-cyan, #70e4ff);
+}
+
+/* Video Preview — outer light glass, inner video preserves colors */
+
+.video-preview {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* The workbench margin around the canvas. This padding is also the hard
+     boundary the canvas may be resized up to — never past it. */
+  padding: 26px;
+  position: relative;
+  background: transparent;
+  overflow: hidden;
+  z-index: 1;
+}
+
+/*
+ * The canvas rests a little inside the workspace, so there is real room to
+ * drag the corner and grow it. The resize stops the moment an edge reaches
+ * the workspace — see getZoomLimits in VideoPreview2.
+ */
+
+.video-preview__frame-wrap {
+  max-width: 88%;
+  max-height: 88%;
+}
+
+.video-preview__frame-wrap {
+  /*
+   * Deliberately a definite `height` (not auto): with `width:auto` and an
+   * `aspect-ratio` set inline, a definite height lets width be derived
+   * directly from height × aspect-ratio. The previous `height:auto` relied
+   * on an in-flow, intrinsically-sized child to seed that computation — the
+   * draggable media layer is `position:absolute` (so it can be positioned by
+   * transform), which takes it out of flow entirely and collapsed the wrap
+   * to near-zero once nothing else contributed a size.
+   */
+  height: min(68vh, 100%);
+  width: auto;
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* The corner-resize zoom scales this wrapper; keep it snappy but not
+     instant, so releasing a drag settles rather than jumping. */
+  transition: transform 120ms ease-out;
+}
+
+.video-preview__frame-wrap.is-zoom-live { transition: none; }
+
+.video-preview__frame {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  /* Noticeably bigger than before (was 56vh) without taking over the layout. */
+  max-height: 68vh;
+  background: #000;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 16px 48px rgba(15,23,42,0.12);
+  border: 1.5px solid rgba(15,23,42,0.07);
+  transition: border-color 200ms ease, box-shadow 200ms ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.video-preview__video,
+.video-preview__image { width: 100%; height: 100%; object-fit: cover; display: block; background: #000; pointer-events: none; }
+
+.video-preview__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  padding: 40px;
+  text-align: center;
+  color: var(--launchly-muted);
+}
+
+.video-preview__empty-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: #FFFFFF;
+  border: 1px solid var(--launchly-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--launchly-subtle);
+  box-shadow: var(--launchly-shadow-soft);
+  margin-bottom: 2px;
+}
+
+.video-preview__empty-title { font-size: 16px; font-weight: 700; color: #E2E8F0; margin: 0; letter-spacing: -0.01em; }
+
+.video-preview__empty-subtitle { font-size: 13.5px; font-weight: 500; color: #94A3B8; margin: 6px 0 0; }
+
+.video-preview__empty-hint { font-size: 11.5px; color: #64748B; margin: 10px 0 0; max-width: 280px; line-height: 1.6; }
+
+.video-preview__audio { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 24px; color: var(--launchly-muted); }
+
+.video-preview__audio-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 14px;
+  background: #FFFBEB;
+  border: 1px solid rgba(217,119,6,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #D97706;
+}
+
+.video-preview__audio-name { font-size: 13px; font-weight: 600; color: var(--launchly-text); }
+
+.video-preview__audio-wave { display: flex; align-items: flex-end; gap: 2px; height: 32px; }
+
+.video-preview__audio-wave span { width: 3px; background: #F59E0B; border-radius: 1px; }
+
+.video-preview__text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; padding: 24px; pointer-events: none; }
+
+.video-preview__corner-handle {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.85);
+  border: 1px solid var(--launchly-border);
+  color: var(--launchly-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: nwse-resize;
+  box-shadow: var(--launchly-shadow-soft);
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+.video-preview__frame:hover .video-preview__corner-handle { opacity: 1; }
+
+.video-preview__corner-handle:active { background: #FFFFFF; }
+
+/*
+ * Preview border states. `error` is the only state that reads as a problem —
+ * a thin red border and a soft red glow, never a full red fill, so the
+ * content underneath stays completely visible.
+ */
+
+.preview-border--normal { border-color: rgba(15,23,42,0.07); }
+
+.preview-border--active {
+  border-color: rgba(8,145,178,0.35);
+  box-shadow: 0 16px 48px rgba(15,23,42,0.12), 0 0 0 3px rgba(8,145,178,0.10);
+}
+
+.preview-border--warning {
+  border-color: rgba(217,119,6,0.45);
+  box-shadow: 0 16px 48px rgba(217,119,6,0.10), 0 0 0 3px rgba(217,119,6,0.08);
+}
+
+/*
+ * Shrunk to the minimum — green. Going smaller is always safe, so this is a
+ * confirmation, not a warning. (Growing to the edge is the red state above.)
+ */
+
+.preview-border--ok {
+  border-color: rgba(22,163,74,0.55);
+  box-shadow:
+    0 2px 6px rgba(15, 23, 42, 0.10),
+    0 28px 70px rgba(15, 23, 42, 0.22),
+    0 0 0 2px rgba(22,163,74,0.26);
+  transition: box-shadow 180ms cubic-bezier(0.2, 0.8, 0.2, 1), border-color 180ms ease;
+}
+
+/* ── Resize handles ──────────────────────────────────────────────────────── */
+/* Corner handle — visible while resizing, and it flashes when it runs out. */
+
+.video-preview__corner-handle.is-active { opacity: 1; }
+
+.video-preview__corner-handle.is-at-max,
+.video-preview__side-handle.is-at-max .video-preview__grip {
+  background: #DC2626;
+  border-color: #DC2626;
+  color: #FFFFFF;
+  box-shadow: 0 0 0 4px rgba(220,38,38,0.18);
+  animation: handle-limit-flash 420ms ease;
+}
+
+.video-preview__corner-handle.is-at-min,
+.video-preview__side-handle.is-at-min .video-preview__grip {
+  background: #16A34A;
+  border-color: #16A34A;
+  color: #FFFFFF;
+  box-shadow: 0 0 0 4px rgba(22,163,74,0.18);
+  animation: handle-limit-flash 420ms ease;
+}
+
+/*
+ * Left / right handles — drag outwards to make the canvas longer. The hit
+ * area is generous; only the small grip is drawn.
+ */
+
+.video-preview__side-handle {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: ew-resize;
+  opacity: 0;
+  transition: opacity 150ms ease;
+  z-index: 4;
+}
+
+.video-preview__side-handle.is-left { left: 2px; }
+
+.video-preview__side-handle.is-right { right: 2px; }
+
+.video-preview__frame:hover .video-preview__side-handle,
+.video-preview__side-handle.is-active { opacity: 1; }
+
+.video-preview__grip {
+  width: 5px;
+  height: 34px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(15, 23, 42, 0.10);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.28);
+  transition: background 150ms ease, height 150ms ease, box-shadow 150ms ease;
+}
+
+.video-preview__side-handle:hover .video-preview__grip { height: 42px; background: #FFFFFF; }
+
+.preview-border--error {
+  border-color: #DC2626;
+  box-shadow:
+    0 0 0 2px rgba(220,38,38,0.22),
+    0 0 20px rgba(220,38,38,0.32),
+    0 16px 48px rgba(220,38,38,0.14);
+  animation: preview-error-pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes preview-error-pulse {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(220,38,38,0.22), 0 0 20px rgba(220,38,38,0.32), 0 16px 48px rgba(220,38,38,0.14); }
+  50% { box-shadow: 0 0 0 5px rgba(220,38,38,0.14), 0 0 34px rgba(220,38,38,0.48), 0 16px 48px rgba(220,38,38,0.2); }
+}
+
+/* A very light red tint on the frame itself — subtle, content stays legible. */
+
+.preview-border--error::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(220,38,38,0.05);
+  pointer-events: none;
+}
+
+/* Brief green flash — an unrelated feedback source (e.g. the timeline zoom)
+   returning to normal after its own error. Layers on top of any border state. */
+
+.video-preview__frame.is-ok-flash {
+  animation: preview-ok-pulse 0.7s ease-in-out 2;
+}
+
+@keyframes preview-ok-pulse {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(22,163,74,0.22), 0 0 16px rgba(22,163,74,0.3); }
+  50% { box-shadow: 0 0 0 5px rgba(22,163,74,0.14), 0 0 30px rgba(22,163,74,0.5); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .preview-border--error,
+  .video-preview__frame.is-ok-flash { animation: none; }
+}
+
+.preview-limit-indicator {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(17,24,39,0.9);
+  color: #FFFFFF;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+  z-index: 3;
+  transition: background 150ms ease;
+}
+
+/*
+ * The note at the bottom of the canvas, gone in ~2s.
+ *   red   — "Maximum size reached": there is no more room to grow into
+ *   green — "Minimum size reached": you have shrunk as far as allowed
+ */
+
+.preview-limit-indicator.is-note {
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.28);
+  animation: limit-note-in 220ms cubic-bezier(0.22, 1, 0.36, 1), limit-note-out 320ms ease 1.68s both;
+}
+
+.preview-limit-indicator.is-note.is-max {
+  background: #DC2626;
+  box-shadow: 0 6px 20px rgba(220, 38, 38, 0.36);
+}
+
+.preview-limit-indicator.is-note.is-min {
+  background: #16A34A;
+  box-shadow: 0 6px 20px rgba(22, 163, 74, 0.32);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .preview-limit-indicator.is-note { animation: none; }
+}
+
+/* ── Draggable media layer inside the canvas ─────────────────────────────── */
+
+.preview-media-layer {
+  position: absolute;
+  inset: 0;
+  cursor: grab;
+  will-change: transform;
+  touch-action: none;
+}
+
+.preview-media-layer:active { cursor: grabbing; }
+
+.preview-media-layer.is-selected { outline: 1.5px dashed rgba(8,145,178,0.55); outline-offset: -1.5px; }
+
+.preview-media-layer__handles { position: absolute; inset: 0; pointer-events: none; }
+
+.preview-media-layer__handle {
+  position: absolute;
+  width: 9px; height: 9px;
+  margin: -4.5px;
+  border-radius: 3px;
+  background: #FFFFFF;
+  border: 1.5px solid #0891B2;
+  box-shadow: 0 1px 4px rgba(15,23,42,0.25);
+}
+
+.preview-media-layer__handle--tl { top: 0; left: 0; }
+
+.preview-media-layer__handle--tr { top: 0; left: 100%; }
+
+.preview-media-layer__handle--bl { top: 100%; left: 0; }
+
+.preview-media-layer__handle--br { top: 100%; left: 100%; }
+
+.video-preview__play {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--launchly-border);
+  background: #FFFFFF;
+  color: var(--launchly-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 150ms ease;
+  box-shadow: var(--launchly-shadow);
+}
+
+.video-preview__play:hover { transform: translateX(-50%) scale(1.05); box-shadow: var(--launchly-shadow-hover); }
+
+/*
+ * The preview frame echoes the timeline limit state.
+ * Error  → red, swelling slowly (2.6s) so it reads as "stuck / blocked".
+ * Back OK → green, pulsing quickly (0.7s) so it reads as "released".
+ */
+
+.video-preview__frame.has-error,
+.video-preview__frame.has-ok {
+  animation-iteration-count: infinite;
+  animation-timing-function: ease-in-out;
+}
+
+.video-preview__frame.has-error {
+  border-color: #DC2626;
+  animation-name: preview-ring-red;
+  animation-duration: 2.6s;
+}
+
+@keyframes preview-ring-red {
+  0%, 100% {
+    box-shadow: 0 0 0 2px rgba(220,38,38,0.24), 0 0 18px rgba(220,38,38,0.30), 0 16px 48px rgba(220,38,38,0.14);
+  }
+  50% {
+    box-shadow: 0 0 0 7px rgba(220,38,38,0.16), 0 0 46px rgba(220,38,38,0.60), 0 16px 48px rgba(220,38,38,0.24);
+  }
+}
+
+.video-preview__frame.has-ok {
+  border-color: #16A34A;
+  animation-name: preview-ring-green;
+  animation-duration: 0.7s;
+}
+
+@keyframes preview-ring-green {
+  0%, 100% {
+    box-shadow: 0 0 0 2px rgba(22,163,74,0.24), 0 0 16px rgba(22,163,74,0.30), 0 16px 48px rgba(22,163,74,0.14);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(22,163,74,0.18), 0 0 38px rgba(22,163,74,0.58), 0 16px 48px rgba(22,163,74,0.22);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .video-preview__frame.has-error,
+  .video-preview__frame.has-ok { animation: none; }
+  .video-preview__frame.has-error { box-shadow: 0 0 0 4px rgba(220,38,38,0.32); }
+  .video-preview__frame.has-ok { box-shadow: 0 0 0 4px rgba(22,163,74,0.32); }
+}

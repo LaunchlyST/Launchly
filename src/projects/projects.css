@@ -1,0 +1,19 @@
+/* projects — styles for this section only.
+   Imported from src/app-shell/Editor.tsx in cascade order. */
+
+.project-name-input {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-primary, #e8e8ec);
+  font-size: 14px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  outline: none;
+  min-width: 120px;
+  transition: border-color 0.2s;
+}
+
+.project-name-input:hover,
+.project-name-input:focus {
+  border-color: rgba(255, 255, 255, 0.1);
+}

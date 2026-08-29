@@ -15,5 +15,5 @@
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true
   },
-  "include": ["Editor", "editor-engine"]
+  "include": ["src"]
 }
