@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Paperclip, Mic, CornerDownLeft, ArrowUp, Volume2, VolumeX, Sparkles } from 'lucide-react';
+import { Paperclip, Mic, ArrowUp, Volume2, VolumeX, Sparkles } from 'lucide-react';
 import { AI_MODELS } from '../model-selector/aiModels';
-import { ModelCurve } from '../model-selector/ModelCurve';
+import { ModelPicker } from '../model-selector/ModelPicker';
 import { sound, isSoundMuted, setSoundMuted } from '../sound/sound';
 
 interface FloatingComposerProps {
@@ -120,6 +120,7 @@ export function FloatingComposer({ value, onChange, model, onModelChange, onSend
 
         <div className="ai-composer__toolbar">
           <div className="ai-composer__tools">
+            <ModelPicker value={activeModel.id} onChange={onModelChange} />
             <button className="ai-icon-btn" title="Attach media" aria-label="Attach media">
               <Paperclip size={13.5} />
             </button>
@@ -153,18 +154,6 @@ export function FloatingComposer({ value, onChange, model, onModelChange, onSend
         </div>
       </div>
 
-      {/* Model selector */}
-      <div className="ai-panel__models">
-        <ModelCurve value={activeModel.id} onChange={onModelChange} />
-      </div>
-
-      <div className="ai-panel__foot">
-        <span className="ai-panel__hint">
-          <kbd><CornerDownLeft size={9} /></kbd> send
-          <em>·</em>
-          scroll to browse models
-        </span>
-      </div>
 
       <span className="sr-only" aria-live="polite">
         {activeModel.name} {activeModel.version} selected

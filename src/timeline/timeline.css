@@ -1793,10 +1793,9 @@
 
 .timeline__zoom-badge { margin-left: 2px; }
 
-/* The zoom cluster is centred, so the bar reads as one balanced control row
-   rather than a group of icons drifting at the left edge. */
+/* The zoom cluster sits at the left end of the bar, where it started. */
 
-.timeline__zoombar { justify-content: center; }
+.timeline__zoombar { justify-content: flex-start; }
 
 /* ── Extended-timeline confirm ─────────────────────────────────────────────
    A compact row that opens beside the duration readout, inside the control
@@ -1920,27 +1919,28 @@
   }
   .zoom-confirm.is-leaving { transform: translateY(-50%) translateX(4px); }
 }
-/* The timeline's own empty state — the same idea as the library's upload
-   panel: one dashed card, centred, saying what to do. It sits above the lanes
-   but takes no pointer events, so media still drops straight onto a track. */
+/* The timeline's empty state: one quiet line centred over the lanes, not a
+   panel sitting on top of them. It clears the moment a clip lands. */
 
 .timeline__placeholder {
   position: absolute;
-  left: calc(120px + (100% - 120px) / 2); /* centre of the lane area, past the label gutter */
-  /* Centred on the lane band only: the 32px ruler above and the 46px control
-     bar below are not part of it. */
+  left: calc(120px + (100% - 120px) / 2);
+  /* Centred on the lane band: the 32px ruler above and 46px control bar below
+     are not part of it. */
   top: calc(32px + (100% - 78px) / 2);
   transform: translate(-50%, -50%);
   z-index: 2;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 3px;
-  padding: 14px 26px;
-  border-radius: var(--launchly-radius-lg);
-  border: 1.5px dashed var(--launchly-border-strong);
-  background: var(--launchly-surface-1);
-  text-align: center;
+  gap: 9px;
+  padding: 7px 15px 7px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--launchly-border);
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: var(--launchly-shadow-soft);
+  white-space: nowrap;
   pointer-events: none;
 }
 
@@ -1948,24 +1948,55 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
-  margin-bottom: 3px;
-  border-radius: 11px;
-  background: var(--launchly-surface-3);
-  border: 1px solid var(--launchly-border);
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  background: var(--launchly-surface-sunken);
   color: var(--launchly-muted);
-  box-shadow: var(--launchly-shadow-soft);
 }
 
 .timeline__placeholder-title {
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 700;
   color: var(--launchly-text);
 }
 
+.timeline__placeholder-sep {
+  width: 1px;
+  height: 12px;
+  background: var(--launchly-border-strong);
+}
+
 .timeline__placeholder-hint {
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 500;
   color: var(--launchly-subtle);
+}
+
+/* ── Timeline polish ───────────────────────────────────────────────────────
+   Rows read as a stack of lanes: a lighter grid, a clearer label gutter and a
+   selected clip that stands out without shouting. */
+
+.timeline-track__lane {
+  transition: background var(--launchly-dur) var(--launchly-ease),
+    box-shadow var(--launchly-dur) var(--launchly-ease);
+}
+
+.timeline-track:hover .timeline-track__lane { background: rgba(15, 23, 42, 0.014); }
+
+.timeline-track__label {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.88));
+}
+
+.timeline-track__name {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--launchly-muted);
+}
+
+/* A clip being carried to another lane reads as lifted off the row. */
+.timeline-clip.dragging,
+.timeline-clip:active {
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.16);
 }

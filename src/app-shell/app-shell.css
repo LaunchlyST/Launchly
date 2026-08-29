@@ -250,6 +250,8 @@
 /* ── Timeline shell ───────────────────────────────────────────────────── */
 
 .launchly-editor__timeline-area {
-  height: 244px;
-  min-height: 200px;
+  /* Tall enough that a second lane is reachable without scrolling first, so
+     moving a clip between rows is one drag rather than scroll-then-drag. */
+  height: 286px;
+  min-height: 230px;
 }

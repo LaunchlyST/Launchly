@@ -124,6 +124,7 @@ export function TimelineTrack({ track, clips, pixelsPerSecond, selectedClipIds, 
         )}
       </div>
       <div
+        data-track-id={track.id}
         className={`timeline-track__lane ${isHidden ? 'lane-hidden' : ''}`}
         onDragOver={(e) => onLaneDragOver?.(e, track.id)}
         onDrop={(e) => onLaneDrop?.(e, track.id)}

@@ -305,3 +305,116 @@
   .model-curve__card { transition: opacity 200ms ease; }
   .model-curve.is-pulsing .model-curve__card.is-front { animation: none; }
 }
+
+/* ── Model picker ──────────────────────────────────────────────────────────
+   The model in use, shown as a pill in the composer's control row, with a
+   plain list to change it. Same shape as the video size control. */
+
+.model-picker { position: relative; display: inline-flex; }
+
+.model-picker__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 7px 0 5px;
+  border-radius: 999px;
+  border: 1px solid var(--launchly-border);
+  background: var(--launchly-surface-3);
+  color: var(--launchly-text);
+  cursor: pointer;
+  box-shadow: var(--launchly-shadow-soft);
+  transition: background var(--launchly-dur) var(--launchly-ease),
+    border-color var(--launchly-dur) var(--launchly-ease);
+}
+.model-picker__trigger:hover,
+.model-picker__trigger.is-open { border-color: var(--launchly-border-strong); }
+.model-picker__trigger svg.is-flipped { transform: rotate(180deg); }
+.model-picker__trigger > svg { color: var(--launchly-subtle); transition: transform var(--launchly-dur) var(--launchly-ease); }
+
+.model-picker__mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--launchly-surface-sunken);
+  color: var(--launchly-muted);
+}
+
+.model-picker__name {
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: -0.005em;
+  white-space: nowrap;
+}
+.model-picker__name em { font-style: normal; color: var(--launchly-muted); }
+
+.model-picker__menu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  z-index: 80;
+  width: 236px;
+  padding: 5px;
+  border-radius: var(--launchly-radius-md);
+  background: var(--launchly-panel-2);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid var(--launchly-border);
+  box-shadow: var(--launchly-shadow-hover), var(--launchly-inset-hairline);
+  animation: model-picker-in 140ms var(--launchly-ease);
+}
+
+@keyframes model-picker-in {
+  from { opacity: 0; transform: translateY(4px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.model-picker__option {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 7px 8px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--launchly-dur) var(--launchly-ease);
+}
+.model-picker__option:hover { background: var(--launchly-surface-sunken); }
+.model-picker__option.is-active { background: var(--launchly-accent-soft); }
+
+.model-picker__option-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: var(--launchly-surface-3);
+  border: 1px solid var(--launchly-border);
+  color: var(--launchly-muted);
+}
+
+.model-picker__option-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.model-picker__option-text strong {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--launchly-text);
+}
+.model-picker__option-text em {
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--launchly-subtle);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.model-picker__check { margin-left: auto; color: var(--launchly-accent); flex-shrink: 0; }

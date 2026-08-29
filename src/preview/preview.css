@@ -1256,3 +1256,60 @@
   .video-preview__frame.has-error { box-shadow: 0 0 0 4px rgba(220,38,38,0.32); }
   .video-preview__frame.has-ok { box-shadow: 0 0 0 4px rgba(22,163,74,0.32); }
 }
+
+/* ── Resize handles ────────────────────────────────────────────────────────
+   The grips were 5px wide, fully transparent until the pointer was already
+   inside the black frame, so there was nothing to aim at — the preview read
+   as un-resizable. They now sit half-outside the frame, stay faintly visible,
+   and come up to full strength as soon as the pointer is anywhere near the
+   preview. */
+
+.video-preview__side-handle {
+  width: 24px;
+  height: 88px;
+  opacity: 0.55;
+}
+
+/* Kept inside the frame: it clips its overflow, so a handle hanging outside
+   would simply be cut off. */
+.video-preview__side-handle.is-left { left: 0; }
+.video-preview__side-handle.is-right { right: 0; }
+
+.video-preview:hover .video-preview__side-handle,
+.video-preview__frame:hover .video-preview__side-handle,
+.video-preview__side-handle.is-active { opacity: 1; }
+
+.video-preview__grip {
+  width: 7px;
+  height: 46px;
+  background: #FFFFFF;
+  border: 1px solid var(--launchly-border-strong);
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.22);
+}
+
+.video-preview__side-handle:hover .video-preview__grip {
+  height: 58px;
+  border-color: var(--launchly-accent);
+  box-shadow: 0 2px 12px rgba(8, 145, 178, 0.32);
+}
+
+.video-preview__corner-handle {
+  right: 6px;
+  bottom: 6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  background: #FFFFFF;
+  border: 1px solid var(--launchly-border-strong);
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.22);
+  opacity: 0.55;
+}
+
+.video-preview:hover .video-preview__corner-handle,
+.video-preview__frame:hover .video-preview__corner-handle,
+.video-preview__corner-handle.is-active { opacity: 1; }
+
+.video-preview__corner-handle:hover {
+  border-color: var(--launchly-accent);
+  color: var(--launchly-accent);
+}

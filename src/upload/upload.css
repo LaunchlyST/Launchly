@@ -1263,3 +1263,68 @@
   width: 176px;
   min-width: 176px;
 }
+
+/* ── Upload panel polish ───────────────────────────────────────────────────
+   Tighter header, a clearer drop zone, and cards that read as one list. */
+
+.media-panel__header {
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid var(--launchly-hairline);
+}
+
+.media-panel__title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--launchly-subtle);
+}
+
+.media-panel__empty {
+  gap: 9px;
+  border-width: 1.5px;
+  border-color: var(--launchly-border);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.3));
+}
+
+.media-panel__empty:hover,
+.media-panel__empty:focus-visible {
+  border-color: var(--launchly-accent-strong);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.85), var(--launchly-accent-soft));
+}
+
+.media-panel__empty-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.media-panel__empty-formats {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--launchly-surface-sunken);
+  font-size: 9.5px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  color: var(--launchly-subtle);
+}
+
+.media-item-card {
+  border-radius: var(--launchly-radius-md);
+  transition: background var(--launchly-dur) var(--launchly-ease),
+    border-color var(--launchly-dur) var(--launchly-ease),
+    transform var(--launchly-dur) var(--launchly-ease);
+}
+.media-item-card:hover { transform: translateY(-1px); }
+.media-item-card:active { transform: translateY(0); cursor: grabbing; }
+
+.media-item-card__name {
+  font-size: 11.5px;
+  font-weight: 650;
+  letter-spacing: -0.005em;
+}
+
+.media-item-card__meta {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--launchly-subtle);
+}

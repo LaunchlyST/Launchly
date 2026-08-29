@@ -651,3 +651,38 @@
   .ai-send__dots span { animation: none; }
   .ai-send, .ai-starter, .ai-icon-btn { transition: none; }
 }
+
+/* ── Composer refinements ──────────────────────────────────────────────────
+   The panel is now header, input and one control row — no separate model
+   stage below it, and no footer hint. */
+
+.ai-panel { gap: 8px; padding: 11px; }
+
+.ai-composer {
+  padding: 8px 8px 7px;
+  border-radius: 13px;
+  border: 1px solid var(--launchly-border);
+  background: var(--launchly-surface-3);
+  transition: border-color var(--launchly-dur) var(--launchly-ease),
+    box-shadow var(--launchly-dur) var(--launchly-ease);
+}
+
+.ai-panel.is-focused .ai-composer {
+  border-color: var(--launchly-accent-strong);
+  box-shadow: 0 0 0 3px var(--launchly-accent-soft);
+}
+
+.ai-composer__input {
+  min-height: 46px;
+  padding: 2px 3px 6px;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.ai-composer__toolbar {
+  padding-top: 6px;
+  border-top: 1px solid var(--launchly-hairline);
+  gap: 8px;
+}
+
+.ai-composer__tools { gap: 4px; align-items: center; }

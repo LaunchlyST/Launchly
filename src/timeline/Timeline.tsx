@@ -353,7 +353,27 @@ export function Timeline({ clips, tracks, selectedClipIds, currentTime, duration
         }
       } else if (dragState.type === 'move') {
         const newStart = Math.max(0, Math.min(duration - clip.duration, dragState.startTime + deltaTime));
-        onClipsChange((prev) => prev.map((c) => (c.id === clip.id ? { ...c, timelineStart: newStart } : c)));
+        /**
+         * A clip follows the pointer onto whichever lane it is over, so moving
+         * it to another track is the same gesture as sliding it in time. The
+         * lane under the cursor is read from the DOM rather than computed from
+         * row heights, so it stays right whatever the rows are doing.
+         */
+        const laneEl = document
+          .elementsFromPoint(e.clientX, e.clientY)
+          .find((el) => (el as HTMLElement).dataset?.trackId) as HTMLElement | undefined;
+        const overId = laneEl?.dataset.trackId;
+        const overTrack = overId ? tracks.find((t) => t.id === overId) : undefined;
+        const canMoveTo = overTrack && !overTrack.locked && overTrack.visible !== false && overTrack.id !== clip.trackId;
+        if (canMoveTo && overTrack) sound.tick();
+        setDropLaneId(canMoveTo ? overTrack!.id : null);
+        onClipsChange((prev) =>
+          prev.map((c) =>
+            c.id === clip.id
+              ? { ...c, timelineStart: newStart, ...(canMoveTo ? { trackId: overTrack!.id } : null) }
+              : c
+          )
+        );
       }
     },
     [dragState, clips, tracks, pixelsPerSecond, duration, onClipsChange]
@@ -364,6 +384,7 @@ export function Timeline({ clips, tracks, selectedClipIds, currentTime, duration
       setDragState({ type: null, clipId: null, edge: null, startX: 0, startTime: 0, startDuration: 0 });
       document.body.style.cursor = '';
     }
+    setDropLaneId(null);
     if (isScrubbing) setIsScrubbing(false);
   }, [dragState.type, isScrubbing]);
 
@@ -535,6 +556,12 @@ export function Timeline({ clips, tracks, selectedClipIds, currentTime, duration
       if (Math.abs(seconds - zoomStateRef.current.visibleSeconds) < 0.01) return;
       // The zoom actually moved, so any standing limit error is now resolved.
       clearLimitToOk();
+      /**
+       * Moving back down the scale answers the question the confirm was
+       * asking, so it goes at once rather than sitting out its three seconds.
+       * Pushing right again re-opens it.
+       */
+      if (seconds < zoomStateRef.current.visibleSeconds) closeConfirm();
       setTimelineVisibleSeconds(seconds);
       setTimelineZoomValue(isExtended(seconds) ? 100 : zoomValueForSeconds(seconds));
       // Dropping back below the 1h maximum re-arms the confirmation, so pushing
@@ -546,7 +573,7 @@ export function Timeline({ clips, tracks, selectedClipIds, currentTime, duration
       if (rescaleTimerRef.current) window.clearTimeout(rescaleTimerRef.current);
       rescaleTimerRef.current = window.setTimeout(() => setIsRescaling(false), 320);
     },
-    [setTimelineVisibleSeconds, setTimelineZoomValue, setTimelineExtendedUnlocked, clearLimitToOk]
+    [setTimelineVisibleSeconds, setTimelineZoomValue, setTimelineExtendedUnlocked, clearLimitToOk, closeConfirm]
   );
 
   /** Slider moved within the normal 5s…1h range. */
@@ -846,14 +873,15 @@ export function Timeline({ clips, tracks, selectedClipIds, currentTime, duration
       {!hasClips && (
         <div className="timeline__placeholder" aria-hidden="true">
           <span className="timeline__placeholder-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 16V4" />
               <path d="m7 9 5-5 5 5" />
               <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
             </svg>
           </span>
           <span className="timeline__placeholder-title">Drop media here</span>
-          <span className="timeline__placeholder-hint">Drag from the library onto any track</span>
+          <span className="timeline__placeholder-sep" />
+          <span className="timeline__placeholder-hint">drag from the library onto any track</span>
         </div>
       )}
 
