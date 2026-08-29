@@ -1,0 +1,77 @@
+/**
+ * Billing look: current plan panel, subscription status, usage meters, the
+ * manage-billing button. Pricing page and paywall modal styles live in
+ * paywall/styles/paywall.css — this file holds no paywall styles.
+ */
+
+.current-plan {
+  padding: 18px;
+  border-radius: var(--launchly-radius-lg, 16px);
+  background: var(--launchly-panel, rgba(255, 255, 255, 0.72));
+  border: 1px solid var(--launchly-border, rgba(15, 23, 42, 0.07));
+  box-shadow: var(--launchly-shadow-soft, 0 4px 14px rgba(15, 23, 42, 0.05));
+  color: var(--launchly-text, #0F172A);
+  font-family: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+.current-plan__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.current-plan__label {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--launchly-subtle, #94A3B8);
+}
+.current-plan__name { display: flex; align-items: center; gap: 8px; font-size: 17px; font-weight: 750; margin: 3px 0 0; }
+.current-plan__price { font-size: 13px; font-weight: 650; color: var(--launchly-muted, #5A6678); }
+
+/* Status pill — colour tracks how much attention the state deserves. */
+.current-plan__status {
+  padding: 2px 8px;
+  font-size: 10px; font-weight: 650;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.06);
+  color: var(--launchly-muted, #5A6678);
+}
+.current-plan__status.is-active,
+.current-plan__status.is-trialing { background: rgba(22, 163, 74, 0.12); color: #15803D; }
+.current-plan__status.is-past_due,
+.current-plan__status.is-incomplete { background: rgba(245, 158, 11, 0.14); color: #B45309; }
+.current-plan__status.is-canceled,
+.current-plan__status.is-unpaid { background: rgba(220, 38, 38, 0.10); color: #B91C1C; }
+
+.current-plan__note { font-size: 12px; color: var(--launchly-muted, #5A6678); margin: 12px 0 0; }
+.current-plan__note--warn { color: #B45309; }
+
+/* ── Usage meters ────────────────────────────────────────────────────────── */
+.current-plan__meters { list-style: none; padding: 0; margin: 16px 0 0; display: flex; flex-direction: column; gap: 9px; }
+.usage-meter { display: grid; grid-template-columns: 1fr 100px auto; align-items: center; gap: 10px; font-size: 11.5px; }
+.usage-meter__label { color: var(--launchly-muted, #5A6678); }
+.usage-meter__track { height: 5px; border-radius: 999px; background: rgba(15, 23, 42, 0.08); overflow: hidden; }
+.usage-meter__fill {
+  display: block; height: 100%; border-radius: 999px;
+  background: #0891B2;
+  transition: width 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.usage-meter.is-exhausted .usage-meter__fill { background: #DC2626; }
+.usage-meter__value { font-variant-numeric: tabular-nums; color: var(--launchly-subtle, #94A3B8); }
+
+.current-plan__manage {
+  display: inline-flex; align-items: center; gap: 7px;
+  margin-top: 18px; padding: 9px 13px;
+  font-size: 12px; font-weight: 650; font-family: inherit;
+  color: var(--launchly-text, #0F172A);
+  background: var(--launchly-surface-3, #FFFFFF);
+  border: 1px solid var(--launchly-border-strong, rgba(15, 23, 42, 0.13));
+  border-radius: var(--launchly-radius, 10px);
+  cursor: pointer;
+  transition: background 160ms ease;
+}
+.current-plan__manage:hover:not(:disabled) { background: #F8FAFC; }
+.current-plan__manage:disabled { opacity: 0.6; cursor: default; }
+.current-plan__manage svg:last-child { color: var(--launchly-subtle, #94A3B8); }
+
+@media (prefers-reduced-motion: reduce) {
+  .usage-meter__fill { transition: none; }
+}
+
+@media (max-width: 720px) {
+  .usage-meter { grid-template-columns: 1fr 70px auto; }
+}

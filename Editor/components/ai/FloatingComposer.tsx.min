@@ -1,4 +1,0 @@
-import React from 'react';
-export function FloatingComposer({ value, onChange, model, onModelChange, onSend }: any) {
-  return <div style={{padding:12,background:'#fff',border:'1px solid #eee',borderRadius:12}}>MINIMAL COMPOSER {model} <button onClick={() => onSend()}>Send</button></div>;
-}
