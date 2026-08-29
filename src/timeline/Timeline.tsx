@@ -34,7 +34,8 @@ interface TimelineProps {
   onTracksChange?: (tracks: Track[] | ((prev: Track[]) => Track[])) => void;
   onSelectionChange: (ids: string[]) => void;
   onTimeChange: (time: number) => void;
-  onDropMedia: (clip: Clip, dropTime: number) => void;
+  /** `trackId` is the lane dropped on; `null` asks for a brand-new lane. */
+  onDropMedia: (clip: Clip, dropTime: number, trackId?: string | null) => void;
 }
 
 export function Timeline({ clips, tracks, selectedClipIds, currentTime, duration, isMuted, onClipsChange, onTracksChange, onSelectionChange, onTimeChange, onDropMedia }: TimelineProps) {
@@ -126,21 +127,19 @@ export function Timeline({ clips, tracks, selectedClipIds, currentTime, duration
   }>({ type: null, clipId: null, edge: null, startX: 0, startTime: 0, startDuration: 0 });
 
   const [isDragOver, setIsDragOver] = useState(false);
+  /** Lane currently under the dragged media: a track id, or 'new' for the +. */
+  const [dropLaneId, setDropLaneId] = useState<string | null>(null);
   const [isScrubbing, setIsScrubbing] = useState(false);
   const [trimLimitId, setTrimLimitId] = useState<string | null>(null);
   const lastTrimTickRef = useRef(0);
   const [showExtendedConfirm, setShowExtendedConfirm] = useState(false);
   /**
-   * The confirm belongs to the control that raised it — the right-hand end of
-   * the zoom arc — and it stays there. It is pinned above and to the left of
-   * that point, clamped so it can never leave the viewport, and it recomputes
-   * on resize. It never wanders to the middle of the editor.
+   * The confirm sits in the control row, immediately beside the duration
+   * readout it is about. It never floats over the timeline, so nothing is
+   * hidden behind it while it is up.
    */
-  const [confirmAnchorClientX, setConfirmAnchorClientX] = useState<number | null>(null);
-  const [confirmPos, setConfirmPos] = useState<{ left: number; pointer: number } | null>(null);
   const [confirmLeaving, setConfirmLeaving] = useState(false);
   const zoombarRef = useRef<HTMLDivElement>(null);
-  const confirmCardRef = useRef<HTMLDivElement>(null);
   const confirmTimersRef = useRef<number[]>([]);
 
   const clearConfirmTimers = useCallback(() => {
@@ -151,26 +150,23 @@ export function Timeline({ clips, tracks, selectedClipIds, currentTime, duration
   const closeConfirm = useCallback(() => {
     clearConfirmTimers();
     setShowExtendedConfirm(false);
-    setConfirmAnchorClientX(null);
-    setConfirmPos(null);
     setConfirmLeaving(false);
   }, [clearConfirmTimers]);
 
-  /** Open the confirm pinned to the control at `clientX`. */
-  const openConfirmAt = useCallback(
-    (clientX: number) => {
-      clearConfirmTimers();
-      setConfirmAnchorClientX(clientX);
-      setConfirmLeaving(false);
-      setShowExtendedConfirm(true);
-      // Ignored for a while → fade out, leaving the normal limit in place.
-      confirmTimersRef.current.push(
-        window.setTimeout(() => setConfirmLeaving(true), 9000),
-        window.setTimeout(() => closeConfirm(), 9400)
-      );
-    },
-    [clearConfirmTimers, closeConfirm]
-  );
+  /** Length of the fade-out, kept in sync with the CSS exit transition. */
+  const CONFIRM_EXIT_MS = 260;
+
+  /** Open the confirm beside the duration readout. */
+  const openConfirm = useCallback(() => {
+    clearConfirmTimers();
+    setConfirmLeaving(false);
+    setShowExtendedConfirm(true);
+    // Left alone for 3s → fade out, leaving the normal limit in place.
+    confirmTimersRef.current.push(
+      window.setTimeout(() => setConfirmLeaving(true), 3000),
+      window.setTimeout(() => closeConfirm(), 3000 + CONFIRM_EXIT_MS)
+    );
+  }, [clearConfirmTimers, closeConfirm]);
 
   /** Any interaction cancels the auto-dismiss. */
   const holdConfirm = useCallback(() => {
@@ -178,33 +174,6 @@ export function Timeline({ clips, tracks, selectedClipIds, currentTime, duration
     setConfirmLeaving(false);
   }, [clearConfirmTimers]);
 
-  /**
-   * Place the card relative to the anchor: above it, offset to the left so the
-   * card body sits over the timeline rather than off the right edge, then
-   * clamped into the viewport. The pointer is positioned separately so it
-   * keeps aiming at the control even after clamping moves the card.
-   */
-  useLayoutEffect(() => {
-    if (!showExtendedConfirm || confirmAnchorClientX === null) return;
-    const place = () => {
-      const bar = zoombarRef.current?.getBoundingClientRect();
-      if (!bar) return;
-      const width = confirmCardRef.current?.offsetWidth || 244;
-      const margin = 10;
-      /** How far the card's right edge sits past the anchor. */
-      const overhang = 30;
-      const maxLeft = Math.max(margin, window.innerWidth - width - margin);
-      const leftClient = Math.min(Math.max(confirmAnchorClientX - width + overhang, margin), maxLeft);
-      setConfirmPos({
-        left: leftClient - bar.left,
-        // Keep the arrow inside the card's rounded corners.
-        pointer: Math.min(Math.max(confirmAnchorClientX - leftClient, 16), width - 16),
-      });
-    };
-    place();
-    window.addEventListener('resize', place);
-    return () => window.removeEventListener('resize', place);
-  }, [showExtendedConfirm, confirmAnchorClientX]);
   /**
    * Limit feedback. Hitting a limit shows a red error for 3s; moving back
    * inside the limit turns it green immediately rather than waiting that out.
@@ -483,19 +452,49 @@ export function Timeline({ clips, tracks, selectedClipIds, currentTime, duration
     setIsDragOver(true);
   };
   const handleDragLeave = (e: React.DragEvent) => {
+    setDropLaneId(null);
     if (!scrollRef.current?.contains(e.relatedTarget as Node)) setIsDragOver(false);
   };
-  const handleDrop = (e: React.DragEvent) => {
+  /** Where in the timeline a drag event points. */
+  const dropTimeFor = (e: React.DragEvent) => {
+    const rect = scrollRef.current!.getBoundingClientRect();
+    const x = e.clientX - rect.left + scrollRef.current!.scrollLeft - TRACK_LABEL_WIDTH;
+    return xToTime(Math.max(0, x));
+  };
+
+  /**
+   * Drops land on whichever lane the cursor is over. `trackId` of `null` means
+   * the "+" lane: put it on a new row of its own.
+   */
+  const dropOnLane = (e: React.DragEvent, trackId: string | null) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsDragOver(false);
+    setDropLaneId(null);
     try {
       const data = JSON.parse(e.dataTransfer.getData('application/x-launchly-clip'));
       if (!data?.id) return;
-      const rect = scrollRef.current!.getBoundingClientRect();
-      const x = e.clientX - rect.left + scrollRef.current!.scrollLeft - TRACK_LABEL_WIDTH;
-      const dropTime = xToTime(Math.max(0, x));
       const original = clips.find((c) => c.id === data.id) ?? data;
-      onDropMedia(original, dropTime);
+      onDropMedia(original, dropTimeFor(e), trackId);
+    } catch {}
+  };
+
+  const handleLaneDragOver = (e: React.DragEvent, trackId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDropLaneId(trackId);
+  };
+
+  /** Dropped on the timeline but not on a lane — let the app pick the row. */
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    setDropLaneId(null);
+    try {
+      const data = JSON.parse(e.dataTransfer.getData('application/x-launchly-clip'));
+      if (!data?.id) return;
+      const original = clips.find((c) => c.id === data.id) ?? data;
+      onDropMedia(original, dropTimeFor(e));
     } catch {}
   };
 
@@ -559,11 +558,11 @@ export function Timeline({ clips, tracks, selectedClipIds, currentTime, duration
   );
 
   /** Pushed past the right edge: ask to unlock, or step further into extended mode. */
-  const handlePushMax = useCallback((anchorX?: number) => {
+  const handlePushMax = useCallback(() => {
     const { visibleSeconds: cur, unlocked } = zoomStateRef.current;
     if (!unlocked) {
       if (cur >= NORMAL_MAX_SECONDS - 0.5) {
-        openConfirmAt(anchorX ?? 0);
+        openConfirm();
         sound.limit();
       }
       return;
@@ -575,7 +574,7 @@ export function Timeline({ clips, tracks, selectedClipIds, currentTime, duration
     } else {
       flashLimit('Maximum timeline length reached — 30 days is the longest view');
     }
-  }, [applyVisibleSeconds, flashLimit, openConfirmAt]);
+  }, [applyVisibleSeconds, flashLimit, openConfirm]);
 
   /** Pushed past the left edge while already at the closest zoom. */
   const handlePushMin = useCallback(() => {
@@ -592,7 +591,7 @@ export function Timeline({ clips, tracks, selectedClipIds, currentTime, duration
       const { visibleSeconds: cur, extended: isExt } = zoomStateRef.current;
       if (dir > 0) {
         if (cur >= NORMAL_MAX_SECONDS - 0.5) {
-          handlePushMax(anchorX);
+          handlePushMax();
         } else {
           const next = stepNormalStage(cur, 1);
           if (next) {
@@ -841,14 +840,29 @@ export function Timeline({ clips, tracks, selectedClipIds, currentTime, duration
         </div>
       )}
 
+      {/* One empty state for the whole timeline, centred over the lanes. It
+          shows only while nothing has been added, and clears the moment the
+          first clip lands. It never blocks a drop — drags pass through it. */}
+      {!hasClips && (
+        <div className="timeline__placeholder" aria-hidden="true">
+          <span className="timeline__placeholder-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 16V4" />
+              <path d="m7 9 5-5 5 5" />
+              <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+            </svg>
+          </span>
+          <span className="timeline__placeholder-title">Drop media here</span>
+          <span className="timeline__placeholder-hint">Drag from the library onto any track</span>
+        </div>
+      )}
+
       <div ref={scrollRef} className="timeline__scroll" onClick={handleCanvasClick} onScroll={handleScroll}>
         {/* The lanes sit behind a fixed label gutter, so the canvas must include it. */}
         <div className="timeline__canvas" style={{ width: TRACK_LABEL_WIDTH + contentWidth }}>
           <div className="timeline__tracks">
             {!hasTracks && !hasClips ? (
-              <div className="timeline__empty-lane">
-                <span>Drag media here to start editing</span>
-              </div>
+              <div className="timeline__empty-lane" />
             ) : (
               tracks.map((track) => (
                 <TimelineTrack
@@ -867,6 +881,9 @@ export function Timeline({ clips, tracks, selectedClipIds, currentTime, duration
                   onToggleVisibility={handleToggleVisibility}
                   onToggleLock={handleToggleLock}
                   onToggleMute={handleToggleMute}
+                  isDropTarget={dropLaneId === track.id}
+                  onLaneDragOver={handleLaneDragOver}
+                  onLaneDrop={(e) => dropOnLane(e, track.id)}
                 />
               ))
             )}
@@ -938,43 +955,39 @@ export function Timeline({ clips, tracks, selectedClipIds, currentTime, duration
             <path d="M12 8l1-2" />
           </svg>
         </span>
-        <span className={`timeline__zoom-label ${zoomDragging ? 'is-live' : ''}`} key={zoomLabel} title="Visible timeline duration">
-          {zoomLabel}
-        </span>
-        {extended && <span className="timeline__zoom-badge">Extended</span>}
+        {/* The readout anchors the confirm, so the card opens beside it — in
+            this row, never over the timeline. */}
+        <span className="timeline__zoom-readout">
+          <span className={`timeline__zoom-label ${zoomDragging ? 'is-live' : ''}`} key={zoomLabel} title="Visible timeline duration">
+            {zoomLabel}
+          </span>
+          {extended && <span className="timeline__zoom-badge">Extended</span>}
 
-        {/* Glass confirmation — entering Extended Timeline Mode */}
-        {showExtendedConfirm && (
-          <div
-            ref={confirmCardRef}
-            className={`zoom-confirm ${confirmLeaving ? 'is-leaving' : ''}`}
-            role="dialog"
-            aria-label="Extended timeline mode"
-            style={
-              {
-                left: confirmPos ? `${confirmPos.left}px` : 0,
-                '--confirm-pointer': confirmPos ? `${confirmPos.pointer}px` : '50%',
-                // Hidden for the first frame, until it has been measured and placed.
-                visibility: confirmPos ? 'visible' : 'hidden',
-              } as React.CSSProperties
-            }
-            onPointerEnter={holdConfirm}
-            onPointerDown={holdConfirm}
-            onFocusCapture={holdConfirm}
-          >
-            <div className="zoom-confirm__title">Need a longer timeline?</div>
-            <p className="zoom-confirm__body">Extend your timeline up to 30 days.</p>
-            <div className="zoom-confirm__actions">
-              <button className="zoom-confirm__btn" onClick={() => handleExtendedConfirm(false)}>
-                Cancel
-              </button>
-              <button className="zoom-confirm__btn zoom-confirm__btn--primary" onClick={() => handleExtendedConfirm(true)} autoFocus>
-                Continue
-              </button>
-            </div>
-            <span className="zoom-confirm__pointer" aria-hidden="true" />
-          </div>
-        )}
+          {/* Entering Extended Timeline Mode — a compact row that fits the bar. */}
+          {showExtendedConfirm && (
+            <span
+              className={`zoom-confirm ${confirmLeaving ? 'is-leaving' : ''}`}
+              role="dialog"
+              aria-label="Extended timeline mode"
+              onPointerEnter={holdConfirm}
+              onPointerDown={holdConfirm}
+              onFocusCapture={holdConfirm}
+            >
+              <span className="zoom-confirm__text">
+                <strong className="zoom-confirm__title">Need longer?</strong>
+                <span className="zoom-confirm__body">Extend up to 30 days</span>
+              </span>
+              <span className="zoom-confirm__actions">
+                <button className="zoom-confirm__btn" onClick={() => handleExtendedConfirm(false)}>
+                  Not now
+                </button>
+                <button className="zoom-confirm__btn zoom-confirm__btn--primary" onClick={() => handleExtendedConfirm(true)} autoFocus>
+                  Extend
+                </button>
+              </span>
+            </span>
+          )}
+        </span>
 
         {/* Soft limit feedback at the closest zoom */}
         {/* Red while out of range, green the instant you come back */}
@@ -1001,8 +1014,6 @@ export function Timeline({ clips, tracks, selectedClipIds, currentTime, duration
           </div>
         )}
       </div>
-
-      {!hasClips && hasTracks && <div className="timeline__empty">Add clips to timeline</div>}
     </div>
   );
 }

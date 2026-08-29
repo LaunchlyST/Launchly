@@ -1576,24 +1576,27 @@
 /* Tooltip above the handle while dragging */
 
 .timeline__zoom-tooltip {
+  /* In the control row, left of the slider — never above it, where it would
+     cover the timeline. */
   position: absolute;
-  bottom: calc(100% + 12px);
-  left: 50%;
-  transform: translateX(-50%);
+  right: calc(100% + 12px);
+  top: 50%;
+  left: auto;
+  bottom: auto;
+  transform: translateY(-50%);
   z-index: 40;
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1px;
-  padding: 6px 12px;
-  border-radius: 10px;
+  align-items: baseline;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
   white-space: nowrap;
   pointer-events: none;
-  background: rgba(255,255,255,0.82);
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(14px) saturate(150%);
   -webkit-backdrop-filter: blur(14px) saturate(150%);
-  border: 1px solid rgba(255,255,255,0.7);
-  box-shadow: 0 8px 26px rgba(15,23,42,0.14);
+  border: 1px solid var(--launchly-border);
+  box-shadow: var(--launchly-shadow-soft);
   animation: zoom-tooltip-in 160ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -1612,149 +1615,18 @@
   font-variant-numeric: tabular-nums;
 }
 
-.timeline__zoom-tooltip::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  margin-left: -5px;
-  border: 5px solid transparent;
-  border-top-color: rgba(255,255,255,0.82);
-}
+.timeline__zoom-tooltip::after { content: none; }
 
-/*
- * Extended-timeline confirm.
- * Opens pinned to the exact point on the zoom control that triggered it, with a
- * pointer aimed back at that point. Ignored for 3s, it glides to the centre of
- * the editor and gives one soft pulse; ignored further, it fades out. Any
- * interaction freezes it wherever it is.
- */
 
-.zoom-confirm {
-  position: absolute;
-  bottom: calc(100% + 14px);
-  z-index: 60;
-  width: 244px;
-  padding: 14px 15px 12px;
-  border-radius: 16px;
-  text-align: left;
 
-  /* Same cloudy glass as the rest of the editor */
-  background: rgba(255, 255, 255, 0.68);
-  backdrop-filter: blur(28px) saturate(190%);
-  -webkit-backdrop-filter: blur(28px) saturate(190%);
-  border: 1px solid rgba(255, 255, 255, 0.85);
-  box-shadow:
-    0 18px 44px rgba(15, 23, 42, 0.16),
-    0 2px 6px rgba(15, 23, 42, 0.05),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95);
 
-  /*
-   * `left` is supplied inline by JS, measured against the viewport so the card
-   * is always fully on screen, and recomputed on resize. It is deliberately
-   * NOT transitioned: animating it would make the card appear mid-timeline and
-   * slide to the control. It opens where it belongs and stays there.
-   */
-  transform-origin: var(--confirm-pointer, 50%) bottom;
-  transition: opacity 320ms ease, transform 320ms ease;
-  animation: zoom-confirm-in 300ms cubic-bezier(0.22, 1, 0.36, 1);
-}
 
-/* Ignored for a while — fade back out from the control it grew from */
 
-.zoom-confirm.is-leaving {
-  opacity: 0;
-  transform: scale(0.96) translateY(4px);
-  animation: none;
-  pointer-events: none;
-}
 
-/* Grows out of the max control, not out of thin air */
 
-@keyframes zoom-confirm-in {
-  from { opacity: 0; transform: scale(0.88) translateY(10px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
-}
 
-/* Pointer tying the card back to the control it belongs to */
-
-.zoom-confirm__pointer {
-  position: absolute;
-  top: 100%;
-  left: var(--confirm-pointer, 50%);
-  margin-left: -7px;
-  width: 14px;
-  height: 8px;
-  overflow: hidden;
-  opacity: 1;
-  transition: left 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-.zoom-confirm__pointer::before {
-  content: '';
-  position: absolute;
-  top: -7px; left: 1px;
-  width: 12px; height: 12px;
-  border-radius: 2px;
-  transform: rotate(45deg);
-  background: rgba(255, 255, 255, 0.68);
-  backdrop-filter: blur(28px) saturate(190%);
-  -webkit-backdrop-filter: blur(28px) saturate(190%);
-  border-right: 1px solid rgba(255, 255, 255, 0.85);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.85);
-  box-shadow: 3px 3px 8px rgba(15, 23, 42, 0.06);
-}
-
-.zoom-confirm.is-leaving .zoom-confirm__pointer { opacity: 0; }
-
-.zoom-confirm__title {
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  color: var(--launchly-text);
-  line-height: 1.3;
-}
-
-.zoom-confirm__body {
-  margin: 4px 0 13px;
-  font-size: 11.5px;
-  line-height: 1.45;
-  color: var(--launchly-muted);
-}
-
-.zoom-confirm__actions { display: flex; justify-content: flex-end; gap: 7px; }
-
-.zoom-confirm__btn {
-  font-size: 11.5px;
-  font-weight: 600;
-  padding: 6px 13px;
-  border-radius: 9px;
-  cursor: pointer;
-  border: 1px solid rgba(15, 23, 42, 0.09);
-  background: rgba(255, 255, 255, 0.7);
-  color: var(--launchly-muted);
-  transition: background 150ms ease, color 150ms ease, transform 150ms ease, box-shadow 150ms ease;
-}
-
-.zoom-confirm__btn:hover { background: #FFFFFF; color: var(--launchly-text); transform: translateY(-1px); }
-
-.zoom-confirm__btn:focus-visible { outline: 2px solid rgba(168, 85, 247, 0.5); outline-offset: 2px; }
-
-.zoom-confirm__btn--primary {
-  border-color: transparent;
-  color: #FFFFFF;
-  background: linear-gradient(135deg, #F59E0B, #A855F7);
-  box-shadow: 0 4px 13px rgba(168, 85, 247, 0.32);
-}
-
-.zoom-confirm__btn--primary:hover {
-  color: #FFFFFF;
-  filter: brightness(1.06);
-  box-shadow: 0 6px 17px rgba(168, 85, 247, 0.42);
-}
 
 @media (prefers-reduced-motion: reduce) {
-  .zoom-confirm { transition: opacity 380ms ease; animation: none; }
 }
 
 /* Limit feedback — red while out of range, green the moment you come back */
@@ -1925,3 +1797,175 @@
    rather than a group of icons drifting at the left edge. */
 
 .timeline__zoombar { justify-content: center; }
+
+/* ── Extended-timeline confirm ─────────────────────────────────────────────
+   A compact row that opens beside the duration readout, inside the control
+   bar. It stays out of the timeline entirely, so nothing is covered while it
+   is up, and it clears itself after 3s unless you reach for it. */
+
+.timeline__zoom-readout {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.zoom-confirm {
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 5px 6px 5px 12px;
+  border-radius: 999px;
+  white-space: nowrap;
+
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--launchly-border);
+  box-shadow: var(--launchly-shadow), var(--launchly-inset-hairline);
+
+  transition: opacity 260ms var(--launchly-ease), transform 260ms var(--launchly-ease);
+  animation: zoom-confirm-in 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Left alone — fades back out from where it opened. */
+.zoom-confirm.is-leaving {
+  opacity: 0;
+  transform: translateY(-50%) translateX(-4px);
+  animation: none;
+  pointer-events: none;
+}
+
+@keyframes zoom-confirm-in {
+  from { opacity: 0; transform: translateY(-50%) translateX(-6px); }
+  to { opacity: 1; transform: translateY(-50%) translateX(0); }
+}
+
+.zoom-confirm__text {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
+.zoom-confirm__title {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  color: var(--launchly-text);
+}
+
+.zoom-confirm__body {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--launchly-muted);
+}
+
+.zoom-confirm__actions { display: inline-flex; align-items: center; gap: 4px; }
+
+.zoom-confirm__btn {
+  padding: 5px 11px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--launchly-muted);
+  font-size: 11px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background var(--launchly-dur) var(--launchly-ease), color var(--launchly-dur) var(--launchly-ease);
+}
+.zoom-confirm__btn:hover { background: var(--launchly-surface-sunken); color: var(--launchly-text); }
+.zoom-confirm__btn:focus-visible { outline: 2px solid var(--launchly-accent); outline-offset: 1px; }
+
+.zoom-confirm__btn--primary {
+  background: var(--launchly-text);
+  color: #FFFFFF;
+  box-shadow: var(--launchly-shadow-soft);
+}
+.zoom-confirm__btn--primary:hover { background: #000000; color: #FFFFFF; }
+
+@media (prefers-reduced-motion: reduce) {
+  .zoom-confirm { animation: none; transition: opacity 200ms ease; }
+}
+
+/* ── Drop targets ──────────────────────────────────────────────────────────
+   Media can be dropped on any lane. The row under the cursor lights up, so it
+   is obvious which one will take the clip. */
+
+.timeline-track.is-drop-target .timeline-track__lane {
+  background: var(--launchly-accent-soft);
+  box-shadow: inset 0 0 0 1px var(--launchly-accent-strong);
+}
+
+/* An empty lane says so, centred in the row. The hint is only a stand-in for
+   content: it disappears the moment a clip lands, and comes back if the lane
+   empties again. */
+
+
+/* Narrow editors: the row runs out of space to the right of the readout, so
+   the confirm opens on the other side rather than off the panel. */
+@media (max-width: 1240px) {
+  .zoom-confirm {
+    left: auto;
+    right: calc(100% + 10px);
+  }
+  @keyframes zoom-confirm-in {
+    from { opacity: 0; transform: translateY(-50%) translateX(6px); }
+    to { opacity: 1; transform: translateY(-50%) translateX(0); }
+  }
+  .zoom-confirm.is-leaving { transform: translateY(-50%) translateX(4px); }
+}
+/* The timeline's own empty state — the same idea as the library's upload
+   panel: one dashed card, centred, saying what to do. It sits above the lanes
+   but takes no pointer events, so media still drops straight onto a track. */
+
+.timeline__placeholder {
+  position: absolute;
+  left: calc(120px + (100% - 120px) / 2); /* centre of the lane area, past the label gutter */
+  /* Centred on the lane band only: the 32px ruler above and the 46px control
+     bar below are not part of it. */
+  top: calc(32px + (100% - 78px) / 2);
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 14px 26px;
+  border-radius: var(--launchly-radius-lg);
+  border: 1.5px dashed var(--launchly-border-strong);
+  background: var(--launchly-surface-1);
+  text-align: center;
+  pointer-events: none;
+}
+
+.timeline__placeholder-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  margin-bottom: 3px;
+  border-radius: 11px;
+  background: var(--launchly-surface-3);
+  border: 1px solid var(--launchly-border);
+  color: var(--launchly-muted);
+  box-shadow: var(--launchly-shadow-soft);
+}
+
+.timeline__placeholder-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--launchly-text);
+}
+
+.timeline__placeholder-hint {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--launchly-subtle);
+}

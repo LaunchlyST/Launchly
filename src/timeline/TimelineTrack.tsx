@@ -19,6 +19,10 @@ interface TimelineTrackProps {
   onToggleVisibility: (trackId: string) => void;
   onToggleLock: (trackId: string) => void;
   onToggleMute: (trackId: string) => void;
+  /** Media dragged over this lane — used to highlight the row under the cursor. */
+  isDropTarget?: boolean;
+  onLaneDragOver?: (e: React.DragEvent, trackId: string) => void;
+  onLaneDrop?: (e: React.DragEvent, trackId: string) => void;
 }
 
 const TRACK_META: Record<string, { icon: string; label: string }> = {
@@ -72,7 +76,7 @@ function SpeakerIcon({ muted }: { muted: boolean }) {
   );
 }
 
-export function TimelineTrack({ track, clips, pixelsPerSecond, selectedClipIds, isMuted, trimLimitId, displayNumber, showControls, onSelect, onMouseDown, onDoubleClick, onToggleVisibility, onToggleLock, onToggleMute }: TimelineTrackProps) {
+export function TimelineTrack({ track, clips, pixelsPerSecond, selectedClipIds, isMuted, trimLimitId, displayNumber, showControls, onSelect, onMouseDown, onDoubleClick, onToggleVisibility, onToggleLock, onToggleMute, isDropTarget, onLaneDragOver, onLaneDrop }: TimelineTrackProps) {
   const meta = TRACK_META[track.type] ?? { icon: '•', label: (track.type[0] ?? 'V').toUpperCase() };
   // Always derive the label from the live position. The `label` stored on the
   // track is fixed at creation and goes stale as soon as a row is removed.
@@ -80,9 +84,10 @@ export function TimelineTrack({ track, clips, pixelsPerSecond, selectedClipIds, 
   const isHidden = track.visible === false;
   const isLocked = track.locked;
   const isTrackMuted = track.muted || isMuted;
+  const laneClips = clips.filter((c) => c.trackId === track.id);
 
   return (
-    <div className={`timeline-track ${isLocked ? 'locked' : ''} ${isHidden ? 'hidden-track' : ''}`}>
+    <div className={`timeline-track ${isLocked ? 'locked' : ''} ${isHidden ? 'hidden-track' : ''} ${isDropTarget ? 'is-drop-target' : ''}`}>
       <div className={`timeline-track__label ${showControls ? '' : 'timeline-track__label--empty'}`}>
         {showControls && (
           <>
@@ -118,9 +123,12 @@ export function TimelineTrack({ track, clips, pixelsPerSecond, selectedClipIds, 
           </>
         )}
       </div>
-      <div className={`timeline-track__lane ${isHidden ? 'lane-hidden' : ''}`}>
-        {clips
-          .filter((c) => c.trackId === track.id)
+      <div
+        className={`timeline-track__lane ${isHidden ? 'lane-hidden' : ''}`}
+        onDragOver={(e) => onLaneDragOver?.(e, track.id)}
+        onDrop={(e) => onLaneDrop?.(e, track.id)}
+      >
+        {laneClips
           .map((clip) => (
             <TimelineClip
               key={clip.id}

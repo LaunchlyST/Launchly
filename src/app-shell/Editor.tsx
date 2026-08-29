@@ -113,10 +113,10 @@ export function Editor() {
    * of leaving a blank row behind.
    */
   const ensureTrack = useCallback(
-    (type: 'video' | 'audio' | 'text') => {
-      const emptyOfType = tracks.find(
-        (t: any) => t.type === type && !clips.some((c: any) => c.trackId === t.id)
-      );
+    (type: 'video' | 'audio' | 'text', forceNew = false) => {
+      const emptyOfType = forceNew
+        ? undefined
+        : tracks.find((t: any) => t.type === type && !clips.some((c: any) => c.trackId === t.id));
       if (emptyOfType) return emptyOfType.id;
 
       const count = tracks.filter((t: any) => t.type === type).length;
@@ -187,10 +187,16 @@ export function Editor() {
   );
 
   const handleDropMedia = useCallback(
-    (sourceClip: any, dropTime: number) => {
-      // Determine target track type and ensure it exists
+    (sourceClip: any, dropTime: number, trackId?: string | null) => {
       const trackType = sourceClip.type === 'audio' ? 'audio' : sourceClip.type === 'text' || sourceClip.type === 'caption' ? 'text' : 'video';
-      const targetTrackId = ensureTrack(trackType as any);
+      /**
+       * A lane was picked by the drop: use it. `null` came from the "+" lane,
+       * which always wants a fresh row. Otherwise fall back to the usual rule.
+       */
+      const targetTrackId =
+        trackId === null
+          ? ensureTrack(trackType as any, true)
+          : trackId ?? ensureTrack(trackType as any);
 
       const newClip = {
         ...sourceClip,
