@@ -1,0 +1,5 @@
+# Local dev server scratch state
+.server-job-id
+node_modules/
+dist/
+*.log
