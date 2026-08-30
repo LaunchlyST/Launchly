@@ -1,8 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Paperclip, Mic, ArrowUp, Volume2, VolumeX, Sparkles } from 'lucide-react';
-import { AI_MODELS } from '../model-selector/aiModels';
-import { ModelPicker } from '../model-selector/ModelPicker';
-import { sound, isSoundMuted, setSoundMuted } from '../sound/sound';
+import { Paperclip, Mic, ArrowUp } from 'lucide-react';
 
 interface FloatingComposerProps {
   value: string;
@@ -12,27 +9,31 @@ interface FloatingComposerProps {
   onSend: () => void;
 }
 
-const MAX_CHARS = 2000;
+const MAX_CHARS = 3000;
+
+type VoiceOption = 'Voice' | 'Chat' | 'Script' | 'Model';
 
 export function FloatingComposer({ value, onChange, model, onModelChange, onSend }: FloatingComposerProps) {
-  const [isTyping, setIsTyping] = useState(false);
-  const [isFocused, setIsFocused] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [muted, setMuted] = useState(isSoundMuted());
-  const typingTimeout = useRef<number | null>(null);
+  const [voiceOpen, setVoiceOpen] = useState(false);
+  const [voiceOption, setVoiceOption] = useState<VoiceOption>('Voice');
+  const [messages, setMessages] = useState<string[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  useEffect(
-    () => () => {
-      if (typingTimeout.current) window.clearTimeout(typingTimeout.current);
-    },
-    []
-  );
+  // close dropdowns on outside click
+  useEffect(() => {
+    const h = (e: MouseEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
+        setVoiceOpen(false);
+      }
+    };
+    window.addEventListener('mousedown', h);
+    return () => window.removeEventListener('mousedown', h);
+  }, []);
 
-  const activeModel = AI_MODELS.find((m) => m.id === model) ?? AI_MODELS[0];
-  const canSend = value.trim().length > 0 && !isGenerating;
+  const canSend = value.trim().length > 0;
 
-  /** Grow to fit the prompt instead of always reserving three empty rows. */
   const autoSize = () => {
     const el = textareaRef.current;
     if (!el) return;
@@ -41,19 +42,15 @@ export function FloatingComposer({ value, onChange, model, onModelChange, onSend
   };
   useEffect(autoSize, [value]);
 
-  const handleChange = (next: string) => {
-    onChange(next.slice(0, MAX_CHARS));
-    setIsTyping(true);
-    if (typingTimeout.current) window.clearTimeout(typingTimeout.current);
-    typingTimeout.current = window.setTimeout(() => setIsTyping(false), 700);
-  };
+  // Auto-scroll messages to bottom
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   const handleSend = () => {
     if (!canSend) return;
-    sound.snap?.();
-    setIsGenerating(true);
+    setMessages((prev) => [...prev, value.trim()]);
     onSend();
-    window.setTimeout(() => setIsGenerating(false), 900);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -63,101 +60,77 @@ export function FloatingComposer({ value, onChange, model, onModelChange, onSend
     }
   };
 
-  const toggleMute = () => {
-    const next = !muted;
-    setMuted(next);
-    setSoundMuted(next);
-    if (!next) sound.tick?.();
-  };
-
-  const status = isGenerating ? 'generating' : isTyping ? 'typing' : 'ready';
-  const statusLabel = isGenerating ? 'Working' : isTyping ? 'Listening' : 'Ready';
+  const closeAll = () => { setVoiceOpen(false); };
 
   return (
-    <div
-      className={`ai-panel ${isFocused ? 'is-focused' : ''} ${isGenerating ? 'is-generating' : ''}`}
-    >
-      {/* Header — identity, live status, sound */}
-      <div className="ai-panel__header">
-        <span className="ai-panel__brand">
-          <span className="ai-panel__brand-icon" aria-hidden="true">
-            <Sparkles size={11} strokeWidth={2.4} />
-          </span>
-          AI Assistant
-        </span>
+    <div className="ai-panel-v2">
+      {/* ── Message history — scrollable, shows sent messages ──────── */}
+      {messages.length > 0 && (
+        <div className="ai-v2__messages">
+          {messages.map((msg, i) => (
+            <div key={i} className="ai-v2__msg">{msg}</div>
+          ))}
+          <div ref={messagesEndRef} />
+        </div>
+      )}
 
-        <span className="ai-panel__header-right">
-          <span className={`ai-status is-${status}`}>
-            <span className="ai-status__dot" aria-hidden="true" />
-            {statusLabel}
-          </span>
-          <button
-            className="ai-icon-btn"
-            onClick={toggleMute}
-            title={muted ? 'Unmute sounds' : 'Mute sounds'}
-            aria-label={muted ? 'Unmute sounds' : 'Mute sounds'}
-          >
-            {muted ? <VolumeX size={13} /> : <Volume2 size={13} />}
-          </button>
-        </span>
-      </div>
-
-      {/* Composer */}
-      <div className="ai-composer">
+      <div className="ai-v2__inputWrap" ref={wrapRef}>
         <textarea
           ref={textareaRef}
-          className="ai-composer__input"
-          placeholder="Describe an edit…"
+          className="ai-v2__textarea"
+          placeholder="Ask anything..."
           value={value}
-          onChange={(e) => handleChange(e.target.value)}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
+          onChange={(e) => onChange(e.target.value.slice(0, MAX_CHARS))}
           onKeyDown={handleKeyDown}
           rows={1}
           maxLength={MAX_CHARS}
-          aria-label="AI prompt"
+          aria-label="Ask anything"
         />
+        <button
+          className={`ai-v2__send ${canSend ? 'is-ready' : ''}`}
+          onClick={handleSend}
+          disabled={!canSend}
+          aria-label="Send"
+        >
+          <ArrowUp size={16} strokeWidth={2.6} />
+        </button>
 
-        <div className="ai-composer__toolbar">
-          <div className="ai-composer__tools">
-            <ModelPicker value={activeModel.id} onChange={onModelChange} />
-            <button className="ai-icon-btn" title="Attach media" aria-label="Attach media">
-              <Paperclip size={13.5} />
-            </button>
-            <button className="ai-icon-btn" title="Voice input" aria-label="Voice input">
-              <Mic size={13.5} />
-            </button>
+        {/* ── Voice dropdown — inside the input box ─────────────────── */}
+        {voiceOpen && (
+          <div className="ai-v2__dropdown ai-v2__dropdown--inline">
+            {(['Voice', 'Chat', 'Script', 'Model'] as VoiceOption[]).map((opt) => (
+              <button
+                key={opt}
+                className={`ai-v2__dropdownItem ${voiceOption === opt ? 'is-selected' : ''}`}
+                onClick={() => {
+                  setVoiceOption(opt);
+                  closeAll();
+                  if (opt === 'Model') {
+                    onModelChange(model === 'chatgpt' ? 'claude' : 'chatgpt');
+                  }
+                }}
+              >
+                {opt}
+              </button>
+            ))}
           </div>
-
-          <div className="ai-composer__meta">
-            {value.length > 0 && (
-              <span className={`ai-composer__count ${value.length > MAX_CHARS * 0.9 ? 'is-near' : ''}`}>
-                {value.length}/{MAX_CHARS}
-              </span>
-            )}
-            <button
-              className={`ai-send ${isGenerating ? 'is-generating' : canSend ? 'is-ready' : ''}`}
-              onClick={handleSend}
-              disabled={!canSend}
-              aria-label="Send prompt"
-              title={canSend ? 'Send (Enter)' : 'Write a prompt first'}
-            >
-              {isGenerating ? (
-                <span className="ai-send__dots">
-                  <span /><span /><span />
-                </span>
-              ) : (
-                <ArrowUp size={15} strokeWidth={2.6} />
-              )}
-            </button>
-          </div>
-        </div>
+        )}
       </div>
 
+      <div className="ai-v2__toolbar">
+        <div className="ai-v2__left">
+          <button className="ai-v2__pill" onClick={() => document.getElementById('ai-attach-input')?.click()}>
+            <Paperclip size={12} /> Attach
+          </button>
+          <input id="ai-attach-input" type="file" hidden onChange={() => {}} />
 
-      <span className="sr-only" aria-live="polite">
-        {activeModel.name} {activeModel.version} selected
-      </span>
+          <button className={`ai-v2__pill ${voiceOpen ? 'is-active' : ''}`} onClick={() => setVoiceOpen((v) => !v)}>
+            <Mic size={12} /> {voiceOption}
+          </button>
+        </div>
+
+        <span className="ai-v2__counter">{value.length}/{MAX_CHARS.toLocaleString()}</span>
+      </div>
     </div>
   );
 }

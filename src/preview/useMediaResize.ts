@@ -24,6 +24,8 @@ interface UseMediaResizeArgs {
   axis?: 'both' | 'x';
   /** Left-hand handles grow when dragged LEFT, so their delta is inverted. */
   invert?: boolean;
+  /** 'scale' = uniform scale(s)  |  'scaleX' = horizontal stretch only (longer, not taller) */
+  mode?: 'scale' | 'scaleX';
   onResizeMove?: (scale: number) => void;
   /** `edge` says which limit was hit, so the caller can colour the feedback. */
   onBoundaryChange?: (exceeded: boolean, edge: 'min' | 'max' | null) => void;
@@ -46,6 +48,7 @@ export function useMediaResize({
   sensitivity = 400,
   axis = 'both',
   invert = false,
+  mode = 'scale',
   onResizeMove,
   onBoundaryChange,
   onResizeEnd,
@@ -67,7 +70,18 @@ export function useMediaResize({
   const applyScale = (s: number) => {
     const el = layerRef.current;
     if (!el) return;
-    el.style.transform = `scale(${s})`;
+    if (mode === 'scaleX') {
+      // Keep existing vertical scale from transform if present, else just stretch horizontally.
+      // We store uniform scale in a CSS var --fallback to current s.
+      const current = el.style.transform;
+      // If already has scale(...), preserve its uniform part and add scaleX wrapper.
+      // For simplicity, side handles drive scaleX only: longer, not taller.
+      el.style.transform = `scaleX(${s})`;
+      // Also keep transformOrigin centered
+      el.style.transformOrigin = 'center';
+    } else {
+      el.style.transform = `scale(${s})`;
+    }
   };
 
   const flush = useCallback(() => {

@@ -794,23 +794,16 @@ export function Timeline({ clips, tracks, selectedClipIds, currentTime, duration
   const hasTracks = tracks.length > 0;
 
   /**
-   * Track header numbering. A row shows its label + eye + lock as soon as it
-   * holds ANY clip — audio and text included. The old rule only counted
-   * video/image clips, so a music track came out blank with no controls.
-   *
-   * Numbering runs per type (V1, V2 … A1, A2 … T1), so each file added to the
-   * timeline gets the next number for its own kind.
-   */
-  const trackDisplay = new Map<string, { number: number; showControls: boolean }>();
+    * Track header numbering. Every lane is numbered sequentially from the top:
+    * V1, V2, V3 … regardless of type. This matches the screenshot expectation
+    * where the top row is V1, the next row is V2, etc. going down.
+    */
+   const trackDisplay = new Map<string, { number: number; showControls: boolean }>();
   {
-    const perType: Record<string, number> = {};
     tracks.forEach((track, i) => {
-      const hasClips = clips.some((c) => c.trackId === track.id);
-      const showControls = i === 0 || hasClips;
-      // Captions share the text lane's numbering.
-      const key = track.type === 'caption' ? 'text' : track.type;
-      if (showControls) perType[key] = (perType[key] ?? 0) + 1;
-      trackDisplay.set(track.id, { number: perType[key] ?? 1, showControls });
+      // Always show V1 + icon — user requested no hiding
+      const showControls = true;
+      trackDisplay.set(track.id, { number: i + 1, showControls });
     });
   }
   const extendedT = extendedProgress(visibleSeconds);
@@ -867,30 +860,48 @@ export function Timeline({ clips, tracks, selectedClipIds, currentTime, duration
         </div>
       )}
 
-      {/* One empty state for the whole timeline, centred over the lanes. It
-          shows only while nothing has been added, and clears the moment the
-          first clip lands. It never blocks a drop — drags pass through it. */}
-      {!hasClips && (
-        <div className="timeline__placeholder" aria-hidden="true">
-          <span className="timeline__placeholder-icon">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 16V4" />
-              <path d="m7 9 5-5 5 5" />
-              <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
-            </svg>
-          </span>
-          <span className="timeline__placeholder-title">Drop media here</span>
-          <span className="timeline__placeholder-sep" />
-          <span className="timeline__placeholder-hint">drag from the library onto any track</span>
-        </div>
-      )}
+      {/* The placeholder is always in the DOM so it reappears the instant
+          the last clip is removed. When clips exist it sits behind the lanes
+          (z-index 0) so clips naturally cover it. */}
+      <div className={`timeline__placeholder ${hasClips ? 'timeline__placeholder--hidden' : ''}`} aria-hidden="true">
+        <span className="timeline__placeholder-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 16V4" />
+            <path d="m7 9 5-5 5 5" />
+            <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+          </svg>
+        </span>
+        <span className="timeline__placeholder-title">Drop media here</span>
+        <span className="timeline__placeholder-sep" />
+        <span className="timeline__placeholder-hint">drag from the library onto any track</span>
+      </div>
 
       <div ref={scrollRef} className="timeline__scroll" onClick={handleCanvasClick} onScroll={handleScroll}>
         {/* The lanes sit behind a fixed label gutter, so the canvas must include it. */}
         <div className="timeline__canvas" style={{ width: TRACK_LABEL_WIDTH + contentWidth }}>
           <div className="timeline__tracks">
             {!hasTracks && !hasClips ? (
-              <div className="timeline__empty-lane" />
+              <div className="timeline-track">
+                <div className="timeline-track__label">
+                  <span className="timeline-track__icon" style={{ background: '#70e4ff' }}>🎬</span>
+                  <span className="timeline-track__name">V1</span>
+                  <div className="timeline-track__controls">
+                    <button className="track-ctrl" title="Show track" aria-label="Show">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                    </button>
+                    <button className="track-ctrl" title="Lock track" aria-label="Lock">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" />
+                        <path d="M7 11V7a5 5 0 0 1 9.9-1" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <div className="timeline-track__lane" />
+              </div>
             ) : (
               tracks.map((track) => (
                 <TimelineTrack
@@ -929,7 +940,7 @@ export function Timeline({ clips, tracks, selectedClipIds, currentTime, duration
           </div>
           <div
             className={`timeline__playhead ${isScrubbing ? 'dragging' : ''}`}
-            style={{ left: `${120 + timeToX(currentTime)}px`, transform: 'translateX(-50%)' } as React.CSSProperties}
+            style={{ left: `${TRACK_LABEL_WIDTH + timeToX(currentTime)}px` } as React.CSSProperties}
             onMouseDown={handleScrubStart}
           >
             <span className="timeline__playhead-head" />

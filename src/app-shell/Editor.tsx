@@ -11,6 +11,12 @@ import { useShortcut } from '../react-hooks/reactHooks';
 import { getAspectRatioById } from '../video-controls/aspectRatios';
 import { NotificationProvider } from '../notifications/NotificationProvider';
 import { NotificationContainer } from '../notifications/NotificationContainer';
+import { ExportModal } from '../export/ExportModal';
+import { ExportSuccess, ExportWhitePage } from '../export/ExportSuccess';
+import { Subscription } from '../subscription/Subscription';
+import { useSubscription } from '../subscription/useSubscription';
+import { Paywall } from '../paywall/Paywall';
+import { usePaywall } from '../paywall/usePaywall';
 // Feature stylesheets, imported in cascade order — each one lives with its section.
 import '../theme/theme.css';
 import '../app-shell/app-shell.css';
@@ -28,6 +34,8 @@ import '../inspector/inspector.css';
 import '../global-search/global-search.css';
 import '../notifications/notifications.css';
 import '../context-menu/context-menu.css';
+import '../subscription/subscription.css';
+import '../paywall/paywall.css';
 
 export function Editor() {
   const {
@@ -57,7 +65,25 @@ export function Editor() {
     toasts,
     addToast,
     removeToast,
+    projectName,
   } = useEditorStore() as any;
+
+  const [exportModalOpen, setExportModalOpen] = React.useState(false);
+  const [exportSuccessOpen, setExportSuccessOpen] = React.useState(false);
+  const [whitePageOpen, setWhitePageOpen] = React.useState(false);
+  const [subscriptionOpen, setSubscriptionOpen] = React.useState(false);
+
+  const sub = useSubscription();
+  const isPro = sub.sub.planId !== 'free';
+  const paywall = usePaywall(isPro);
+
+  const handleExportProject = useCallback(() => setExportModalOpen(true), []);
+  const handleExported = useCallback(() => setExportSuccessOpen(true), []);
+  const handleUpgrade = useCallback(() => setSubscriptionOpen(true), []);
+  const handleSelectPlan = useCallback((planId: string, period: any) => {
+    paywall.close();
+    sub.subscribe(planId as any, period);
+  }, [sub]);
 
   const timelineClips = clips;
   const libraryAssets = mediaAssets.length > 0 ? mediaAssets : clips; // fallback for migrated state
@@ -119,8 +145,8 @@ export function Editor() {
         : tracks.find((t: any) => t.type === type && !clips.some((c: any) => c.trackId === t.id));
       if (emptyOfType) return emptyOfType.id;
 
-      const count = tracks.filter((t: any) => t.type === type).length;
-      const labelMap: Record<string, string> = { video: `V${count + 1}`, audio: `A${count + 1}`, text: `T${count + 1}` };
+      const count = tracks.length;
+      const labelMap: Record<string, string> = { video: `V${count + 1}`, audio: `V${count + 1}`, text: `V${count + 1}` };
       const nameMap: Record<string, string> = { video: 'Video', audio: 'Audio', text: 'Text' };
       const colorMap: Record<string, string> = { video: '#70e4ff', audio: '#ffd47a', text: '#b9a4ff' };
       const newTrack: any = {
@@ -312,6 +338,9 @@ export function Editor() {
             onAspectRatioChange={setAspectRatio}
             isMuted={isMuted}
             onMuteToggle={handleMuteToggle}
+            onExportProject={handleExportProject}
+            onUpgrade={handleUpgrade}
+            planLabel={sub.sub.planId}
           />
         }
         timeline={
@@ -332,6 +361,11 @@ export function Editor() {
       />
       <ToastContainer toasts={toasts} />
       <NotificationContainer />
+      <ExportModal open={exportModalOpen} onClose={() => setExportModalOpen(false)} onExported={handleExported} isPro={isPro} onPremiumLocked={(f: string) => paywall.trigger(f as any)} />
+      <ExportSuccess open={exportSuccessOpen} onClose={() => setExportSuccessOpen(false)} onViewWhitePage={() => { setExportSuccessOpen(false); setWhitePageOpen(true); }} projectName={projectName} />
+      <ExportWhitePage open={whitePageOpen} onBack={() => setWhitePageOpen(false)} projectName={projectName} clips={timelineClips} />
+      <Subscription open={subscriptionOpen} onClose={() => setSubscriptionOpen(false)} onSelectPlan={handleSelectPlan} currentPlanId={sub.sub.planId} />
+      <Paywall open={paywall.open} feature={paywall.activeFeature} onClose={paywall.close} onUpgrade={() => { paywall.close(); handleUpgrade(); }} />
     </div>
     </NotificationProvider>
   );

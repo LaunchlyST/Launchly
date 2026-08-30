@@ -27,9 +27,9 @@ interface TimelineTrackProps {
 
 const TRACK_META: Record<string, { icon: string; label: string }> = {
   video: { icon: '🎬', label: 'V' },
-  audio: { icon: '♪', label: 'A' },
-  text: { icon: 'T', label: 'T' },
-  caption: { icon: '≡', label: 'T' },
+  audio: { icon: '♪', label: 'V' },
+  text: { icon: 'T', label: 'V' },
+  caption: { icon: '≡', label: 'V' },
 };
 
 function EyeIcon({ off }: { off?: boolean }) {
@@ -77,10 +77,8 @@ function SpeakerIcon({ muted }: { muted: boolean }) {
 }
 
 export function TimelineTrack({ track, clips, pixelsPerSecond, selectedClipIds, isMuted, trimLimitId, displayNumber, showControls, onSelect, onMouseDown, onDoubleClick, onToggleVisibility, onToggleLock, onToggleMute, isDropTarget, onLaneDragOver, onLaneDrop }: TimelineTrackProps) {
-  const meta = TRACK_META[track.type] ?? { icon: '•', label: (track.type[0] ?? 'V').toUpperCase() };
-  // Always derive the label from the live position. The `label` stored on the
-  // track is fixed at creation and goes stale as soon as a row is removed.
-  const displayLabel = `${meta.label}${displayNumber}`;
+  const meta = TRACK_META[track.type] ?? { icon: '•', label: 'V' };
+  const displayLabel = `V${displayNumber}`;
   const isHidden = track.visible === false;
   const isLocked = track.locked;
   const isTrackMuted = track.muted || isMuted;
@@ -88,11 +86,10 @@ export function TimelineTrack({ track, clips, pixelsPerSecond, selectedClipIds, 
 
   return (
     <div className={`timeline-track ${isLocked ? 'locked' : ''} ${isHidden ? 'hidden-track' : ''} ${isDropTarget ? 'is-drop-target' : ''}`}>
-      <div className={`timeline-track__label ${showControls ? '' : 'timeline-track__label--empty'}`}>
-        {showControls && (
-          <>
-            <span className="timeline-track__name" title={`${track.type} • ${track.name}`}>{displayLabel}</span>
-            <div className="timeline-track__controls">
+      <div className={`timeline-track__label`}>
+        <span className="timeline-track__icon" style={{ background: track.color ?? '#70e4ff' }}>{meta.icon}</span>
+        <span className="timeline-track__name" title={`${track.type} • ${track.name}`}>{displayLabel}</span>
+        <div className="timeline-track__controls">
               <button
                 className={`track-ctrl ${isHidden ? 'off' : ''}`}
                 onClick={(e) => { e.stopPropagation(); onToggleVisibility(track.id); }}
@@ -120,8 +117,6 @@ export function TimelineTrack({ track, clips, pixelsPerSecond, selectedClipIds, 
                 </button>
               ) : null}
             </div>
-          </>
-        )}
       </div>
       <div
         data-track-id={track.id}

@@ -323,6 +323,7 @@
 
 .media-panel__list {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 4px 12px 12px;
   position: relative;
@@ -366,11 +367,9 @@
   pointer-events: none;
 }
 
-
-
 .media-panel__ai {
   flex-shrink: 0;
-  border-top: 1px solid var(--launchly-hairline);
+  border-top: 2px solid var(--launchly-border-strong, #d1d5db);
   padding: 12px;
   background:
     linear-gradient(180deg, rgba(124, 58, 237, 0.035), rgba(255, 255, 255, 0)) ,

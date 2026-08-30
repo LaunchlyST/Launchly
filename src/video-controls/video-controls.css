@@ -227,6 +227,24 @@
 
 .editor-toolbar__spacer { flex: 1; }
 
+/* Go Pro / plan pill — opens the subscription + paywall flow */
+.go-pro-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(124,58,237,0.35);
+  background: linear-gradient(135deg, #7C3AED, #6D28D9);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(124,58,237,0.3);
+  transition: all 150ms ease;
+}
+.go-pro-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(124,58,237,0.4); filter: brightness(1.05); }
+
 /* Video Size Dropdown — white frosted */
 
 .video-size-dropdown { position: relative; }

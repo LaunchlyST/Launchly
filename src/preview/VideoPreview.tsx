@@ -95,13 +95,14 @@ export function VideoPreview({ clips, tracks = [], selectedClipIds, currentTime,
     return { min, max: Math.max(min, max) };
   }, []);
 
-  /** Shared behaviour for every resize handle — corner and both sides. */
+  /** Shared behaviour for corner handle — uniform scale (bigger). */
   const resizeBehaviour = {
     layerRef: zoomLayerRef,
     getScale: () => previewScaleRef.current,
     minScale: EDITOR_LIMITS.previewZoomMin,
     maxScale: EDITOR_LIMITS.previewZoomMax,
     getLimits: getZoomLimits,
+    mode: 'scale' as const,
     onResizeMove: (s: number) => {
       if (Math.abs(s - previewScaleRef.current) > 0.01) sound.tick();
       previewScaleRef.current = s;
@@ -122,12 +123,53 @@ export function VideoPreview({ clips, tracks = [], selectedClipIds, currentTime,
     },
   };
 
+  // Side handles — make it LONGER horizontally, not taller (scaleX only).
+  const [stretchX, setStretchX] = useState(1);
+  const stretchXRef = useRef(1);
+  const getStretchLimits = useCallback(() => {
+    // Allow wider stretch up to workspace edge horizontally, keep min safe.
+    const el = frameRef.current;
+    const host = zoomLayerRef.current?.parentElement;
+    const fallback = { min: 0.4, max: 2.2 };
+    if (!el || !host) return fallback;
+    const availW = Math.max(0, host.clientWidth - 32);
+    const baseW = el.getBoundingClientRect().width / (stretchXRef.current || 1) / (previewScaleRef.current || 1);
+    if (baseW < 1) return fallback;
+    const max = Math.max(1, availW / baseW);
+    return { min: 0.4, max: Math.min(2.5, max) };
+  }, []);
+  const stretchBehaviourBase = {
+    layerRef: frameRef as unknown as React.RefObject<HTMLElement>,
+    getScale: () => stretchXRef.current,
+    minScale: 0.4,
+    maxScale: 2.5,
+    getLimits: getStretchLimits,
+    sensitivity: 300,
+    axis: 'x' as const,
+    mode: 'scaleX' as const,
+    onResizeMove: (s: number) => {
+      stretchXRef.current = s;
+      setStretchX(s);
+    },
+    onBoundaryChange: (exceeded: boolean, edge: 'min' | 'max' | null) => {
+      setZoomBoundary(exceeded ? edge : null);
+      if (!exceeded) return;
+      sound.limit();
+      if (edge === 'max') showLimitNote('Maximum width reached', 'max');
+      else showLimitNote('Minimum width reached', 'min');
+    },
+    onResizeEnd: (s: number) => {
+      stretchXRef.current = s;
+      setStretchX(s);
+      setZoomActive(false);
+      setZoomBoundary(null);
+    },
+  };
   // Corner handle — horizontal + vertical.
   const { onPointerDown: onCornerDown } = useMediaResize(resizeBehaviour);
-  // Side handles — horizontal only. The left one grows when dragged outwards,
-  // i.e. to the left, so its delta is inverted.
-  const { onPointerDown: onRightDown } = useMediaResize({ ...resizeBehaviour, axis: 'x' });
-  const { onPointerDown: onLeftDown } = useMediaResize({ ...resizeBehaviour, axis: 'x', invert: true });
+  // Side handles — horizontal only (longer left/right, not bigger).
+  const { onPointerDown: onRightDown } = useMediaResize({ ...stretchBehaviourBase, axis: 'x' });
+  const { onPointerDown: onLeftDown } = useMediaResize({ ...stretchBehaviourBase, axis: 'x', invert: true });
 
   /** Wraps a handle so the preview enters its "resizing" state on grab. */
   const beginResize = (handler: (e: React.PointerEvent) => void) => (e: React.PointerEvent) => {
@@ -256,6 +298,7 @@ export function VideoPreview({ clips, tracks = [], selectedClipIds, currentTime,
         <div
           ref={frameRef}
           className={`video-preview__frame preview-border--${borderState} ${zoomActive ? 'is-zooming' : ''} ${okFlash && borderState === 'normal' ? 'is-ok-flash' : ''}`}
+          style={stretchX !== 1 ? { transform: `scaleX(${stretchX})`, transformOrigin: 'center' } as React.CSSProperties : undefined}
         >
           {!hasMedia ? (
             <div className="video-preview__empty">

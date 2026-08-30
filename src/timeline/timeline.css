@@ -212,9 +212,8 @@
 
 .timeline__playhead-line {
   position: absolute;
-  top: 18px; bottom: 0; left: 50%;
-  transform: translateX(-0.5px);
-  width: 1.5px;
+  top: 18px; bottom: 0; left: 0;
+  width: 1px;
   background: #0891B2;
   opacity: 0.95;
   box-shadow: 0 0 8px rgba(8,145,178,0.35);
@@ -926,12 +925,10 @@
 .timeline__playhead {
   position: absolute;
   top: 0; bottom: 0;
-  width: 20px;
-  /* Centring is done by the inline translateX(-50%); a margin here too would
-     shift the playhead a further 10px left of the time it points at. */
+  width: 1px;
   cursor: grab;
   z-index: 5;
-  transform: translateX(0);
+  transform: none;
   transition: filter 150ms ease;
   pointer-events: auto;
 }
@@ -998,9 +995,8 @@
 
 .timeline__playhead-line {
   position: absolute;
-  top: 18px; bottom: 0; left: 50%;
-  transform: translateX(-0.5px);
-  width: 1.5px;
+  top: 18px; bottom: 0; left: 0;
+  width: 1px;
   background: #0891B2;
   opacity: 0.95;
   box-shadow: 0 0 8px rgba(8,145,178,0.35);
@@ -1941,6 +1937,16 @@
   -webkit-backdrop-filter: blur(10px);
   box-shadow: var(--launchly-shadow-soft);
   white-space: nowrap;
+  pointer-events: none;
+  transition: opacity 0.25s ease, z-index 0s;
+}
+
+/* When clips are on the timeline, sink the placeholder behind the lanes so
+   clips naturally cover it. The instant the last clip is removed the class
+   drops and the placeholder reappears. */
+.timeline__placeholder--hidden {
+  z-index: 0;
+  opacity: 0;
   pointer-events: none;
 }
 
