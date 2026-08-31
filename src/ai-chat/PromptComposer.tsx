@@ -14,8 +14,6 @@ interface PromptComposerProps {
   /** A turn is in flight — the composer accepts text but will not send it. */
   busy: boolean;
   canStop: boolean;
-  /** Lets the sidebar focus the input, e.g. after a starter is picked. */
-  textareaRef?: React.RefObject<HTMLTextAreaElement>;
 }
 
 const MAX_CHARS = 3000;
@@ -32,13 +30,11 @@ export function PromptComposer({
   onAttach,
   busy,
   canStop,
-  textareaRef: externalRef,
 }: PromptComposerProps) {
   const [voiceOpen, setVoiceOpen] = useState(false);
   const [voiceOption, setVoiceOption] = useState<VoiceOption>('Voice');
   const [focused, setFocused] = useState(false);
-  const internalRef = useRef<HTMLTextAreaElement>(null);
-  const textareaRef = externalRef ?? internalRef;
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const trimmed = value.trim();
   const ready = trimmed.length > 0 && !busy;

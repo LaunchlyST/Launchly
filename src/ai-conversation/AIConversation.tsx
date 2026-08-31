@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Sparkles, ArrowDown, Trash2 } from 'lucide-react';
+import { ArrowDown, Trash2 } from 'lucide-react';
 import { ConversationMessage, ConversationStatus } from './conversation.types';
 import { AIMessage } from './AIMessage';
 
@@ -8,21 +8,7 @@ interface AIConversationProps {
   status: ConversationStatus;
   onRetry: (id: string) => void;
   onClear: () => void;
-  /** Loads a starter prompt into the composer for editing before sending. */
-  onStarter: (text: string) => void;
 }
-
-/**
- * Openers for the empty state. The chip stays short enough to read at a
- * glance while the prompt it loads is spelled out, so the composer starts
- * from something worth editing rather than a fragment.
- */
-const STARTERS: { label: string; prompt: string }[] = [
-  { label: 'Trim the intro', prompt: 'Trim the intro so the first clip starts on the action' },
-  { label: 'Add captions', prompt: 'Add captions across the whole timeline' },
-  { label: 'Make it 9:16', prompt: 'Resize the project to 9:16 for TikTok' },
-  { label: 'Tighten pacing', prompt: 'Tighten the pacing by removing dead air between clips' },
-];
 
 /** Distance from the bottom, in px, still treated as "pinned to latest". */
 const PIN_THRESHOLD = 48;
@@ -32,7 +18,7 @@ const PIN_THRESHOLD = 48;
  * including before a single message exists — so that sending message #1
  * appends a row instead of building a new layout.
  */
-export function AIConversation({ messages, status, onRetry, onClear, onStarter }: AIConversationProps) {
+export function AIConversation({ messages, status, onRetry, onClear }: AIConversationProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   /**
    * Whether new messages should pull the view down. Starts pinned, and only
@@ -127,28 +113,8 @@ export function AIConversation({ messages, status, onRetry, onClear, onStarter }
         tabIndex={0}
       >
         {isEmpty ? (
-          <div className="ai-conv__empty">
-            <p className="ai-conv__empty-title">
-              <span className="ai-conv__empty-icon" aria-hidden="true">
-                <Sparkles size={13} strokeWidth={2.1} />
-              </span>
-              Start with a suggestion
-            </p>
-            <p className="ai-conv__empty-hint">Or describe an edit in your own words.</p>
-            <div className="ai-conv__starters">
-              {STARTERS.map((s) => (
-                <button
-                  key={s.label}
-                  type="button"
-                  className="ai-conv__starter"
-                  onClick={() => onStarter(s.prompt)}
-                  title={s.prompt}
-                >
-                  {s.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          // Deliberately blank: an empty transcript is an empty box.
+          <div className="ai-conv__empty" />
         ) : (
           <div className="ai-conv__list">
             {messages.map((m) => (

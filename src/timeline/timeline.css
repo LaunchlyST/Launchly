@@ -926,6 +926,10 @@
   position: absolute;
   top: 0; bottom: 0;
   width: 1px;
+  /* Resets the -10px that centred the earlier 20px-wide grab area. Left
+     in place it shifted this line 10px clear of the ruler playhead, so
+     the two read as one line sitting behind another. */
+  margin-left: 0;
   cursor: grab;
   z-index: 5;
   transform: none;
@@ -1806,14 +1810,13 @@
 }
 
 .zoom-confirm {
-  position: absolute;
-  left: calc(100% + 10px);
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 60;
-  display: flex;
+  /* In flow, directly after the duration readout, so it fills the empty
+     space in the control bar instead of floating over its neighbours.
+     Absolute positioning put it on top of the slider on narrower panels. */
+  display: inline-flex;
   align-items: center;
   gap: 12px;
+  margin-left: 4px;
   padding: 5px 6px 5px 12px;
   border-radius: 999px;
   white-space: nowrap;
@@ -1831,14 +1834,14 @@
 /* Left alone — fades back out from where it opened. */
 .zoom-confirm.is-leaving {
   opacity: 0;
-  transform: translateY(-50%) translateX(-4px);
+  transform: translateX(-4px);
   animation: none;
   pointer-events: none;
 }
 
 @keyframes zoom-confirm-in {
-  from { opacity: 0; transform: translateY(-50%) translateX(-6px); }
-  to { opacity: 1; transform: translateY(-50%) translateX(0); }
+  from { opacity: 0; transform: translateX(-6px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
 .zoom-confirm__text {
@@ -1904,16 +1907,6 @@
 
 /* Narrow editors: the row runs out of space to the right of the readout, so
    the confirm opens on the other side rather than off the panel. */
-@media (max-width: 1240px) {
-  .zoom-confirm {
-    left: auto;
-    right: calc(100% + 10px);
-  }
-  @keyframes zoom-confirm-in {
-    from { opacity: 0; transform: translateY(-50%) translateX(6px); }
-    to { opacity: 1; transform: translateY(-50%) translateX(0); }
-  }
-  .zoom-confirm.is-leaving { transform: translateY(-50%) translateX(4px); }
 }
 /* The timeline's empty state: one quiet line centred over the lanes, not a
    panel sitting on top of them. It clears the moment a clip lands. */
