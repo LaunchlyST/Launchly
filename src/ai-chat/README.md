@@ -1,6 +1,13 @@
 # ai-chat
 
-AI chat for the editor:
-- `FloatingComposer.tsx` — the "Ask anything..." prompt box docked at the bottom (with Attach / Voice / Prompts and a model dropdown).
+The "Ask anything…" prompt composer for the editor.
+
+- `PromptComposer.tsx` — the input itself: auto-growing textarea (Enter sends,
+  Shift+Enter adds a line), character counter, and the controls below it.
+- `SendButton.tsx` — send, which becomes stop-generation while a turn runs.
+- `AttachmentButton.tsx` — Attach, owning its hidden file input.
+- `VoiceButton.tsx` — Voice / Chat / Script / Model mode menu.
 - `AICommandBar.tsx` — small AI command controls.
-- `ai-chat.css` — styles for the chat UI.
+- `ai-chat.css` — styles for the composer.
+
+The conversation the composer feeds lives in `../ai-conversation`.

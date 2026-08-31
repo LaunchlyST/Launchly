@@ -17,12 +17,15 @@ import { Subscription } from '../subscription/Subscription';
 import { useSubscription } from '../subscription/useSubscription';
 import { Paywall } from '../paywall/Paywall';
 import { usePaywall } from '../paywall/usePaywall';
+import { useConversation } from '../ai-conversation/useConversation';
+import { localResponder } from '../ai-conversation/localResponder';
 // Feature stylesheets, imported in cascade order — each one lives with its section.
 import '../theme/theme.css';
 import '../app-shell/app-shell.css';
 import '../upload/upload.css';
 import '../tool-rail/tool-rail.css';
 import '../ai-chat/ai-chat.css';
+import '../ai-conversation/ai-conversation.css';
 import '../model-selector/model-selector.css';
 import '../preview/preview.css';
 import '../video-controls/video-controls.css';
@@ -72,6 +75,8 @@ export function Editor() {
   const [exportSuccessOpen, setExportSuccessOpen] = React.useState(false);
   const [whitePageOpen, setWhitePageOpen] = React.useState(false);
   const [subscriptionOpen, setSubscriptionOpen] = React.useState(false);
+  const [uploadState, setUploadState] = React.useState<'idle' | 'uploading' | 'error'>('idle');
+  const [uploadError, setUploadError] = React.useState<string | null>(null);
 
   const sub = useSubscription();
   const isPro = sub.sub.planId !== 'free';
@@ -171,18 +176,29 @@ export function Editor() {
   const handleUpload = useCallback(
     async (files: FileList | null) => {
       if (!files || files.length === 0) return;
-      // Use dummy track ids for import — library doesn't need real tracks
-      const result = await importMediaFiles(files, 'video-1', 'audio-1', clips);
+      setUploadState('uploading');
+      setUploadError(null);
+      try {
+        // Use dummy track ids for import — library doesn't need real tracks
+        const result = await importMediaFiles(files, 'video-1', 'audio-1', clips);
 
-      if (result.clips.length > 0) {
-        // Add to media library as source assets (reset timelineStart for library)
-        const libraryClips = result.clips.map((c: any) => ({
-          ...c,
-          id: `media-${Date.now()}-${Math.random().toString(36).slice(2, 6)}-${c.id}`,
-          timelineStart: 0,
-        }));
-        setMediaAssets((prev: any[]) => [...prev, ...libraryClips]);
-        addToast(`Added ${result.clips.length} media file${result.clips.length > 1 ? 's' : ''}`, { type: 'success' });
+        if (result.clips.length > 0) {
+          // Add to media library as source assets (reset timelineStart for library)
+          const libraryClips = result.clips.map((c: any) => ({
+            ...c,
+            id: `media-${Date.now()}-${Math.random().toString(36).slice(2, 6)}-${c.id}`,
+            timelineStart: 0,
+          }));
+          setMediaAssets((prev: any[]) => [...prev, ...libraryClips]);
+          addToast(`Added ${result.clips.length} media file${result.clips.length > 1 ? 's' : ''}`, { type: 'success' });
+        }
+        setUploadState('idle');
+      } catch (err) {
+        // Surfaced in the dropzone's own error state, with a retry, rather
+        // than leaving the panel stuck on a spinner.
+        setUploadError(err instanceof Error ? err.message : 'Those files could not be added.');
+        setUploadState('error');
+        addToast('Upload failed', { type: 'error' });
       }
     },
     [clips, setMediaAssets, addToast]
@@ -262,16 +278,29 @@ export function Editor() {
     [handleUpload, handleDropMedia, currentTime]
   );
 
-  const handleAiSend = useCallback(() => {
-    if (!aiPrompt.trim()) {
-      addToast('Type an instruction for the AI', { type: 'warning' });
-      return;
-    }
-    const modelLabel = aiModel === 'claude' ? 'Claude' : 'ChatGPT';
-    addToast(`[${modelLabel}] ${aiPrompt.slice(0, 60)}${aiPrompt.length > 60 ? '…' : ''}`, { type: 'info', title: 'AI queued' });
-    // Keep prompt so user can iterate; clear optionally
-    // setAiPrompt('');
-  }, [aiPrompt, aiModel, addToast]);
+  /**
+   * The conversation lives here, above the sidebar, so the message list
+   * outlives any single input and the transcript container can be rendered
+   * before the first message is ever sent.
+   */
+  const conversation = useConversation({
+    model: aiModel,
+    respond: localResponder,
+    // Clearing on accept is what puts the sent message in the transcript and
+    // resets the composer in the same frame.
+    onSent: () => setAiPrompt(''),
+  });
+
+  const handleAiSend = useCallback(
+    (text: string) => {
+      if (!text.trim()) {
+        addToast('Type an instruction for the AI', { type: 'warning' });
+        return;
+      }
+      conversation.send(text);
+    },
+    [conversation, addToast]
+  );
 
   const handleMuteToggle = useCallback(() => {
     setIsMuted(!isMuted);
@@ -310,11 +339,19 @@ export function Editor() {
               }
             }}
             selectedClipIds={selectedClipIds}
+            uploadState={uploadState}
+            uploadError={uploadError}
             aiPrompt={aiPrompt}
             onAiPromptChange={setAiPrompt}
             aiModel={aiModel}
             onAiModelChange={setAiModel}
             onAiSend={handleAiSend}
+            onAiStop={conversation.stop}
+            onAiRetry={conversation.retry}
+            onAiClear={conversation.clear}
+            messages={conversation.messages}
+            conversationStatus={conversation.status}
+            canStop={conversation.canStop}
           />
         }
         preview={

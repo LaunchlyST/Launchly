@@ -1327,3 +1327,200 @@
   font-weight: 500;
   color: var(--launchly-subtle);
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   Left sidebar layout.
+   One flex column of three regions: media library, AI conversation and
+   the composer. The library takes the flexible space and scrolls
+   internally; the conversation holds a capped height (see
+   ai-conversation.css); the composer is pinned and never scrolls away.
+   Supersedes the .media-panel__top / .media-panel__ai rules above.
+   ══════════════════════════════════════════════════════════════════════ */
+
+.media-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.media-panel__media {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  /* Floor keeps the library usable when the conversation is at full height;
+     below this the whole sidebar scrolls rather than crushing either one. */
+  min-height: 172px;
+  overflow: hidden;
+}
+
+.media-panel__controls {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-3) var(--sp-2);
+}
+
+/* The scrolling region — library items or the dropzone. */
+.media-panel__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 var(--sp-3) var(--sp-3);
+}
+
+.media-panel__body::-webkit-scrollbar { width: 6px; }
+.media-panel__body::-webkit-scrollbar-track { background: transparent; }
+.media-panel__body::-webkit-scrollbar-thumb { background: rgba(15, 23, 42, 0.14); border-radius: 999px; }
+.media-panel__body::-webkit-scrollbar-thumb:hover { background: rgba(15, 23, 42, 0.24); }
+
+.media-panel__composer {
+  flex-shrink: 0;
+  padding: var(--sp-2) var(--sp-3) var(--sp-3);
+  border-top: 1px solid var(--launchly-border);
+  background: var(--launchly-surface-2);
+}
+
+/* ── Header ──────────────────────────────────────────────────────────── */
+
+.media-panel__header {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.media-panel__title {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--launchly-subtle);
+}
+
+.media-panel__count-pill {
+  min-width: 18px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--launchly-surface-sunken);
+  color: var(--launchly-muted);
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Dropzone — fills whatever height the library region is given ────── */
+
+.media-panel__empty {
+  flex: 1 1 auto;
+  min-height: 148px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: var(--sp-4) var(--sp-3);
+  text-align: center;
+  border: 1px dashed var(--launchly-border-strong);
+  border-radius: var(--launchly-radius-lg);
+  background: var(--launchly-surface-1);
+  cursor: pointer;
+  transition: border-color var(--launchly-dur) var(--launchly-ease),
+              background var(--launchly-dur) var(--launchly-ease),
+              transform var(--launchly-dur) var(--launchly-ease);
+}
+
+.media-panel__empty:hover { border-color: var(--launchly-accent); background: var(--launchly-surface-2); }
+.media-panel__empty:focus-visible { outline: 2px solid var(--launchly-accent); outline-offset: 2px; }
+
+.media-panel__empty.is-dragover {
+  border-color: var(--launchly-accent);
+  background: var(--launchly-accent-soft);
+  transform: scale(0.995);
+}
+
+.media-panel__empty.is-uploading,
+.media-panel__empty.is-error { cursor: default; }
+.media-panel__empty.is-error { border-style: solid; border-color: rgba(220, 38, 38, 0.28); }
+
+.media-panel__upload-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin-bottom: var(--sp-1);
+  border-radius: var(--launchly-radius-lg);
+  background: var(--launchly-surface-3);
+  border: 1px solid var(--launchly-border);
+  color: var(--launchly-muted);
+  box-shadow: var(--launchly-shadow-soft);
+}
+
+.media-panel__upload-icon--error { color: var(--launchly-danger); border-color: rgba(220, 38, 38, 0.22); }
+
+.media-panel__spinner { animation: media-spin 900ms linear infinite; }
+@keyframes media-spin { to { transform: rotate(360deg); } }
+
+.media-panel__empty-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--launchly-text);
+  letter-spacing: -0.01em;
+}
+
+.media-panel__empty-hint {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--launchly-muted);
+}
+
+.media-panel__empty-formats {
+  margin: 2px 0 0;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--launchly-subtle);
+}
+
+.media-panel__cta {
+  margin-top: var(--sp-3);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid var(--launchly-text);
+  border-radius: var(--launchly-radius);
+  background: var(--launchly-text);
+  color: #FFFFFF;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--launchly-shadow-soft);
+  transition: transform var(--launchly-dur) var(--launchly-ease),
+              box-shadow var(--launchly-dur) var(--launchly-ease);
+}
+
+.media-panel__cta:hover { transform: translateY(-1px); box-shadow: var(--launchly-shadow); }
+.media-panel__cta:active { transform: translateY(0) scale(0.98); }
+.media-panel__cta:focus-visible { outline: 2px solid var(--launchly-accent); outline-offset: 2px; }
+
+.media-panel__drop-hint {
+  margin-top: var(--sp-2);
+  font-size: 10.5px;
+  color: var(--launchly-subtle);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .media-panel__spinner { animation-duration: 2s; }
+  .media-panel__empty,
+  .media-panel__cta { transition: none; }
+}

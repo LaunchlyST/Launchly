@@ -1,0 +1,347 @@
+/* ai-conversation — styles for this section only.
+   Imported from src/app-shell/Editor.tsx in cascade order. */
+
+/* ── Conversation shell ──────────────────────────────────────────────────
+   A fixed-height region between the media library and the composer. The
+   height is capped in vh so tall monitors give the transcript more room
+   while short laptops keep the library usable; overflow is handled by the
+   inner scroller, never by growing the sidebar. */
+
+.ai-conv {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: clamp(148px, 26vh, 268px);
+  border-top: 1px solid var(--launchly-border);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.24));
+}
+
+.ai-conv__header {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-shrink: 0;
+  padding: var(--sp-3) var(--sp-3) var(--sp-2);
+}
+
+.ai-conv__label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--launchly-subtle);
+}
+
+.ai-conv__status {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--launchly-accent);
+  letter-spacing: -0.01em;
+  animation: ai-conv-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes ai-conv-pulse {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+
+.ai-conv__clear {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: var(--launchly-radius-sm);
+  background: transparent;
+  color: var(--launchly-subtle);
+  cursor: pointer;
+  transition: background var(--launchly-dur) var(--launchly-ease),
+              color var(--launchly-dur) var(--launchly-ease);
+}
+
+.ai-conv__clear:hover { background: var(--launchly-surface-sunken); color: var(--launchly-text); }
+.ai-conv__clear:active { transform: scale(0.94); }
+.ai-conv__clear:focus-visible { outline: 2px solid var(--launchly-accent-strong); outline-offset: 1px; }
+
+/* ── Scroller ─────────────────────────────────────────────────────────── */
+
+.ai-conv__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 var(--sp-3) var(--sp-3);
+}
+
+.ai-conv__scroll:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--launchly-accent-strong); }
+
+.ai-conv__scroll::-webkit-scrollbar { width: 6px; }
+.ai-conv__scroll::-webkit-scrollbar-track { background: transparent; }
+.ai-conv__scroll::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.14);
+  border-radius: 999px;
+}
+.ai-conv__scroll::-webkit-scrollbar-thumb:hover { background: rgba(15, 23, 42, 0.24); }
+
+.ai-conv__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+/* ── Empty state — present from first paint, so nothing shifts later ──── */
+
+.ai-conv__empty {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 3px;
+  padding: var(--sp-2);
+}
+
+.ai-conv__empty-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  margin-bottom: 3px;
+  border-radius: var(--launchly-radius-md);
+  background: var(--launchly-accent-soft);
+  color: var(--launchly-accent);
+}
+
+.ai-conv__empty-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--launchly-text);
+  letter-spacing: -0.01em;
+}
+
+.ai-conv__empty-hint {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--launchly-subtle);
+  max-width: 30ch;
+}
+
+/* ── Messages — compact rows, not oversized chat bubbles ─────────────── */
+
+.ai-msg {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  animation: ai-msg-in 200ms var(--launchly-ease);
+}
+
+@keyframes ai-msg-in {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.ai-msg__meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.ai-msg__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 5px;
+  background: var(--launchly-accent-soft);
+  color: var(--launchly-accent);
+}
+
+.ai-msg__author {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--launchly-muted);
+}
+
+.ai-msg__time {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--launchly-subtle);
+  font-variant-numeric: tabular-nums;
+  opacity: 0;
+  transition: opacity var(--launchly-dur) var(--launchly-ease);
+}
+
+/* Timestamps are metadata — revealed on hover so they never compete with
+   the message text they annotate. */
+.ai-msg:hover .ai-msg__time { opacity: 1; }
+
+.ai-msg__body {
+  padding: var(--sp-2) 10px;
+  border-radius: var(--launchly-radius-md);
+  font-size: 12.5px;
+  line-height: 1.55;
+  letter-spacing: -0.01em;
+}
+
+.ai-msg--user .ai-msg__body {
+  background: var(--launchly-surface-sunken);
+  border: 1px solid var(--launchly-border);
+  color: var(--launchly-text);
+  font-weight: 500;
+}
+
+.ai-msg--assistant .ai-msg__body {
+  background: var(--launchly-surface-3);
+  border: 1px solid var(--launchly-hairline);
+  color: var(--launchly-muted);
+  box-shadow: var(--launchly-shadow-soft);
+}
+
+.ai-msg__text {
+  margin: 0;
+  /* Long words and pasted URLs must wrap rather than widen the sidebar. */
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+/* Caret shown while text is still streaming in. */
+.ai-msg__caret {
+  display: inline-block;
+  width: 2px;
+  height: 12px;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  background: var(--launchly-accent);
+  animation: ai-caret-blink 1s steps(2, start) infinite;
+}
+
+@keyframes ai-caret-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+.ai-msg__note {
+  display: block;
+  margin-top: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--launchly-subtle);
+}
+
+/* ── Failure + retry ─────────────────────────────────────────────────── */
+
+.ai-msg.is-failed .ai-msg__body {
+  border-color: rgba(220, 38, 38, 0.22);
+  background: rgba(220, 38, 38, 0.03);
+}
+
+.ai-msg__error {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 2px;
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--launchly-danger);
+}
+
+.ai-msg__error span { flex: 1; min-width: 0; }
+
+.ai-msg__retry {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(220, 38, 38, 0.2);
+  background: transparent;
+  color: var(--launchly-danger);
+  font-size: 10.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--launchly-dur) var(--launchly-ease),
+              transform var(--launchly-dur) var(--launchly-ease);
+}
+
+.ai-msg__retry:hover:not(:disabled) { background: rgba(220, 38, 38, 0.07); }
+.ai-msg__retry:active:not(:disabled) { transform: scale(0.96); }
+.ai-msg__retry:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* ── Typing indicator ────────────────────────────────────────────────── */
+
+.ai-typing {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 18px;
+}
+
+.ai-typing__dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--launchly-subtle);
+  animation: ai-typing-bounce 1.1s ease-in-out infinite;
+}
+
+.ai-typing__dot:nth-child(2) { animation-delay: 0.15s; }
+.ai-typing__dot:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes ai-typing-bounce {
+  0%, 70%, 100% { transform: translateY(0); opacity: 0.45; }
+  35% { transform: translateY(-3px); opacity: 1; }
+}
+
+/* ── Jump-to-latest ──────────────────────────────────────────────────── */
+
+.ai-conv__jump {
+  position: absolute;
+  left: 50%;
+  bottom: var(--sp-2);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--launchly-border);
+  background: var(--launchly-surface-3);
+  color: var(--launchly-text);
+  font-size: 10.5px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--launchly-shadow-soft);
+  /* Kept mounted and inert so showing it never reflows the transcript. */
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 6px);
+  transition: opacity var(--launchly-dur) var(--launchly-ease),
+              transform var(--launchly-dur) var(--launchly-ease);
+}
+
+.ai-conv__jump.is-visible { opacity: 1; pointer-events: auto; transform: translate(-50%, 0); }
+.ai-conv__jump:hover { border-color: var(--launchly-border-strong); }
+.ai-conv__jump:active { transform: translate(-50%, 0) scale(0.96); }
+
+/* ── Short viewports — give the library its space back ───────────────── */
+
+@media (max-height: 760px) {
+  .ai-conv { height: clamp(124px, 20vh, 190px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-msg,
+  .ai-conv__status,
+  .ai-typing__dot,
+  .ai-msg__caret { animation: none; }
+}
+
+/* Reserves the clear button's space while the transcript is empty, so the
+   header height — and therefore the scroller — never changes on message #1. */
+.ai-conv__clear.is-hidden { visibility: hidden; pointer-events: none; }

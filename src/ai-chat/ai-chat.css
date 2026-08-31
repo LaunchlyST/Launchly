@@ -861,3 +861,222 @@
 }
 .ai-v2__dropdownItem:hover { background: #F1F5F9; color: #0F172A; }
 .ai-v2__dropdownItem.is-selected { background: #0F172A; color: #fff; }
+
+/* ══════════════════════════════════════════════════════════════════════
+   Prompt composer — the "Ask anything…" input.
+   Supersedes the .ai-panel-v2 / .ai-v2__* block above. Reads as one
+   surface with the conversation it sits under, rather than a floating card.
+   ══════════════════════════════════════════════════════════════════════ */
+
+.composer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-2) 10px 10px;
+  border: 1px solid var(--launchly-border);
+  border-radius: var(--launchly-radius-lg);
+  background: var(--launchly-surface-3);
+  box-shadow: var(--launchly-shadow-soft);
+  transition: border-color var(--launchly-dur) var(--launchly-ease),
+              box-shadow var(--launchly-dur) var(--launchly-ease);
+}
+
+.composer.is-focused {
+  border-color: var(--launchly-accent-strong);
+  box-shadow: var(--launchly-shadow-soft), 0 0 0 3px var(--launchly-accent-soft);
+}
+
+.composer__field {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--sp-2);
+}
+
+.composer__textarea {
+  flex: 1;
+  min-width: 0;
+  min-height: 34px;
+  padding: 7px 0 0;
+  border: none;
+  outline: none;
+  resize: none;
+  background: transparent;
+  color: var(--launchly-text);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 450;
+  line-height: 1.55;
+  letter-spacing: -0.01em;
+  /* Height is driven from JS so the box grows to a ceiling, then scrolls. */
+  overflow-y: hidden;
+}
+
+.composer__textarea::placeholder { color: var(--launchly-subtle); font-weight: 400; }
+
+.composer__textarea::-webkit-scrollbar { width: 5px; }
+.composer__textarea::-webkit-scrollbar-thumb { background: rgba(15, 23, 42, 0.14); border-radius: 999px; }
+
+/* ── Send / stop ─────────────────────────────────────────────────────── */
+
+.composer-send {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--launchly-border);
+  background: var(--launchly-surface-sunken);
+  color: var(--launchly-subtle);
+  cursor: pointer;
+  transition: background var(--launchly-dur) var(--launchly-ease),
+              color var(--launchly-dur) var(--launchly-ease),
+              transform var(--launchly-dur) var(--launchly-ease),
+              box-shadow var(--launchly-dur) var(--launchly-ease);
+}
+
+.composer-send:disabled { cursor: not-allowed; }
+
+/* Ready — the dark navy already used for primary actions elsewhere. */
+.composer-send.is-ready {
+  background: var(--launchly-text);
+  border-color: var(--launchly-text);
+  color: #FFFFFF;
+  box-shadow: var(--launchly-shadow-soft);
+}
+
+.composer-send.is-ready:hover { transform: translateY(-1px); box-shadow: var(--launchly-shadow); }
+.composer-send.is-ready:active { transform: translateY(0) scale(0.94); }
+.composer-send:focus-visible { outline: 2px solid var(--launchly-accent); outline-offset: 2px; }
+
+.composer-send.is-stop {
+  background: var(--launchly-text);
+  border-color: var(--launchly-text);
+  color: #FFFFFF;
+}
+
+.composer-send.is-stop:hover { transform: scale(1.04); }
+.composer-send.is-stop:active { transform: scale(0.94); }
+
+/* ── Toolbar row — attach, voice, counter ────────────────────────────── */
+
+.composer__toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  padding-top: var(--sp-2);
+  border-top: 1px solid var(--launchly-hairline);
+  min-width: 0;
+}
+
+.composer-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  padding: 5px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--launchly-border);
+  background: var(--launchly-surface-1);
+  color: var(--launchly-muted);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--launchly-dur) var(--launchly-ease),
+              border-color var(--launchly-dur) var(--launchly-ease),
+              color var(--launchly-dur) var(--launchly-ease),
+              transform var(--launchly-dur) var(--launchly-ease);
+}
+
+.composer-pill:hover:not(:disabled) {
+  background: var(--launchly-surface-3);
+  border-color: var(--launchly-border-strong);
+  color: var(--launchly-text);
+}
+
+.composer-pill:active:not(:disabled) { transform: scale(0.97); }
+.composer-pill:focus-visible { outline: 2px solid var(--launchly-accent); outline-offset: 1px; }
+.composer-pill:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.composer-pill.is-active {
+  background: var(--launchly-text);
+  border-color: var(--launchly-text);
+  color: #FFFFFF;
+}
+
+.composer-pill__badge {
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--launchly-accent-soft);
+  color: var(--launchly-accent);
+  font-size: 9px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.composer__counter {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--launchly-subtle);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  transition: color var(--launchly-dur) var(--launchly-ease);
+}
+
+.composer__counter.is-near-limit { color: var(--launchly-danger); font-weight: 600; }
+
+/* ── Voice menu — anchored above the pill, never over the textarea ───── */
+
+.composer-voice { position: relative; flex-shrink: 0; }
+
+.composer-menu {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  z-index: 20;
+  min-width: 132px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 5px;
+  border: 1px solid var(--launchly-border);
+  border-radius: var(--launchly-radius-md);
+  background: var(--launchly-surface-3);
+  box-shadow: var(--launchly-shadow);
+  animation: composer-menu-in 150ms var(--launchly-ease);
+}
+
+@keyframes composer-menu-in {
+  from { opacity: 0; transform: translateY(4px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.composer-menu__item {
+  padding: 7px 9px;
+  border: none;
+  border-radius: var(--launchly-radius-sm);
+  background: transparent;
+  color: var(--launchly-muted);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background 120ms var(--launchly-ease), color 120ms var(--launchly-ease);
+}
+
+.composer-menu__item:hover { background: var(--launchly-surface-sunken); color: var(--launchly-text); }
+.composer-menu__item.is-selected { background: var(--launchly-text); color: #FFFFFF; }
+
+@media (prefers-reduced-motion: reduce) {
+  .composer-menu { animation: none; }
+  .composer-send,
+  .composer-pill { transition: none; }
+}
