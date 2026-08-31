@@ -71,6 +71,7 @@ export function MediaPanel({
   canStop,
 }: MediaPanelProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const composerRef = useRef<HTMLTextAreaElement>(null);
   const [category, setCategory] = useState<MediaCategory>('all');
   const [view, setView] = useState<MediaView>('list');
   const [search, setSearch] = useState('');
@@ -122,6 +123,19 @@ export function MediaPanel({
   }, [clips, category, search]);
 
   const busy = conversationStatus !== 'idle';
+
+  /**
+   * A starter loads the composer and hands over the caret rather than sending
+   * outright — the prompt is a starting point the user is meant to adjust.
+   */
+  const handleStarter = useCallback((text: string) => {
+    onAiPromptChange(text);
+    const el = composerRef.current;
+    if (!el) return;
+    el.focus();
+    // Caret to the end, so typing continues the sentence.
+    requestAnimationFrame(() => el.setSelectionRange(text.length, text.length));
+  }, [onAiPromptChange]);
 
   return (
     <div className="media-panel">
@@ -189,6 +203,7 @@ export function MediaPanel({
         status={conversationStatus}
         onRetry={onAiRetry}
         onClear={onAiClear}
+        onStarter={handleStarter}
       />
 
       <div className="media-panel__composer">
@@ -202,6 +217,7 @@ export function MediaPanel({
           onAttach={onUpload}
           busy={busy}
           canStop={canStop}
+          textareaRef={composerRef}
         />
       </div>
     </div>

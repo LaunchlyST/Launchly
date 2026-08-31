@@ -1342,8 +1342,17 @@
   flex-direction: column;
   height: 100%;
   min-height: 0;
-  overflow: hidden;
+  /* Normally the three regions fit exactly and this never scrolls. It is
+     the last resort for very short viewports and heavy browser zoom, where
+     the regions hit their floors — scrolling the sidebar keeps the composer
+     reachable instead of clipping it off the bottom. */
+  overflow-y: auto;
+  overflow-x: hidden;
 }
+
+.media-panel::-webkit-scrollbar { width: 6px; }
+.media-panel::-webkit-scrollbar-track { background: transparent; }
+.media-panel::-webkit-scrollbar-thumb { background: rgba(15, 23, 42, 0.14); border-radius: 999px; }
 
 .media-panel__media {
   flex: 1 1 auto;

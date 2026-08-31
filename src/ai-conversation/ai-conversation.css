@@ -74,7 +74,14 @@
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 0 var(--sp-3) var(--sp-3);
+  /* Bottom padding lives on the list, not here: Chrome counts a scroll
+     container's bottom padding in scrollHeight, which made the empty
+     state report as overflowing by exactly that much. */
+  padding: 0 var(--sp-3);
+  /* Column layout so the empty state can fill the free space with flex
+     rather than height:100%, which ignored this padding and overflowed. */
+  display: flex;
+  flex-direction: column;
 }
 
 .ai-conv__scroll:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--launchly-accent-strong); }
@@ -91,45 +98,92 @@
   display: flex;
   flex-direction: column;
   gap: var(--sp-3);
+  padding-bottom: var(--sp-3);
 }
 
 /* ── Empty state — present from first paint, so nothing shifts later ──── */
 
 .ai-conv__empty {
-  height: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
-  gap: 3px;
-  padding: var(--sp-2);
-}
-
-.ai-conv__empty-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  margin-bottom: 3px;
-  border-radius: var(--launchly-radius-md);
-  background: var(--launchly-accent-soft);
-  color: var(--launchly-accent);
+  gap: var(--sp-2);
+  padding: var(--sp-1) 0;
 }
 
 .ai-conv__empty-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-size: 12px;
   font-weight: 600;
   color: var(--launchly-text);
   letter-spacing: -0.01em;
 }
 
+.ai-conv__empty-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  background: var(--launchly-accent-soft);
+  color: var(--launchly-accent);
+}
+
 .ai-conv__empty-hint {
   font-size: 11px;
-  line-height: 1.5;
+  line-height: 1.45;
   color: var(--launchly-subtle);
-  max-width: 30ch;
+  margin-top: -3px;
+}
+
+/* Starter prompts — the empty state's real job is getting the first
+   message written, so it offers openers instead of more grey copy. */
+
+.ai-conv__starters {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 5px;
+  max-width: 280px;
+}
+
+.ai-conv__starter {
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--launchly-border);
+  background: var(--launchly-surface-3);
+  color: var(--launchly-muted);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 550;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: var(--launchly-shadow-soft);
+  transition: border-color var(--launchly-dur) var(--launchly-ease),
+              color var(--launchly-dur) var(--launchly-ease),
+              transform var(--launchly-dur) var(--launchly-ease);
+}
+
+.ai-conv__starter:hover {
+  border-color: var(--launchly-accent);
+  color: var(--launchly-text);
+  transform: translateY(-1px);
+}
+
+.ai-conv__starter:active { transform: translateY(0) scale(0.97); }
+.ai-conv__starter:focus-visible { outline: 2px solid var(--launchly-accent); outline-offset: 1px; }
+
+/* Short panels drop the hint line before they crowd the starters. */
+@media (max-height: 900px) {
+  .ai-conv__empty-hint { display: none; }
 }
 
 /* ── Messages — compact rows, not oversized chat bubbles ─────────────── */
@@ -345,3 +399,8 @@
 /* Reserves the clear button's space while the transcript is empty, so the
    header height — and therefore the scroller — never changes on message #1. */
 .ai-conv__clear.is-hidden { visibility: hidden; pointer-events: none; }
+
+/* The empty state is sized to fit, so it must never present a scrollbar —
+   sub-pixel rounding on the wrapped starter rows can otherwise leave a few
+   scrollable pixels behind. */
+.ai-conv__scroll.is-empty { overflow-y: hidden; }
