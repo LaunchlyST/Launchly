@@ -91,12 +91,13 @@ export function TimelineTrack({ track, clips, pixelsPerSecond, selectedClipIds, 
   const laneClips = clips.filter((c) => c.trackId === track.id);
 
   return (
-    <div className={`timeline-track ${isLocked ? 'locked' : ''} ${isHidden ? 'hidden-track' : ''} ${isDropTarget ? 'is-drop-target' : ''}`}>
-      {showControls && (
-        <div className={`timeline-track__label`}>
-          <span className="timeline-track__icon" style={{ background: colorForTrackNumber(displayNumber) }}>{meta.icon}</span>
-          <span className="timeline-track__name" title={`${track.type} • ${track.name}`}>{displayLabel}</span>
-          <div className="timeline-track__controls">
+    <div className={`timeline-track ${isLocked ? 'locked' : ''} ${isHidden ? 'hidden-track' : ''} ${isDropTarget ? 'is-drop-target' : ''} ${!showControls ? 'track--empty' : ''}`}>
+      <div className={`timeline-track__label ${!showControls ? 'timeline-track__label--empty' : ''}`}>
+        {showControls && (
+          <>
+            <span className="timeline-track__icon" style={{ background: colorForTrackNumber(displayNumber) }}>{meta.icon}</span>
+            <span className="timeline-track__name" title={`${track.type} • ${track.name}`}>{displayLabel}</span>
+            <div className="timeline-track__controls">
                 <button
                   className={`track-ctrl ${isHidden ? 'off' : ''}`}
                   onClick={(e) => { e.stopPropagation(); onToggleVisibility(track.id); }}
@@ -124,8 +125,9 @@ export function TimelineTrack({ track, clips, pixelsPerSecond, selectedClipIds, 
                   </button>
                 ) : null}
               </div>
-        </div>
-      )}
+          </>
+        )}
+      </div>
       <div
         data-track-id={track.id}
         className={`timeline-track__lane ${isHidden ? 'lane-hidden' : ''}`}
