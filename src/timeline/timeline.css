@@ -1914,9 +1914,7 @@
 .timeline__placeholder {
   position: absolute;
   left: calc(120px + (100% - 120px) / 2);
-  /* Centred on the lane band: the 32px ruler above and 46px control bar below
-     are not part of it. */
-  top: calc(32px + (100% - 78px) / 2);
+  top: 50%;
   transform: translate(-50%, -50%);
   z-index: 2;
   display: flex;

@@ -82,7 +82,15 @@ export interface ContextMenuItem {
   divider?: boolean;
 }
 
+export type AppPage = 'editor' | 'upload';
+export type UploadSubPage = 'upload-project' | 'selling';
+
 export interface EditorState {
+  // Page
+  currentPage: AppPage;
+  setCurrentPage: (page: AppPage) => void;
+  uploadSubPage: UploadSubPage;
+  setUploadSubPage: (sub: UploadSubPage) => void;
   // UI State
   activeTool: string;
   setActiveTool: (tool: string) => void;
@@ -271,6 +279,11 @@ const defaultClips: Clip[] = [];
 export const useEditorStore = create<EditorState>()(
   persist(
     (set) => ({
+      // Page
+      currentPage: 'editor',
+      setCurrentPage: (page) => set({ currentPage: page }),
+      uploadSubPage: 'upload-project' as UploadSubPage,
+      setUploadSubPage: (sub) => set({ uploadSubPage: sub }),
       // UI State
       activeTool: 'media',
       setActiveTool: (tool) => set({ activeTool: tool }),
@@ -495,6 +508,8 @@ export const useEditorStore = create<EditorState>()(
         timelineZoomValue: (state as any).timelineZoomValue,
         timelineVisibleSeconds: (state as any).timelineVisibleSeconds,
         timelineExtendedUnlocked: (state as any).timelineExtendedUnlocked,
+        currentPage: state.currentPage,
+        uploadSubPage: state.uploadSubPage,
       }),
     }
   )

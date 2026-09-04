@@ -163,7 +163,7 @@ function AIToolsPanel() {
     <div className="tool-panel-content ai-panel">
       <div className="panel-header">
         <div>
-          <span className="panel-label">AI Assistant</span>
+          <span className="panel-label">AI Chat bot</span>
           <strong className="panel-title">Production Tools</strong>
         </div>
         <button className="tool-panel-action">Queue</button>

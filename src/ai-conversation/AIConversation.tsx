@@ -86,7 +86,7 @@ export function AIConversation({ messages, status, onRetry, onClear }: AIConvers
   return (
     <section className="ai-conv" aria-label="AI conversation">
       <header className="ai-conv__header">
-        <span className="ai-conv__label">Assistant</span>
+        <span className="ai-conv__label">Chat bot</span>
         {busy && <span className="ai-conv__status">{status === 'responding' ? 'Responding' : 'Thinking'}</span>}
         {/* Always mounted, only hidden while empty — rendering it on message
             #1 would change the header's height and shrink the scroller. */}

@@ -801,8 +801,7 @@ export function Timeline({ clips, tracks, selectedClipIds, currentTime, duration
    const trackDisplay = new Map<string, { number: number; showControls: boolean }>();
   {
     tracks.forEach((track, i) => {
-      // Always show V1 + icon — user requested no hiding
-      const showControls = true;
+      const showControls = clips.some((c) => c.trackId === track.id);
       trackDisplay.set(track.id, { number: i + 1, showControls });
     });
   }
@@ -883,7 +882,7 @@ export function Timeline({ clips, tracks, selectedClipIds, currentTime, duration
             {!hasTracks && !hasClips ? (
               <div className="timeline-track">
                 <div className="timeline-track__label">
-                  <span className="timeline-track__icon" style={{ background: '#70e4ff' }}>🎬</span>
+                  <span className="timeline-track__icon" style={{ background: '#0891B2' }}>🎬</span>
                   <span className="timeline-track__name">V1</span>
                   <div className="timeline-track__controls">
                     <button className="track-ctrl" title="Show track" aria-label="Show">
@@ -1014,7 +1013,7 @@ export function Timeline({ clips, tracks, selectedClipIds, currentTime, duration
             >
               <span className="zoom-confirm__text">
                 <strong className="zoom-confirm__title">Need longer?</strong>
-                <span className="zoom-confirm__body">Extend up to 30 days</span>
+                <span className="zoom-confirm__body">Unlock extended timeline</span>
               </span>
               <span className="zoom-confirm__actions">
                 <button className="zoom-confirm__btn" onClick={() => handleExtendedConfirm(false)}>

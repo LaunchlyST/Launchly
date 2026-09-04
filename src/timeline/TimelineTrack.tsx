@@ -27,10 +27,16 @@ interface TimelineTrackProps {
 
 const TRACK_META: Record<string, { icon: string; label: string }> = {
   video: { icon: '🎬', label: 'V' },
-  audio: { icon: '♪', label: 'V' },
-  text: { icon: 'T', label: 'V' },
-  caption: { icon: '≡', label: 'V' },
+  audio: { icon: '🎬', label: 'V' },
+  text: { icon: '🎬', label: 'V' },
+  caption: { icon: '🎬', label: 'V' },
 };
+
+const TRACK_COLORS = ['#0891B2', '#D97706', '#7C3AED', '#16A34A', '#E11D48', '#2563EB', '#9333EA', '#EA580C'];
+
+function colorForTrackNumber(n: number): string {
+  return TRACK_COLORS[(n - 1) % TRACK_COLORS.length];
+}
 
 function EyeIcon({ off }: { off?: boolean }) {
   return off ? (
@@ -86,38 +92,40 @@ export function TimelineTrack({ track, clips, pixelsPerSecond, selectedClipIds, 
 
   return (
     <div className={`timeline-track ${isLocked ? 'locked' : ''} ${isHidden ? 'hidden-track' : ''} ${isDropTarget ? 'is-drop-target' : ''}`}>
-      <div className={`timeline-track__label`}>
-        <span className="timeline-track__icon" style={{ background: track.color ?? '#70e4ff' }}>{meta.icon}</span>
-        <span className="timeline-track__name" title={`${track.type} • ${track.name}`}>{displayLabel}</span>
-        <div className="timeline-track__controls">
-              <button
-                className={`track-ctrl ${isHidden ? 'off' : ''}`}
-                onClick={(e) => { e.stopPropagation(); onToggleVisibility(track.id); }}
-                title={isHidden ? 'Show track' : 'Hide track'}
-                aria-label={isHidden ? 'Show' : 'Hide'}
-              >
-                <EyeIcon off={isHidden} />
-              </button>
-              <button
-                className={`track-ctrl ${isLocked ? 'active' : ''}`}
-                onClick={(e) => { e.stopPropagation(); onToggleLock(track.id); }}
-                title={isLocked ? 'Unlock track' : 'Lock track'}
-                aria-label={isLocked ? 'Unlock' : 'Lock'}
-              >
-                <LockIcon locked={isLocked} />
-              </button>
-              {track.type === 'audio' ? (
+      {showControls && (
+        <div className={`timeline-track__label`}>
+          <span className="timeline-track__icon" style={{ background: colorForTrackNumber(displayNumber) }}>{meta.icon}</span>
+          <span className="timeline-track__name" title={`${track.type} • ${track.name}`}>{displayLabel}</span>
+          <div className="timeline-track__controls">
                 <button
-                  className={`track-ctrl ${isTrackMuted ? 'off' : ''}`}
-                  onClick={(e) => { e.stopPropagation(); onToggleMute(track.id); }}
-                  title={isTrackMuted ? 'Unmute' : 'Mute'}
-                  aria-label={isTrackMuted ? 'Unmute' : 'Mute'}
+                  className={`track-ctrl ${isHidden ? 'off' : ''}`}
+                  onClick={(e) => { e.stopPropagation(); onToggleVisibility(track.id); }}
+                  title={isHidden ? 'Show track' : 'Hide track'}
+                  aria-label={isHidden ? 'Show' : 'Hide'}
                 >
-                  <SpeakerIcon muted={!!isTrackMuted} />
+                  <EyeIcon off={isHidden} />
                 </button>
-              ) : null}
-            </div>
-      </div>
+                <button
+                  className={`track-ctrl ${isLocked ? 'active' : ''}`}
+                  onClick={(e) => { e.stopPropagation(); onToggleLock(track.id); }}
+                  title={isLocked ? 'Unlock track' : 'Lock track'}
+                  aria-label={isLocked ? 'Unlock' : 'Lock'}
+                >
+                  <LockIcon locked={isLocked} />
+                </button>
+                {track.type === 'audio' ? (
+                  <button
+                    className={`track-ctrl ${isTrackMuted ? 'off' : ''}`}
+                    onClick={(e) => { e.stopPropagation(); onToggleMute(track.id); }}
+                    title={isTrackMuted ? 'Unmute' : 'Mute'}
+                    aria-label={isTrackMuted ? 'Unmute' : 'Mute'}
+                  >
+                    <SpeakerIcon muted={!!isTrackMuted} />
+                  </button>
+                ) : null}
+              </div>
+        </div>
+      )}
       <div
         data-track-id={track.id}
         className={`timeline-track__lane ${isHidden ? 'lane-hidden' : ''}`}

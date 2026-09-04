@@ -19,6 +19,8 @@ import { Paywall } from '../paywall/Paywall';
 import { usePaywall } from '../paywall/usePaywall';
 import { useConversation } from '../ai-conversation/useConversation';
 import { localResponder } from '../ai-conversation/localResponder';
+import { TopNav } from './TopNav';
+import { UploadPage } from './UploadPage';
 // Feature stylesheets, imported in cascade order — each one lives with its section.
 import '../theme/theme.css';
 import '../app-shell/app-shell.css';
@@ -39,6 +41,7 @@ import '../notifications/notifications.css';
 import '../context-menu/context-menu.css';
 import '../subscription/subscription.css';
 import '../paywall/paywall.css';
+import './upload-page.css';
 
 export function Editor() {
   const {
@@ -69,6 +72,8 @@ export function Editor() {
     addToast,
     removeToast,
     projectName,
+    currentPage,
+    setCurrentPage,
   } = useEditorStore() as any;
 
   const [exportModalOpen, setExportModalOpen] = React.useState(false);
@@ -151,9 +156,8 @@ export function Editor() {
       if (emptyOfType) return emptyOfType.id;
 
       const count = tracks.length;
-      const labelMap: Record<string, string> = { video: `V${count + 1}`, audio: `V${count + 1}`, text: `V${count + 1}` };
+      const TRACK_COLORS = ['#0891B2', '#D97706', '#7C3AED', '#16A34A', '#E11D48', '#2563EB', '#9333EA', '#EA580C'];
       const nameMap: Record<string, string> = { video: 'Video', audio: 'Audio', text: 'Text' };
-      const colorMap: Record<string, string> = { video: '#70e4ff', audio: '#ffd47a', text: '#b9a4ff' };
       const newTrack: any = {
         id: `${type}-${Date.now()}-${Math.random().toString(36).slice(2, 4)}`,
         name: nameMap[type],
@@ -164,8 +168,8 @@ export function Editor() {
         muted: false,
         solo: false,
         height: type === 'audio' ? 60 : 56,
-        color: colorMap[type],
-        label: labelMap[type],
+        color: TRACK_COLORS[count % TRACK_COLORS.length],
+        label: `V${count + 1}`,
       };
       setTracks((prev: any[]) => [...prev, newTrack]);
       return newTrack.id;
@@ -318,88 +322,95 @@ export function Editor() {
   // Resolve aspect ratio for preview frame styling
   const aspectPreset = getAspectRatioById(aspectRatio);
 
-  return (
+return (
     <NotificationProvider>
     <div className="launchly-editor-root">
-      <EditorLayout
-        leftPanel={
-          <MediaPanel
-            clips={libraryAssets}
-            onUpload={handleUpload}
-            onDragStart={handleMediaDragStart}
-            onDelete={handleDeleteMedia}
-            onSelectMedia={(clip) => {
-              // Optional: selecting media shows in preview? Keep timeline selection
-            }}
-            onAddToTimeline={(clip) => handleDropMedia(clip, currentTime)}
-            onRename={(clip, name) => {
-              setMediaAssets((prev: any[]) => prev.map((c) => (c.id === clip.id ? { ...c, name } : c)));
-              if (mediaAssets.length === 0) {
-                setClips((prev: any[]) => prev.map((c) => (c.id === clip.id ? { ...c, name } : c)));
-              }
-            }}
-            selectedClipIds={selectedClipIds}
-            uploadState={uploadState}
-            uploadError={uploadError}
-            aiPrompt={aiPrompt}
-            onAiPromptChange={setAiPrompt}
-            aiModel={aiModel}
-            onAiModelChange={setAiModel}
-            onAiSend={handleAiSend}
-            onAiStop={conversation.stop}
-            onAiRetry={conversation.retry}
-            onAiClear={conversation.clear}
-            messages={conversation.messages}
-            conversationStatus={conversation.status}
-            canStop={conversation.canStop}
+      <TopNav />
+      {currentPage === 'upload' ? (
+        <UploadPage />
+      ) : (
+        <>
+          <EditorLayout
+            leftPanel={
+              <MediaPanel
+                clips={libraryAssets}
+                onUpload={handleUpload}
+                onDragStart={handleMediaDragStart}
+                onDelete={handleDeleteMedia}
+                onSelectMedia={(clip) => {
+                  // Optional: selecting media shows in preview? Keep timeline selection
+                }}
+                onAddToTimeline={(clip) => handleDropMedia(clip, currentTime)}
+                onRename={(clip, name) => {
+                  setMediaAssets((prev: any[]) => prev.map((c) => (c.id === clip.id ? { ...c, name } : c)));
+                  if (mediaAssets.length === 0) {
+                    setClips((prev: any[]) => prev.map((c) => (c.id === clip.id ? { ...c, name } : c)));
+                  }
+                }}
+                selectedClipIds={selectedClipIds}
+                uploadState={uploadState}
+                uploadError={uploadError}
+                aiPrompt={aiPrompt}
+                onAiPromptChange={setAiPrompt}
+                aiModel={aiModel}
+                onAiModelChange={setAiModel}
+                onAiSend={handleAiSend}
+                onAiStop={conversation.stop}
+                onAiRetry={conversation.retry}
+                onAiClear={conversation.clear}
+                messages={conversation.messages}
+                conversationStatus={conversation.status}
+                canStop={conversation.canStop}
+              />
+            }
+            preview={
+              <VideoPreview
+                clips={timelineClips}
+                tracks={tracks}
+                selectedClipIds={selectedClipIds}
+                currentTime={currentTime}
+                duration={duration}
+                playing={playing}
+                onPlayToggle={() => setPlaying(!playing)}
+                aspectRatio={aspectRatio}
+                isMuted={isMuted}
+                onDrop={handlePreviewDrop}
+                onClipsChange={setClips}
+              />
+            }
+            toolbar={
+              <EditorToolbar
+                aspectRatio={aspectRatio}
+                onAspectRatioChange={setAspectRatio}
+                isMuted={isMuted}
+                onMuteToggle={handleMuteToggle}
+                onExportProject={handleExportProject}
+                onUpgrade={handleUpgrade}
+                planLabel={sub.sub.planId}
+              />
+            }
+            timeline={
+              <Timeline
+                clips={timelineClips}
+                tracks={tracks}
+                selectedClipIds={selectedClipIds}
+                currentTime={currentTime}
+                duration={duration}
+                isMuted={isMuted}
+                onClipsChange={setClips}
+                onTracksChange={setTracks as any}
+                onSelectionChange={setSelectedClipIds}
+                onTimeChange={setCurrentTime}
+                onDropMedia={handleDropMedia}
+              />
+            }
           />
-        }
-        preview={
-          <VideoPreview
-            clips={timelineClips}
-            tracks={tracks}
-            selectedClipIds={selectedClipIds}
-            currentTime={currentTime}
-            duration={duration}
-            playing={playing}
-            onPlayToggle={() => setPlaying(!playing)}
-            aspectRatio={aspectRatio}
-            isMuted={isMuted}
-            onDrop={handlePreviewDrop}
-            onClipsChange={setClips}
-          />
-        }
-        toolbar={
-          <EditorToolbar
-            aspectRatio={aspectRatio}
-            onAspectRatioChange={setAspectRatio}
-            isMuted={isMuted}
-            onMuteToggle={handleMuteToggle}
-            onExportProject={handleExportProject}
-            onUpgrade={handleUpgrade}
-            planLabel={sub.sub.planId}
-          />
-        }
-        timeline={
-          <Timeline
-            clips={timelineClips}
-            tracks={tracks}
-            selectedClipIds={selectedClipIds}
-            currentTime={currentTime}
-            duration={duration}
-            isMuted={isMuted}
-            onClipsChange={setClips}
-            onTracksChange={setTracks as any}
-            onSelectionChange={setSelectedClipIds}
-            onTimeChange={setCurrentTime}
-            onDropMedia={handleDropMedia}
-          />
-        }
-      />
+        </>
+      )}
       <ToastContainer toasts={toasts} />
       <NotificationContainer />
       <ExportModal open={exportModalOpen} onClose={() => setExportModalOpen(false)} onExported={handleExported} isPro={isPro} onPremiumLocked={(f: string) => paywall.trigger(f as any)} />
-      <ExportSuccess open={exportSuccessOpen} onClose={() => setExportSuccessOpen(false)} onViewWhitePage={() => { setExportSuccessOpen(false); setWhitePageOpen(true); }} projectName={projectName} />
+      <ExportSuccess open={exportSuccessOpen} onClose={() => setExportSuccessOpen(false)} onViewWhitePage={() => { setExportSuccessOpen(false); setWhitePageOpen(true); }} projectName={projectName} clips={timelineClips} />
       <ExportWhitePage open={whitePageOpen} onBack={() => setWhitePageOpen(false)} projectName={projectName} clips={timelineClips} />
       <Subscription open={subscriptionOpen} onClose={() => setSubscriptionOpen(false)} onSelectPlan={handleSelectPlan} currentPlanId={sub.sub.planId} />
       <Paywall open={paywall.open} feature={paywall.activeFeature} onClose={paywall.close} onUpgrade={() => { paywall.close(); handleUpgrade(); }} />
