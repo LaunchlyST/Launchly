@@ -1,0 +1,59 @@
+/* global-search — styles for this section only.
+   Imported from src/app-shell/Editor.tsx in cascade order. */
+
+.command-palette {
+  width: 90%;
+  max-width: 560px;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.command-input {
+  width: 100%;
+  padding: 16px 20px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  color: var(--text-primary, #e8e8ec);
+  font-size: 16px;
+  outline: none;
+}
+
+.command-list {
+  list-style: none;
+  margin: 0;
+  padding: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.command-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-primary, #e8e8ec);
+}
+
+.command-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.command-item kbd {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-tertiary, #5a5a6e);
+  font-family: inherit;
+}
+
+.command-empty {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-tertiary, #5a5a6e);
+  font-size: 13px;
+}
