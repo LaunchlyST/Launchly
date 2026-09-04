@@ -467,7 +467,7 @@ export const useEditorStore = create<EditorState>()(
       setTimelineFeedback: (v) => set({ timelineFeedback: v }),
     }),
     {
-      name: 'launchly-editor-state',
+      name: 'launchly-editor-state-v2',
       partialize: (state) => ({
         timelineHeight: state.timelineHeight,
         canvasZoom: state.canvasZoom,

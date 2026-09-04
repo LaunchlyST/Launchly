@@ -881,24 +881,7 @@ export function Timeline({ clips, tracks, selectedClipIds, currentTime, duration
           <div className="timeline__tracks">
             {!hasTracks && !hasClips ? (
               <div className="timeline-track">
-                <div className="timeline-track__label">
-                  <span className="timeline-track__icon" style={{ background: '#0891B2' }}>🎬</span>
-                  <span className="timeline-track__name">V1</span>
-                  <div className="timeline-track__controls">
-                    <button className="track-ctrl" title="Show track" aria-label="Show">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                        <circle cx="12" cy="12" r="3" />
-                      </svg>
-                    </button>
-                    <button className="track-ctrl" title="Lock track" aria-label="Lock">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="3" y="11" width="18" height="11" rx="2" />
-                        <path d="M7 11V7a5 5 0 0 1 9.9-1" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
+                <div className="timeline-track__label timeline-track__label--empty" />
                 <div className="timeline-track__lane" />
               </div>
             ) : (

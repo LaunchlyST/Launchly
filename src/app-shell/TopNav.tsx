@@ -4,7 +4,6 @@ import { UploadIcon } from '../icons/Icon';
 
 export function TopNav() {
   const { currentPage, setCurrentPage, uploadSubPage, setUploadSubPage } = useEditorStore() as any;
-  if (currentPage !== 'upload') return null;
 
   return (
     <nav className="topnav">
@@ -34,9 +33,15 @@ export function TopNav() {
           Selling
         </button>
       </div>
-      <button className="topnav__back" onClick={() => setCurrentPage('editor')}>
-        ← Back to editor
-      </button>
+      {currentPage === 'upload' ? (
+        <button className="topnav__back" onClick={() => setCurrentPage('editor')}>
+          ← Back to editor
+        </button>
+      ) : (
+        <button className="topnav__back topnav__back--primary" onClick={() => setCurrentPage('upload')}>
+          Upload Project →
+        </button>
+      )}
     </nav>
   );
 }

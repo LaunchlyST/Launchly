@@ -104,6 +104,20 @@
   border-color: var(--launchly-border-strong);
   color: var(--launchly-text);
 }
+.topnav__back--primary {
+  background: var(--launchly-text);
+  color: #fff;
+  border-color: var(--launchly-text);
+}
+.topnav__back--primary:hover {
+  background: #1e293b;
+  color: #fff;
+  border-color: #1e293b;
+}
+.timeline-track__label--empty {
+  opacity: 0;
+  pointer-events: none;
+}
 
 /* ── Header ───────────────────────────────────────────────────────── */
 
