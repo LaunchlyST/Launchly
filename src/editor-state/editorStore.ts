@@ -280,7 +280,7 @@ export const useEditorStore = create<EditorState>()(
   persist(
     (set) => ({
       // Page
-      currentPage: 'editor',
+      currentPage: 'upload',
       setCurrentPage: (page) => set({ currentPage: page }),
       uploadSubPage: 'upload-project' as UploadSubPage,
       setUploadSubPage: (sub) => set({ uploadSubPage: sub }),
