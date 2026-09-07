@@ -53,7 +53,10 @@ export function SignUp({ onSwitchToLogin }: SignUpProps) {
     try {
       const { error: signUpError, session } = await signUp(email, password);
       if (signUpError) {
-        setError(signUpError.message);
+        const msg = signUpError.message.includes('Email rate limit exceeded')
+          ? 'Too many email attempts. Please wait a few minutes and try again.'
+          : signUpError.message;
+        setError(msg);
       } else if (session && session.user) {
         try {
           const res = await fetch(`${WORKER_URL}/api/subscription?userId=${session.user.id}`);
