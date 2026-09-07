@@ -371,6 +371,33 @@ body,
   cursor: not-allowed;
 }
 
+.oauthButton--locked {
+  border-color: #e5484d;
+  background-color: rgba(229, 72, 77, 0.15);
+  box-shadow: 4px 4px #e5484d;
+  color: #ff6b6b;
+  animation: lock-shake 0.4s ease;
+  pointer-events: none;
+}
+
+.oauthButton--locked::before {
+  display: none;
+}
+
+@keyframes lock-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
+.auth-error--locked {
+  background: rgba(229, 72, 77, 0.25);
+  border-color: rgba(229, 72, 77, 0.5);
+  animation: lock-shake 0.4s ease;
+}
+
 .form > input {
   width: 100%;
   height: 40px;

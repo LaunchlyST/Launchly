@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAuthStore } from './auth-store';
 
 const WORKER_URL = import.meta.env.VITE_WORKER_URL || 'http://localhost:8787';
@@ -12,7 +12,13 @@ export function Login({ onSwitchToSignUp }: LoginProps) {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [locked, setLocked] = useState(false);
+  const lockTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const signIn = useAuthStore((s) => s.signIn);
+
+  useEffect(() => {
+    return () => { if (lockTimer.current) clearTimeout(lockTimer.current); };
+  }, []);
 
   const validateEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
@@ -43,6 +49,10 @@ export function Login({ onSwitchToSignUp }: LoginProps) {
         const msg = signInError.message;
         if (msg.includes('Email not confirmed') || msg.includes('email not confirmed')) {
           setError('Please confirm your email before logging in. Check your inbox for the confirmation link.');
+        } else if (msg.includes('Invalid login credentials')) {
+          setError('Account not found. Please sign up first.');
+          setLocked(true);
+          lockTimer.current = setTimeout(() => setLocked(false), 3000);
         } else {
           setError('Incorrect email or password.');
         }
@@ -108,6 +118,7 @@ export function Login({ onSwitchToSignUp }: LoginProps) {
             name="email"
             value={email}
             onChange={(e) => { setEmail(e.target.value); setError(''); }}
+            disabled={locked}
             required
           />
 
@@ -117,18 +128,33 @@ export function Login({ onSwitchToSignUp }: LoginProps) {
             name="password"
             value={password}
             onChange={(e) => { setPassword(e.target.value); setError(''); }}
+            disabled={locked}
             required
             minLength={6}
           />
 
-          {error && <div className="auth-error">{error}</div>}
+          {error && <div className={locked ? 'auth-error auth-error--locked' : 'auth-error'}>{error}</div>}
 
-          <button type="submit" className="oauthButton" disabled={loading}>
-            {loading ? 'Logging in...' : 'Log In'}
-            <svg className="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="m6 17 5-5-5-5" />
-              <path d="m13 17 5-5-5-5" />
-            </svg>
+          <button type="submit" className={`oauthButton ${locked ? 'oauthButton--locked' : ''}`} disabled={loading || locked}>
+            {locked ? (
+              <>
+                <svg className="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+                Sign up first
+              </>
+            ) : loading ? (
+              'Logging in...'
+            ) : (
+              <>
+                Log In
+                <svg className="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m6 17 5-5-5-5" />
+                  <path d="m13 17 5-5-5-5" />
+                </svg>
+              </>
+            )}
           </button>
 
           <p className="form-switch">
