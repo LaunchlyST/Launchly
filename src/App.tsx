@@ -192,6 +192,12 @@ export function App() {
     );
   }
 
+  useEffect(() => {
+    if (!loading && user && route === '/') {
+      navigate('/dashboard');
+    }
+  }, [user, loading, route, navigate]);
+
   if (!user) {
     return (
       <div className="app app--auth">
@@ -206,7 +212,6 @@ export function App() {
     );
   }
 
-  navigate('/dashboard');
   return (
     <div className="auth-loading">
       <span className="auth-spinner auth-spinner--lg" />

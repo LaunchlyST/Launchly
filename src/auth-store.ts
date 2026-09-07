@@ -24,7 +24,12 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   signUp: async (email, password) => {
     try {
-      const { data, error } = await supabase.auth.signUp({ email, password });
+      const emailRedirectTo = window.location.origin;
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { emailRedirectTo },
+      });
       const user = data?.user ?? null;
       const session = data?.session ?? null;
       console.log('[signUp] result:', { user, session, error: error?.message });

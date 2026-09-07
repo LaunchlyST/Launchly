@@ -74,7 +74,7 @@ export function SignUp({ onSwitchToLogin }: SignUpProps) {
           window.location.href = '/pricing';
         }
       } else {
-        setSuccess('Check your email to confirm your account, then log in.');
+        setSuccess('Check your email to confirm your account.');
       }
     } catch {
       setError('An unexpected error occurred.');
