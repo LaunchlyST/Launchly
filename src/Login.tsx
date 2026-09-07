@@ -24,13 +24,47 @@ export function Login({ onSwitchToSignUp }: LoginProps) {
 
   const colors = ['#5b5ef4', '#8b5cf6', '#00d4ff', '#f59e0b', '#10b981', '#e5484d', '#ec4899'];
   const handleSplash = (e: React.MouseEvent) => {
-    const el = document.createElement('div');
-    el.className = 'splash';
-    el.style.left = `${e.clientX}px`;
-    el.style.top = `${e.clientY}px`;
-    el.style.background = `radial-gradient(circle, ${colors[Math.floor(Math.random() * colors.length)]}, transparent)`;
-    document.body.appendChild(el);
-    el.addEventListener('animationend', () => el.remove());
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    const x = e.clientX;
+    const y = e.clientY;
+
+    // Glow burst
+    const glow = document.createElement('div');
+    glow.className = 'splash-glow';
+    glow.style.left = `${x}px`;
+    glow.style.top = `${y}px`;
+    glow.style.background = `radial-gradient(circle, ${color}, transparent)`;
+    glow.style.boxShadow = `0 0 40px 10px ${color}`;
+    document.body.appendChild(glow);
+    glow.addEventListener('animationend', () => glow.remove());
+
+    // 2 expanding rings
+    for (let i = 0; i < 2; i++) {
+      const ring = document.createElement('div');
+      ring.className = 'splash-ring';
+      ring.style.left = `${x}px`;
+      ring.style.top = `${y}px`;
+      ring.style.borderColor = color;
+      ring.style.animationDelay = `${i * 0.1}s`;
+      document.body.appendChild(ring);
+      ring.addEventListener('animationend', () => ring.remove());
+    }
+
+    // 8 particles flying outward
+    for (let i = 0; i < 8; i++) {
+      const particle = document.createElement('div');
+      particle.className = 'splash-particle';
+      const angle = (i / 8) * Math.PI * 2;
+      const dist = 60 + Math.random() * 80;
+      particle.style.left = `${x}px`;
+      particle.style.top = `${y}px`;
+      particle.style.background = color;
+      particle.style.boxShadow = `0 0 6px ${color}`;
+      particle.style.setProperty('--px', `${Math.cos(angle) * dist}px`);
+      particle.style.setProperty('--py', `${Math.sin(angle) * dist}px`);
+      document.body.appendChild(particle);
+      particle.addEventListener('animationend', () => particle.remove());
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -82,7 +116,7 @@ export function Login({ onSwitchToSignUp }: LoginProps) {
   return (
     <div className="auth-page" onClick={handleSplash}>
       <div className="stars" />
-      <div className="auth-container">
+      <div className="auth-container" onClick={(e) => e.stopPropagation()}>
         <form className="form" onSubmit={handleSubmit}>
           <p>
             Welcome back,

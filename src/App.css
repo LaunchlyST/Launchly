@@ -219,29 +219,84 @@ body,
 /* ============ Click Splash ============ */
 .splash {
   position: fixed;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+.splash-ring {
+  position: fixed;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  border: 2px solid;
+  animation: ring-expand 0.7s ease-out forwards;
+}
+
+@keyframes ring-expand {
+  0% {
+    width: 0;
+    height: 0;
+    opacity: 0.9;
+    transform: translate(-50%, -50%) scale(0);
+  }
+  100% {
+    width: 250px;
+    height: 250px;
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.splash-glow {
+  position: fixed;
   width: 0;
   height: 0;
   border-radius: 50%;
   pointer-events: none;
   z-index: 9999;
-  animation: splash-pop 0.6s ease-out forwards;
+  animation: glow-burst 0.5s ease-out forwards;
 }
 
-@keyframes splash-pop {
+@keyframes glow-burst {
   0% {
     width: 0;
     height: 0;
-    opacity: 0.7;
+    opacity: 0.8;
     transform: translate(-50%, -50%) scale(0);
+    filter: blur(0px);
   }
-  50% {
-    opacity: 0.4;
+  40% {
+    opacity: 0.6;
+    filter: blur(8px);
   }
   100% {
-    width: 300px;
-    height: 300px;
+    width: 120px;
+    height: 120px;
     opacity: 0;
     transform: translate(-50%, -50%) scale(1);
+    filter: blur(20px);
+  }
+}
+
+.splash-particle {
+  position: fixed;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  animation: particle-fly 0.6s ease-out forwards;
+}
+
+@keyframes particle-fly {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--px), var(--py)) scale(0);
   }
 }
 
