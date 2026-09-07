@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Sparkles, Settings, LogOut, Crown } from 'lucide-react';
+import { Sparkles, Settings, LogOut, Crown, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { SettingsPanel } from './settings/SettingsPanel';
 import { GeneratorPage } from './generator/GeneratorPage';
 import { SubscriptionGate } from './subscription/SubscriptionGate';
@@ -11,21 +11,100 @@ import { SignUp } from './SignUp';
 import './App.css';
 
 function PricingPage() {
-  const { createCheckout } = useSubscription();
+  const { createCheckout, manageSubscription, checkoutLoading, isActive, loading, refresh } = useSubscription();
+  const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  // Handle post-checkout redirect
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const subscription = params.get("subscription");
+
+    if (subscription === "success") {
+      window.history.replaceState({}, "", window.location.pathname);
+      setToast({ type: "success", message: "Activating your subscription..." });
+
+      let attempts = 0;
+      const maxAttempts = 15;
+      const poll = setInterval(async () => {
+        attempts++;
+        await refresh();
+        if (attempts >= maxAttempts) {
+          clearInterval(poll);
+          setToast({ type: "success", message: "Pro activated!" });
+          setTimeout(() => setToast(null), 4000);
+        }
+      }, 2000);
+
+      return () => clearInterval(poll);
+    }
+
+    if (subscription === "cancelled") {
+      window.history.replaceState({}, "", window.location.pathname);
+      setToast({ type: "error", message: "Checkout cancelled." });
+      setTimeout(() => setToast(null), 4000);
+    }
+  }, [refresh]);
+
+  useEffect(() => {
+    if (isActive && toast?.message === "Activating your subscription...") {
+      setToast({ type: "success", message: "Pro activated!" });
+      setTimeout(() => setToast(null), 4000);
+    }
+  }, [isActive, toast]);
+
+  if (loading) {
+    return (
+      <div className="sub-loading">
+        <Loader2 className="sub-spinner" />
+      </div>
+    );
+  }
 
   return (
-    <div className="sub-gate">
-      <div className="sub-gate__icon">
-        <Crown size={48} />
+    <>
+      {toast && (
+        <div className={`sub-toast sub-toast--${toast.type}`}>
+          {toast.type === "success" ? <CheckCircle size={16} /> : <XCircle size={16} />}
+          <span>{toast.message}</span>
+        </div>
+      )}
+      <div className="sub-gate">
+        <div className="sub-gate__icon">
+          <Crown size={48} />
+        </div>
+        <h2 className="sub-gate__title">
+          {isActive ? "You're Subscribed!" : "Pro Subscription Required"}
+        </h2>
+        <p className="sub-gate__desc">
+          {isActive
+            ? "You have full access to all features."
+            : "Unlock the full editor with all features. Only £5/month."}
+        </p>
+        {isActive ? (
+          <button onClick={manageSubscription} className="sub-gate__btn" disabled={checkoutLoading}>
+            {checkoutLoading ? (
+              <>
+                <Loader2 className="sub-spinner--sm" />
+                Opening...
+              </>
+            ) : (
+              "Manage Subscription"
+            )}
+          </button>
+        ) : (
+          <button onClick={createCheckout} className="sub-gate__btn" disabled={checkoutLoading}>
+            {checkoutLoading ? (
+              <>
+                <Loader2 className="sub-spinner--sm" />
+                Opening checkout...
+              </>
+            ) : (
+              "Subscribe Now — £5/month"
+            )}
+          </button>
+        )}
       </div>
-      <h2 className="sub-gate__title">Pro Subscription Required</h2>
-      <p className="sub-gate__desc">
-        Unlock the full editor with all features. Only £5/month.
-      </p>
-      <button onClick={createCheckout} className="sub-gate__btn">
-        Subscribe Now — £5/month
-      </button>
-    </div>
+    </>
   );
 }
 

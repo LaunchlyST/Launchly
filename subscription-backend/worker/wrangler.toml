@@ -10,3 +10,6 @@ FRONTEND_URL = "https://launchly.pazeruga.workers.dev"
 # STRIPE_WEBHOOK_SECRET
 # SUPABASE_URL
 # SUPABASE_SERVICE_ROLE_KEY
+
+# Set via `wrangler var put STRIPE_PRICE_ID=price_xxx`
+# STRIPE_PRICE_ID

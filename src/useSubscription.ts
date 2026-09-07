@@ -12,6 +12,7 @@ export function useSubscription() {
   const user = useAuthStore((s) => s.user);
   const [subscription, setSubscription] = useState<SubscriptionStatus | null>(null);
   const [loading, setLoading] = useState(true);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchSubscription = useCallback(async () => {
@@ -41,16 +42,47 @@ export function useSubscription() {
 
   const createCheckout = async () => {
     if (!user) return;
+    setCheckoutLoading(true);
+    try {
+      const res = await fetch(`${WORKER_URL}/api/create-checkout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id, email: user.email }),
+      });
 
-    const res = await fetch(`${WORKER_URL}/api/create-checkout`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: user.id, email: user.email }),
-    });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else if (data.error) {
+        setError(data.error);
+        setCheckoutLoading(false);
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to start checkout");
+      setCheckoutLoading(false);
+    }
+  };
 
-    const data = await res.json();
-    if (data.url) {
-      window.location.href = data.url;
+  const manageSubscription = async () => {
+    if (!user) return;
+    setCheckoutLoading(true);
+    try {
+      const res = await fetch(`${WORKER_URL}/api/manage-subscription`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id }),
+      });
+
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else if (data.error) {
+        setError(data.error);
+        setCheckoutLoading(false);
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to open subscription management");
+      setCheckoutLoading(false);
     }
   };
 
@@ -59,9 +91,11 @@ export function useSubscription() {
   return {
     subscription,
     loading,
+    checkoutLoading,
     error,
     isActive,
     createCheckout,
+    manageSubscription,
     refresh: fetchSubscription,
   };
 }
