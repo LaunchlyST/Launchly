@@ -29,7 +29,12 @@ export function Login({ onSwitchToSignUp }: LoginProps) {
     try {
       const { error: signInError, user, session } = await signIn(email, password);
       if (signInError) {
-        setError('Incorrect email or password.');
+        const msg = signInError.message;
+        if (msg.includes('Email not confirmed') || msg.includes('email not confirmed')) {
+          setError('Please confirm your email before logging in. Check your inbox for the confirmation link.');
+        } else {
+          setError('Incorrect email or password.');
+        }
         return;
       }
 
