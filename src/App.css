@@ -217,37 +217,6 @@ body,
 }
 
 /* ============ Click Splash ============ */
-.splash {
-  position: fixed;
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 9999;
-}
-
-.splash-ring {
-  position: fixed;
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 9999;
-  border: 2px solid;
-  animation: ring-expand 0.7s ease-out forwards;
-}
-
-@keyframes ring-expand {
-  0% {
-    width: 0;
-    height: 0;
-    opacity: 0.9;
-    transform: translate(-50%, -50%) scale(0);
-  }
-  100% {
-    width: 250px;
-    height: 250px;
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(1);
-  }
-}
-
 .splash-glow {
   position: fixed;
   width: 0;
@@ -255,38 +224,56 @@ body,
   border-radius: 50%;
   pointer-events: none;
   z-index: 9999;
-  animation: glow-burst 0.5s ease-out forwards;
+  animation: glow-burst 0.6s ease-out forwards;
 }
 
 @keyframes glow-burst {
   0% {
-    width: 0;
-    height: 0;
-    opacity: 0.8;
+    width: 0; height: 0;
+    opacity: 1;
     transform: translate(-50%, -50%) scale(0);
     filter: blur(0px);
   }
-  40% {
-    opacity: 0.6;
-    filter: blur(8px);
+  50% {
+    opacity: 0.7;
+    filter: blur(12px);
   }
   100% {
-    width: 120px;
-    height: 120px;
+    width: 200px; height: 200px;
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.5);
+    filter: blur(30px);
+  }
+}
+
+.splash-ring {
+  position: fixed;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  border: 2.5px solid;
+  animation: ring-expand 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+@keyframes ring-expand {
+  0% {
+    width: 0; height: 0;
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0);
+  }
+  100% {
+    width: 320px; height: 320px;
     opacity: 0;
     transform: translate(-50%, -50%) scale(1);
-    filter: blur(20px);
   }
 }
 
 .splash-particle {
   position: fixed;
-  width: 4px;
-  height: 4px;
   border-radius: 50%;
   pointer-events: none;
   z-index: 9999;
-  animation: particle-fly 0.6s ease-out forwards;
+  animation: particle-fly var(--dur) cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
 
 @keyframes particle-fly {
@@ -294,10 +281,73 @@ body,
     opacity: 1;
     transform: translate(0, 0) scale(1);
   }
+  60% {
+    opacity: 0.8;
+  }
   100% {
     opacity: 0;
     transform: translate(var(--px), var(--py)) scale(0);
   }
+}
+
+.splash-trail {
+  position: fixed;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  animation: trail-fly 0.5s ease-out forwards;
+}
+
+@keyframes trail-fly {
+  0% {
+    opacity: 0.9;
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--tx), var(--ty)) scale(0.2);
+  }
+}
+
+.splash-sparkle {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9999;
+  font-size: 16px;
+  animation: sparkle-float 1s ease-out forwards;
+}
+
+@keyframes sparkle-float {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0.5) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(var(--sx), calc(var(--sy) - 30px)) scale(1.2) rotate(180deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--sx), var(--sy)) scale(0.3) rotate(360deg);
+  }
+}
+
+.splash-flash {
+  position: fixed;
+  width: 100vw;
+  height: 100vh;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 9998;
+  animation: screen-flash 0.3s ease-out forwards;
+}
+
+@keyframes screen-flash {
+  0% { opacity: 0.25; }
+  100% { opacity: 0; }
 }
 
 .auth-container {

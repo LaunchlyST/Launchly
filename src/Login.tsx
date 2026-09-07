@@ -22,48 +22,97 @@ export function Login({ onSwitchToSignUp }: LoginProps) {
 
   const validateEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-  const colors = ['#5b5ef4', '#8b5cf6', '#00d4ff', '#f59e0b', '#10b981', '#e5484d', '#ec4899'];
+  const colors = ['#5b5ef4', '#8b5cf6', '#00d4ff', '#f59e0b', '#10b981', '#e5484d', '#ec4899', '#a855f7', '#06b6d4'];
+  const sparkles = ['✦', '✧', '⚡', '★', '❋', '✦', '◆'];
   const handleSplash = (e: React.MouseEvent) => {
     const color = colors[Math.floor(Math.random() * colors.length)];
+    const color2 = colors[Math.floor(Math.random() * colors.length)];
     const x = e.clientX;
     const y = e.clientY;
+
+    // Screen flash
+    const flash = document.createElement('div');
+    flash.className = 'splash-flash';
+    flash.style.background = `radial-gradient(circle at ${x}px ${y}px, ${color}40, transparent 60%)`;
+    document.body.appendChild(flash);
+    flash.addEventListener('animationend', () => flash.remove());
 
     // Glow burst
     const glow = document.createElement('div');
     glow.className = 'splash-glow';
     glow.style.left = `${x}px`;
     glow.style.top = `${y}px`;
-    glow.style.background = `radial-gradient(circle, ${color}, transparent)`;
-    glow.style.boxShadow = `0 0 40px 10px ${color}`;
+    glow.style.background = `radial-gradient(circle, ${color}, ${color2}, transparent)`;
+    glow.style.boxShadow = `0 0 60px 20px ${color}80, 0 0 120px 40px ${color2}40`;
     document.body.appendChild(glow);
     glow.addEventListener('animationend', () => glow.remove());
 
-    // 2 expanding rings
-    for (let i = 0; i < 2; i++) {
+    // 3 expanding rings
+    for (let i = 0; i < 3; i++) {
       const ring = document.createElement('div');
       ring.className = 'splash-ring';
       ring.style.left = `${x}px`;
       ring.style.top = `${y}px`;
-      ring.style.borderColor = color;
-      ring.style.animationDelay = `${i * 0.1}s`;
+      ring.style.borderColor = i % 2 === 0 ? color : color2;
+      ring.style.animationDelay = `${i * 0.08}s`;
       document.body.appendChild(ring);
       ring.addEventListener('animationend', () => ring.remove());
     }
 
-    // 8 particles flying outward
-    for (let i = 0; i < 8; i++) {
+    // 16 particles flying outward in all directions
+    for (let i = 0; i < 16; i++) {
       const particle = document.createElement('div');
       particle.className = 'splash-particle';
-      const angle = (i / 8) * Math.PI * 2;
-      const dist = 60 + Math.random() * 80;
+      const angle = (i / 16) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
+      const dist = 80 + Math.random() * 140;
+      const size = 3 + Math.random() * 5;
+      const c = Math.random() > 0.5 ? color : color2;
+      const dur = 0.4 + Math.random() * 0.4;
       particle.style.left = `${x}px`;
       particle.style.top = `${y}px`;
-      particle.style.background = color;
-      particle.style.boxShadow = `0 0 6px ${color}`;
+      particle.style.width = `${size}px`;
+      particle.style.height = `${size}px`;
+      particle.style.background = c;
+      particle.style.boxShadow = `0 0 ${size * 2}px ${c}`;
       particle.style.setProperty('--px', `${Math.cos(angle) * dist}px`);
       particle.style.setProperty('--py', `${Math.sin(angle) * dist}px`);
+      particle.style.setProperty('--dur', `${dur}s`);
       document.body.appendChild(particle);
       particle.addEventListener('animationend', () => particle.remove());
+    }
+
+    // 8 trailing particles (slower, smaller)
+    for (let i = 0; i < 8; i++) {
+      const trail = document.createElement('div');
+      trail.className = 'splash-trail';
+      const angle = (i / 8) * Math.PI * 2 + Math.random() * 0.5;
+      const dist = 40 + Math.random() * 60;
+      trail.style.left = `${x}px`;
+      trail.style.top = `${y}px`;
+      trail.style.background = color;
+      trail.style.boxShadow = `0 0 4px ${color}`;
+      trail.style.setProperty('--tx', `${Math.cos(angle) * dist}px`);
+      trail.style.setProperty('--ty', `${Math.sin(angle) * dist}px`);
+      document.body.appendChild(trail);
+      trail.addEventListener('animationend', () => trail.remove());
+    }
+
+    // 5 floating sparkles
+    for (let i = 0; i < 5; i++) {
+      const sparkle = document.createElement('div');
+      sparkle.className = 'splash-sparkle';
+      sparkle.textContent = sparkles[Math.floor(Math.random() * sparkles.length)];
+      const sx = -40 + Math.random() * 80;
+      const sy = -60 - Math.random() * 40;
+      sparkle.style.left = `${x - 8}px`;
+      sparkle.style.top = `${y - 8}px`;
+      sparkle.style.color = Math.random() > 0.5 ? color : color2;
+      sparkle.style.textShadow = `0 0 8px ${color}`;
+      sparkle.style.setProperty('--sx', `${sx}px`);
+      sparkle.style.setProperty('--sy', `${sy}px`);
+      sparkle.style.animationDelay = `${i * 0.05}s`;
+      document.body.appendChild(sparkle);
+      sparkle.addEventListener('animationend', () => sparkle.remove());
     }
   };
 
