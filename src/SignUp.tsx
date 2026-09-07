@@ -29,6 +29,17 @@ export function SignUp({ onSwitchToLogin }: SignUpProps) {
 
   const validateEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
+  const colors = ['#5b5ef4', '#8b5cf6', '#00d4ff', '#f59e0b', '#10b981', '#e5484d', '#ec4899'];
+  const handleSplash = (e: React.MouseEvent) => {
+    const el = document.createElement('div');
+    el.className = 'splash';
+    el.style.left = `${e.clientX}px`;
+    el.style.top = `${e.clientY}px`;
+    el.style.background = `radial-gradient(circle, ${colors[Math.floor(Math.random() * colors.length)]}, transparent)`;
+    document.body.appendChild(el);
+    el.addEventListener('animationend', () => el.remove());
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -84,7 +95,7 @@ export function SignUp({ onSwitchToLogin }: SignUpProps) {
   };
 
   return (
-    <div className="auth-page">
+    <div className="auth-page" onClick={handleSplash}>
       <div className="stars" />
       <div className="auth-container">
         <form className="form" onSubmit={handleSubmit}>
