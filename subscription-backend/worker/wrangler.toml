@@ -1,0 +1,12 @@
+name = "launchly-subscription-worker"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+[vars]
+FRONTEND_URL = "https://launchly.pazeruga.workers.dev"
+
+# Set these via `wrangler secret put`
+# STRIPE_SECRET_KEY
+# STRIPE_WEBHOOK_SECRET
+# SUPABASE_URL
+# SUPABASE_SERVICE_ROLE_KEY

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from './auth-store';
 
+const WORKER_URL = import.meta.env.VITE_WORKER_URL || 'http://localhost:8787';
+
 interface SignUpProps {
   onSwitchToLogin: () => void;
 }
@@ -50,19 +52,24 @@ export function SignUp({ onSwitchToLogin }: SignUpProps) {
     setLoading(true);
     try {
       const { error: signUpError, session } = await signUp(email, password);
-      console.log('[SignUp] result:', { session, signUpError: signUpError?.message });
       if (signUpError) {
-        console.log('[SignUp] error:', signUpError.message);
         setError(signUpError.message);
       } else if (session && session.user) {
-        console.log('[SignUp] session found, user logged in:', session.user.email);
-        setSuccess('Logged in successfully!');
+        try {
+          const res = await fetch(`${WORKER_URL}/api/subscription?userId=${session.user.id}`);
+          const data = await res.json();
+          if (data.subscription_status === 'active') {
+            window.location.href = '/dashboard';
+          } else {
+            window.location.href = '/pricing';
+          }
+        } catch {
+          window.location.href = '/pricing';
+        }
       } else {
-        console.log('[SignUp] no session, email confirmation required');
         setSuccess('Check your email to confirm your account, then log in.');
       }
-    } catch (err) {
-      console.log('[SignUp] unexpected error:', err);
+    } catch {
       setError('An unexpected error occurred.');
     } finally {
       setLoading(false);
@@ -109,7 +116,7 @@ export function SignUp({ onSwitchToLogin }: SignUpProps) {
             placeholder="Email"
             name="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => { setEmail(e.target.value); setError(''); }}
             required
           />
 
@@ -118,7 +125,7 @@ export function SignUp({ onSwitchToLogin }: SignUpProps) {
             placeholder="Password"
             name="password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => { setPassword(e.target.value); setError(''); }}
             required
             minLength={6}
           />
@@ -128,12 +135,15 @@ export function SignUp({ onSwitchToLogin }: SignUpProps) {
             placeholder="Confirm Password"
             name="confirmPassword"
             value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
+            onChange={(e) => { setConfirmPassword(e.target.value); setError(''); }}
             required
           />
 
+          {error && <div className="auth-error">{error}</div>}
+          {success && <div className="auth-success">{success}</div>}
+
           <button type="submit" className="oauthButton" disabled={loading}>
-            Create Account
+            {loading ? 'Creating account...' : 'Create Account'}
             <svg className="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="m6 17 5-5-5-5" />
               <path d="m13 17 5-5-5-5" />
