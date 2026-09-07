@@ -53,10 +53,14 @@ export function SignUp({ onSwitchToLogin }: SignUpProps) {
     try {
       const { error: signUpError, session } = await signUp(email, password);
       if (signUpError) {
-        const msg = signUpError.message.includes('Email rate limit exceeded')
-          ? 'Too many email attempts. Please wait a few minutes and try again.'
-          : signUpError.message;
-        setError(msg);
+        const msg = signUpError.message;
+        if (msg.includes('Email rate limit exceeded') || msg.includes('rate limit')) {
+          setError('Too many attempts. Please wait a few minutes and try again.');
+        } else if (msg.includes('already registered') || msg.includes('already been registered') || msg.includes('User already')) {
+          setError('An account with this email already exists. Please log in.');
+        } else {
+          setError('We couldn\'t create your account. Please try again.');
+        }
       } else if (session && session.user) {
         try {
           const res = await fetch(`${WORKER_URL}/api/subscription?userId=${session.user.id}`);
@@ -146,7 +150,7 @@ export function SignUp({ onSwitchToLogin }: SignUpProps) {
           {success && <div className="auth-success">{success}</div>}
 
           <button type="submit" className="oauthButton" disabled={loading}>
-            {loading ? 'Creating account...' : 'Create Account'}
+            {loading ? 'Creating Account...' : 'Create Account'}
             <svg className="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="m6 17 5-5-5-5" />
               <path d="m13 17 5-5-5-5" />
@@ -156,7 +160,7 @@ export function SignUp({ onSwitchToLogin }: SignUpProps) {
           <p className="form-switch">
             Already have an account?{' '}
             <button type="button" className="form-switch-link" onClick={onSwitchToLogin}>
-              Sign In
+              Log In
             </button>
           </p>
         </form>

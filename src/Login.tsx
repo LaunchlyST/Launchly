@@ -60,7 +60,7 @@ export function Login({ onSwitchToSignUp }: LoginProps) {
         <form className="form" onSubmit={handleSubmit}>
           <p>
             Welcome back,
-            <span>sign in to continue</span>
+            <span>log in to continue</span>
           </p>
 
           <button type="button" className="oauthButton">
@@ -108,7 +108,7 @@ export function Login({ onSwitchToSignUp }: LoginProps) {
           {error && <div className="auth-error">{error}</div>}
 
           <button type="submit" className="oauthButton" disabled={loading}>
-            {loading ? 'Signing in...' : 'Continue'}
+            {loading ? 'Logging in...' : 'Log In'}
             <svg className="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="m6 17 5-5-5-5" />
               <path d="m13 17 5-5-5-5" />
