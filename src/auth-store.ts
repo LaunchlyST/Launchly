@@ -24,7 +24,8 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   signUp: async (email, password) => {
     try {
-      const emailRedirectTo = window.location.origin;
+      const APP_URL = "https://launchly.pazeruga.workers.dev";
+      const emailRedirectTo = APP_URL;
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
