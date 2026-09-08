@@ -4,6 +4,7 @@ import { Film, Monitor, Sliders, Layers } from 'lucide-react';
 import { EditorBackdrop } from './EditorBackdrop';
 import { FilmGrain } from './FilmGrain';
 import { UnlockSequence, UnlockPhase, PHASE_AT } from './UnlockSequence';
+import { PremiumPaywall } from './PremiumPaywall';
 import './editor-backdrop.css';
 import './paywall.css';
 
@@ -155,6 +156,21 @@ export function Paywall({
 
   if (phase === 'done') {
     return <UnlockSequence phase="settle" />;
+  }
+
+  /* The unpaid gate is its own premium scene. Every other state — verifying,
+     the unlock cinematic, and the 'active' room shown on /pricing — keeps the
+     original treatment below. Declared after all hooks, so the hook count is
+     unchanged on every render. */
+  if (variant === 'gate' && !verifying && !unlocking && phase === 'idle') {
+    return (
+      <PremiumPaywall
+        onUnlock={handleUnlock}
+        busy={busy}
+        error={error}
+        onDismiss={onDismiss}
+      />
+    );
   }
 
   return (

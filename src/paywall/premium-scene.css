@@ -1,0 +1,306 @@
+/* ==========================================================================
+   The room behind the offer.
+   Charcoal → deep blue, one warm source low-right, everything else cool.
+   Transform/opacity only: no layout thrash, no paint storms.
+   ========================================================================== */
+
+.ps {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: #05060a;
+}
+
+.ps__ground {
+  position: absolute;
+  inset: -6%;
+  background:
+    radial-gradient(70% 55% at 78% 88%, rgba(242, 169, 59, 0.16), transparent 62%),
+    radial-gradient(60% 50% at 18% 12%, rgba(58, 104, 168, 0.14), transparent 66%),
+    linear-gradient(168deg, #070910 0%, #0a0f1a 44%, #080a11 100%);
+}
+
+.ps__camera {
+  position: absolute;
+  inset: 0;
+  transform-origin: 62% 70%;
+  will-change: transform;
+}
+
+/* ---- ridges: layered depth, receding into haze -------------------------- */
+
+.ps__ridge {
+  position: absolute;
+  left: -12%;
+  right: -12%;
+  border-radius: 46% 54% 0 0 / 100% 100% 0 0;
+  will-change: transform;
+}
+
+.ps__ridge--1 {
+  bottom: -30%;
+  height: 62%;
+  background: linear-gradient(180deg, rgba(24, 38, 60, 0.5), rgba(8, 11, 18, 0.9));
+  filter: blur(14px);
+  opacity: 0.55;
+}
+
+.ps__ridge--2 {
+  bottom: -34%;
+  height: 54%;
+  left: -22%;
+  right: 6%;
+  background: linear-gradient(180deg, rgba(18, 30, 48, 0.72), rgba(6, 9, 15, 0.95));
+  filter: blur(8px);
+  opacity: 0.7;
+}
+
+.ps__ridge--3 {
+  bottom: -38%;
+  height: 46%;
+  left: 4%;
+  right: -20%;
+  background: linear-gradient(180deg, rgba(13, 21, 34, 0.9), rgba(5, 7, 12, 0.99));
+  filter: blur(4px);
+  opacity: 0.85;
+}
+
+.ps__ridge--4 {
+  bottom: -42%;
+  height: 38%;
+  left: -16%;
+  right: -8%;
+  background: linear-gradient(180deg, #080b12, #05060a);
+  filter: blur(1px);
+}
+
+/* ---- beams -------------------------------------------------------------- */
+
+.ps__beam {
+  position: absolute;
+  transform-origin: top center;
+  filter: blur(26px);
+  mix-blend-mode: screen;
+}
+
+.ps__beam--a {
+  top: -18%;
+  right: 6%;
+  width: 42%;
+  height: 116%;
+  background: linear-gradient(
+    182deg,
+    rgba(242, 169, 59, 0.3) 0%,
+    rgba(242, 169, 59, 0.09) 42%,
+    transparent 72%
+  );
+  clip-path: polygon(38% 0, 62% 0, 100% 100%, 0 100%);
+}
+
+.ps__beam--b {
+  top: -10%;
+  left: 12%;
+  width: 30%;
+  height: 96%;
+  background: linear-gradient(184deg, rgba(96, 148, 214, 0.2), transparent 66%);
+  clip-path: polygon(42% 0, 58% 0, 92% 100%, 8% 100%);
+}
+
+/* ---- ring / orbit ------------------------------------------------------- */
+
+.ps__orbit-wrap {
+  position: absolute;
+  top: 46%;
+  right: 16%;
+  width: min(30vw, 340px);
+  aspect-ratio: 1;
+  transform: translate(0, -50%);
+  will-change: transform;
+}
+
+.ps__ring,
+.ps__ring--inner,
+.ps__halo {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+}
+
+.ps__ring {
+  border: 1px solid rgba(242, 169, 59, 0.22);
+  box-shadow:
+    inset 0 0 40px rgba(242, 169, 59, 0.07),
+    0 0 60px rgba(242, 169, 59, 0.05);
+  will-change: transform;
+}
+
+/* One brighter arc so the rotation reads. */
+.ps__ring::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  border-top-color: rgba(242, 169, 59, 0.55);
+  border-right-color: rgba(242, 169, 59, 0.18);
+}
+
+.ps__ring--inner {
+  inset: 16%;
+  border: 1px solid rgba(150, 190, 240, 0.14);
+  box-shadow: inset 0 0 30px rgba(90, 140, 200, 0.06);
+}
+
+.ps__ring--inner::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  border-bottom-color: rgba(160, 200, 250, 0.4);
+}
+
+.ps__halo {
+  inset: 22%;
+  background: radial-gradient(circle, rgba(242, 169, 59, 0.16), transparent 68%);
+  filter: blur(18px);
+}
+
+/* ---- glass panels ------------------------------------------------------- */
+
+.ps__glass {
+  position: absolute;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: linear-gradient(
+    148deg,
+    rgba(255, 255, 255, 0.055),
+    rgba(255, 255, 255, 0.012) 46%,
+    rgba(255, 255, 255, 0.035)
+  );
+  backdrop-filter: blur(3px);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+  will-change: transform;
+}
+
+.ps__glass--1 {
+  top: 16%;
+  right: 30%;
+  width: min(20vw, 230px);
+  height: min(26vh, 190px);
+  transform: rotate(-9deg);
+}
+
+.ps__glass--2 {
+  bottom: 18%;
+  right: 9%;
+  width: min(17vw, 200px);
+  height: min(21vh, 160px);
+  transform: rotate(7deg);
+}
+
+.ps__glass--3 {
+  top: 34%;
+  right: 5%;
+  width: min(12vw, 140px);
+  height: min(15vh, 120px);
+  transform: rotate(-15deg);
+  opacity: 0.7;
+}
+
+/* ---- orbs --------------------------------------------------------------- */
+
+.ps__orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(1px);
+  will-change: transform;
+}
+
+.ps__orb--1 {
+  top: 24%;
+  right: 46%;
+  width: 92px;
+  height: 92px;
+  background:
+    radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.2), transparent 46%),
+    radial-gradient(circle at 62% 74%, rgba(242, 169, 59, 0.2), transparent 60%);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+
+.ps__orb--2 {
+  bottom: 30%;
+  right: 40%;
+  width: 54px;
+  height: 54px;
+  background:
+    radial-gradient(circle at 34% 30%, rgba(255, 255, 255, 0.16), transparent 48%),
+    radial-gradient(circle at 66% 70%, rgba(96, 148, 214, 0.2), transparent 62%);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* ---- atmosphere --------------------------------------------------------- */
+
+.ps__dust {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.ps__haze {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(10, 14, 22, 0.32) 0%,
+    transparent 26%,
+    transparent 62%,
+    rgba(5, 6, 10, 0.62) 100%
+  );
+}
+
+.ps__vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(120% 90% at 50% 45%, transparent 42%, rgba(2, 3, 6, 0.72) 100%);
+}
+
+.ps__grain {
+  position: absolute;
+  inset: -50%;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: ps-grain 7s steps(6) infinite;
+}
+
+@keyframes ps-grain {
+  0% { transform: translate(0, 0); }
+  20% { transform: translate(-3%, 2%); }
+  40% { transform: translate(2%, -3%); }
+  60% { transform: translate(-2%, -2%); }
+  80% { transform: translate(3%, 2%); }
+  100% { transform: translate(0, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ps__grain {
+    animation: none;
+  }
+}
+
+/* On narrow screens the scene sits behind the content, so quieten it. */
+@media (max-width: 900px) {
+  .ps__glass--1,
+  .ps__glass--3,
+  .ps__orb--1 {
+    display: none;
+  }
+  .ps__orbit-wrap {
+    top: 26%;
+    right: -10%;
+    opacity: 0.6;
+  }
+}

@@ -1,0 +1,453 @@
+/* ==========================================================================
+   The unpaid gate. Dark, warm on one side only, nothing centred by default.
+   ========================================================================== */
+
+.pp {
+  --ink: 237, 238, 241;
+  --amber: #f2a93b;
+  --hairline: rgba(255, 255, 255, 0.08);
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  overflow: hidden;
+  background: #05060a;
+  color: rgb(var(--ink));
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* The offer scrolls; the scene behind it does not. */
+.pp__scroll {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
+}
+
+.pp__col {
+  width: min(560px, calc(100% - 12vw));
+  margin-left: max(6vw, 32px);
+  padding: clamp(72px, 12vh, 140px) 0 clamp(72px, 14vh, 160px);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+/* ---- type --------------------------------------------------------------- */
+
+.pp__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 22px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  color: rgba(var(--ink), 0.5);
+}
+
+.pp__eyebrow-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--amber);
+  box-shadow: 0 0 10px rgba(242, 169, 59, 0.8);
+  animation: pp-pulse 3.4s var(--ease) infinite;
+}
+
+@keyframes pp-pulse {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.25); }
+}
+
+.pp__headline {
+  margin: 0 0 20px;
+  font-size: clamp(38px, 5.4vw, 66px);
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+  font-weight: 500;
+  background: linear-gradient(172deg, #ffffff 12%, rgba(226, 232, 240, 0.74) 92%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.pp__lede {
+  margin: 0 0 34px;
+  max-width: 46ch;
+  font-size: 15.5px;
+  line-height: 1.62;
+  color: rgba(var(--ink), 0.58);
+}
+
+.pp__divider {
+  width: 100%;
+  height: 1px;
+  margin-bottom: 12px;
+  background: linear-gradient(
+    90deg,
+    rgba(242, 169, 59, 0.45),
+    rgba(255, 255, 255, 0.09) 34%,
+    transparent 84%
+  );
+}
+
+/* ---- features ----------------------------------------------------------- */
+
+.pp__features {
+  list-style: none;
+  margin: 0 0 clamp(44px, 7vh, 76px);
+  padding: 0;
+  width: 100%;
+}
+
+.pf__row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  align-items: center;
+  gap: 16px;
+  padding: 17px 12px 17px 0;
+  border-radius: 12px;
+  transition: background 320ms var(--ease), transform 320ms var(--ease);
+}
+
+.pf__row.is-hot {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.045), transparent 72%);
+  transform: translateX(4px);
+}
+
+.pf__mark {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid var(--hairline);
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.012));
+  backdrop-filter: blur(6px);
+  color: rgba(var(--ink), 0.62);
+  transition: color 320ms var(--ease), border-color 320ms var(--ease),
+    box-shadow 320ms var(--ease);
+}
+
+.pf__row.is-hot .pf__mark {
+  color: var(--amber);
+  border-color: rgba(242, 169, 59, 0.34);
+  box-shadow: 0 0 26px rgba(242, 169, 59, 0.14);
+}
+
+.pf__motif {
+  width: 26px;
+  height: 26px;
+}
+
+.pf__text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.pf__label {
+  font-size: 14.5px;
+  font-weight: 450;
+  color: rgba(var(--ink), 0.9);
+}
+
+.pf__detail {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: rgba(var(--ink), 0.42);
+}
+
+.pf__rule {
+  position: absolute;
+  left: 60px;
+  right: 12px;
+  bottom: 0;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.pf__row:last-child .pf__rule {
+  display: none;
+}
+
+/* ---- CTA ---------------------------------------------------------------- */
+
+.pp__cta-zone {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 30px 0 4px;
+  width: 100%;
+}
+
+.pp__cta-glow {
+  position: absolute;
+  left: -40px;
+  top: 4px;
+  width: 320px;
+  height: 150px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(242, 169, 59, 0.2), transparent 66%);
+  filter: blur(34px);
+  opacity: 0;
+  transition: opacity 900ms var(--ease);
+  pointer-events: none;
+}
+
+.pp__cta-zone.is-near .pp__cta-glow {
+  opacity: 1;
+  animation: pp-breathe 5.5s ease-in-out infinite;
+}
+
+@keyframes pp-breathe {
+  0%, 100% { transform: scale(1); opacity: 0.75; }
+  50% { transform: scale(1.09); opacity: 1; }
+}
+
+/* Two arcs that sit around the button. */
+.pp__cta-orbit {
+  position: absolute;
+  left: 14px;
+  top: 22px;
+  width: 232px;
+  height: 92px;
+  border-radius: 50%;
+  border: 1px solid rgba(242, 169, 59, 0.14);
+  border-right-color: transparent;
+  border-bottom-color: transparent;
+  opacity: 0;
+  transition: opacity 900ms var(--ease);
+  pointer-events: none;
+}
+
+.pp__cta-orbit--2 {
+  left: -6px;
+  top: 8px;
+  width: 288px;
+  height: 122px;
+  border-color: rgba(150, 190, 240, 0.1);
+  border-left-color: transparent;
+  border-top-color: transparent;
+}
+
+.pp__cta-zone.is-near .pp__cta-orbit {
+  opacity: 1;
+  animation: pp-orbit 26s linear infinite;
+}
+
+.pp__cta-zone.is-near .pp__cta-orbit--2 {
+  animation: pp-orbit 34s linear infinite reverse;
+}
+
+@keyframes pp-orbit {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.pp__cta {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  height: 56px;
+  padding: 0 34px;
+  border: none;
+  border-radius: 15px;
+  background: linear-gradient(168deg, #ffc76b, var(--amber) 52%, #d98b22);
+  color: #17110a;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  box-shadow:
+    0 14px 40px rgba(242, 169, 59, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.42);
+  transition: transform 260ms var(--ease), box-shadow 260ms var(--ease),
+    filter 260ms var(--ease);
+  animation: pp-cta-in 900ms var(--ease) both 0.72s;
+}
+
+@keyframes pp-cta-in {
+  from { opacity: 0; transform: scale(0.94) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.pp__cta:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow:
+    0 20px 54px rgba(242, 169, 59, 0.36),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  filter: brightness(1.04);
+}
+
+.pp__cta:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.pp__cta:focus-visible {
+  outline: 2px solid rgba(255, 214, 150, 0.9);
+  outline-offset: 3px;
+}
+
+.pp__cta:disabled {
+  cursor: progress;
+  filter: saturate(0.6) brightness(0.9);
+}
+
+.pp__cta-text {
+  position: relative;
+  z-index: 1;
+}
+
+.pp__ripple {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+  transform: scale(0);
+  animation: pp-ripple 720ms var(--ease) forwards;
+  pointer-events: none;
+}
+
+@keyframes pp-ripple {
+  to { transform: scale(34); opacity: 0; }
+}
+
+.pp__micro {
+  margin: 18px 0 0;
+  font-size: 12.5px;
+  color: rgba(var(--ink), 0.4);
+}
+
+.pp__ghost {
+  margin-top: 16px;
+  padding: 8px 0;
+  border: none;
+  background: none;
+  color: rgba(var(--ink), 0.42);
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  border-bottom: 1px solid transparent;
+  transition: color 240ms var(--ease), border-color 240ms var(--ease);
+}
+
+.pp__ghost:hover {
+  color: rgba(var(--ink), 0.78);
+  border-bottom-color: rgba(255, 255, 255, 0.22);
+}
+
+.pp__ghost:focus-visible {
+  outline: 1px solid rgba(255, 255, 255, 0.4);
+  outline-offset: 4px;
+  border-radius: 3px;
+}
+
+/* A calm notice, never a stack trace. */
+.pp__notice {
+  margin: 20px 0 0;
+  padding: 12px 16px;
+  max-width: 42ch;
+  border-radius: 11px;
+  border: 1px solid rgba(242, 169, 59, 0.22);
+  background: rgba(242, 169, 59, 0.06);
+  color: rgba(var(--ink), 0.72);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* ---- sound toggle ------------------------------------------------------- */
+
+.pp__sound {
+  position: absolute;
+  z-index: 3;
+  top: 22px;
+  right: 24px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--hairline);
+  background: rgba(12, 16, 24, 0.5);
+  backdrop-filter: blur(10px);
+  color: rgba(var(--ink), 0.6);
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition: color 260ms var(--ease), border-color 260ms var(--ease),
+    background 260ms var(--ease);
+}
+
+.pp__sound:hover {
+  color: rgb(var(--ink));
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.pp__sound:focus-visible {
+  outline: 2px solid rgba(255, 214, 150, 0.8);
+  outline-offset: 2px;
+}
+
+.pp__sound[aria-pressed='true'] {
+  color: var(--amber);
+  border-color: rgba(242, 169, 59, 0.3);
+}
+
+/* ---- responsive --------------------------------------------------------- */
+
+@media (max-width: 900px) {
+  .pp__col {
+    width: calc(100% - 44px);
+    margin-left: 22px;
+  }
+  .pp__sound-label {
+    display: none;
+  }
+  .pp__sound {
+    padding: 0 11px;
+  }
+  .pp__cta {
+    width: 100%;
+  }
+  .pp__cta-orbit {
+    display: none;
+  }
+}
+
+/* ---- reduced motion ----------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .pp__scroll {
+    scroll-behavior: auto;
+  }
+  .pp__eyebrow-dot,
+  .pp__cta,
+  .pp__cta-zone.is-near .pp__cta-glow,
+  .pp__cta-zone.is-near .pp__cta-orbit,
+  .pp__cta-zone.is-near .pp__cta-orbit--2 {
+    animation: none;
+  }
+  .pp__ripple {
+    display: none;
+  }
+  .pf__row,
+  .pf__mark,
+  .pp__cta {
+    transition-duration: 1ms;
+  }
+}
