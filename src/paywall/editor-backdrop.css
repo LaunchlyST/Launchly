@@ -1,0 +1,151 @@
+/* Structural editor chrome. Cool greys only — the warm point belongs to the
+   button. Sizes are absolute so the blurred copy and the arrival copy match. */
+
+.eb {
+  --eb-panel: #171d26;
+  --eb-rail: #12171f;
+  --eb-stage: #0b0e13;
+  --eb-clip: #232d3a;
+  --eb-thumb-a: #232f3d;
+  --eb-thumb-b: #1a2430;
+  --eb-viewer: radial-gradient(66% 78% at 48% 38%, #4d6580 0%, #2b3a4a 52%, #161d26 88%, #10151b 100%);
+  --eb-head: rgba(255, 255, 255, 0.16);
+  --eb-label: rgba(255, 255, 255, 0.13);
+
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: 56px 264px 1fr 288px;
+  background: var(--eb-panel);
+  color: #ecedef;
+  user-select: none;
+}
+
+.eb__rail {
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 20px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  background: var(--eb-rail);
+}
+.eb__rail-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  background: var(--eb-head);
+}
+
+.eb__library {
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 18px 16px;
+  background: var(--eb-panel);
+}
+
+.eb__panel-head {
+  height: 10px;
+  width: 82px;
+  border-radius: 3px;
+  background: var(--eb-head);
+  margin-bottom: 18px;
+}
+
+.eb__thumbs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.eb__thumb {
+  aspect-ratio: 16 / 10;
+  border-radius: 7px;
+  background: linear-gradient(160deg, var(--eb-thumb-a) 0%, var(--eb-thumb-b) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.eb__stage {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--eb-stage);
+}
+
+.eb__viewer {
+  flex: 1;
+  margin: 28px 34px;
+  border-radius: 10px;
+  background: var(--eb-viewer);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.eb__timeline {
+  height: 216px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 14px 20px;
+  background: var(--eb-panel);
+}
+.eb__ruler {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.16);
+  margin-bottom: 16px;
+}
+.eb__track {
+  display: flex;
+  gap: 6px;
+  height: 42px;
+  margin-bottom: 10px;
+}
+.eb__clip {
+  border-radius: 5px;
+  background: var(--eb-clip);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.eb__props {
+  border-left: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 18px 18px;
+  background: var(--eb-panel);
+}
+.eb__field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+.eb__field-label {
+  height: 8px;
+  width: 74px;
+  border-radius: 3px;
+  background: var(--eb-label);
+}
+.eb__field-value {
+  height: 8px;
+  width: 40px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+@media (max-width: 860px) {
+  .eb {
+    grid-template-columns: 44px 1fr;
+  }
+  .eb__library,
+  .eb__props {
+    display: none;
+  }
+}
+
+/* Behind the glass: the same room, pushed brighter so 24px of blur and a
+   0.72 brightness stop still leave something to look at. */
+.eb--behind {
+  --eb-panel: #2c384a;
+  --eb-rail: #1a222d;
+  --eb-stage: #0c1118;
+  --eb-clip: #46607d;
+  --eb-thumb-a: #4a6480;
+  --eb-thumb-b: #2e3f52;
+  --eb-viewer: radial-gradient(66% 78% at 48% 38%, #a8c2da 0%, #5b7893 50%, #26333f 88%, #172029 100%);
+  --eb-head: rgba(255, 255, 255, 0.34);
+  --eb-label: rgba(255, 255, 255, 0.3);
+}

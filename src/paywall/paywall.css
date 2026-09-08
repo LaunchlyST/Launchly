@@ -1,49 +1,408 @@
-/* paywall — glass modal with abit invisible background */
-.paywall-overlay {
+/* ==========================================================================
+   The grading suite at night.
+   One warm source (#F2A93B, the button) in a cool, unevenly lit room.
+   Nothing here is pure black or pure white; nothing is centred; nothing bounces.
+   ========================================================================== */
+
+.pw {
+  --room-0: #0a0b0d;
+  --room-1: #101318;
+  --spill: #16202a;
+  --ink: 236, 237, 239; /* #ECEDEF */
+  --hairline: rgba(255, 255, 255, 0.08);
+  --amber: #f2a93b;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+
   position: fixed;
   inset: 0;
-  z-index: 1200;
-  background: rgba(255,255,255,0.22);
-  backdrop-filter: blur(8px) saturate(130%);
-  -webkit-backdrop-filter: blur(8px) saturate(130%);
+  overflow: hidden;
+  background: var(--room-0);
+  color: rgb(var(--ink));
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-variant-numeric: tabular-nums;
+  z-index: 40;
+}
+
+/* ---------- Layer 1: the room (the real editor, out of reach) ------------ */
+
+.pw__room {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transform-origin: 52% 46%;
+  will-change: transform, filter;
+}
+
+.pw__room-inner {
+  position: absolute;
+  inset: 0;
+  filter: blur(24px) saturate(0.15) brightness(0.72);
+}
+
+/* Chromatic aberration: a red and a cyan copy, half a pixel apart.
+   Barely perceptible on its own, but the edge stops looking like CSS blur. */
+.pw__room-fringe {
+  position: absolute;
+  inset: 0;
+  filter: blur(24px) saturate(0.15) brightness(0.72);
+  mix-blend-mode: screen;
+  opacity: 0.16;
+}
+.pw__room-fringe--r {
+  transform: translateX(0.5px);
+  background: rgba(255, 40, 40, 0.001);
+}
+.pw__room-fringe--c {
+  transform: translateX(-0.5px);
+}
+
+/* It is a screen, so it has scanlines. */
+.pw__scanlines {
+  position: absolute;
+  inset: -2px;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.02) 0px,
+    rgba(255, 255, 255, 0.02) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+}
+
+/* Cool cast — a screen glowing in a dark room. */
+.pw__cast {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      100deg,
+      rgba(10, 11, 13, 0.86) 0%,
+      rgba(10, 11, 13, 0.5) 30%,
+      rgba(22, 32, 42, 0.1) 66%,
+      rgba(22, 32, 42, 0.04) 100%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(22, 32, 42, 0.14) 0%,
+      rgba(16, 19, 24, 0.16) 62%,
+      rgba(10, 11, 13, 0.4) 100%
+    );
+}
+
+/* ---------- Layer 2: light falloff ---------------------------------------
+   Brightest where the content sits (left of centre), falling away to the
+   edges. A soft radial plus a slow vignette — never a flat scrim. */
+
+.pw__falloff {
+  position: absolute;
+  inset: -12%;
+  pointer-events: none;
+  background: radial-gradient(
+    72% 82% at 34% 48%,
+    rgba(22, 32, 42, 0.16) 0%,
+    rgba(16, 19, 24, 0.1) 42%,
+    rgba(10, 11, 13, 0.5) 80%,
+    rgba(10, 11, 13, 0.78) 100%
+  );
+  will-change: transform;
+}
+
+.pw__vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    120% 110% at 50% 50%,
+    transparent 48%,
+    rgba(10, 11, 13, 0.5) 100%
+  );
+}
+
+/* ---------- Layer 3: film grain, over everything ------------------------- */
+
+.pw__grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.03;
+  mix-blend-mode: overlay;
+  z-index: 30;
+}
+
+/* ---------- Foreground: columns 2–6 of 12, left, vertically centred ------ */
+
+.pw__grid {
+  position: relative;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  align-items: center;
+  height: 100%;
+  padding: 0 clamp(24px, 4vw, 72px);
+}
+
+.pw__col {
+  grid-column: 2 / span 5;
+  max-width: 560px;
+}
+
+.pw__eyebrow {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(var(--ink), 0.34);
+  margin-bottom: 22px;
+}
+
+.pw__headline {
+  font-family: 'Space Grotesk', 'Inter', sans-serif;
+  font-size: 56px;
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  line-height: 1.02;
+  font-optical-sizing: auto;
+  color: rgb(var(--ink));
+  margin: 0 0 20px;
+}
+
+.pw__body {
+  font-size: 16px;
+  line-height: 1.6;
+  color: rgba(var(--ink), 0.52);
+  max-width: 38ch;
+  margin: 0 0 34px;
+}
+
+/* ---------- Feature rows: hairlines, thin-stroke icons, no bullets ------- */
+
+.pw__rows {
+  border-top: 1px solid var(--hairline);
+  margin-bottom: 34px;
+}
+
+.pw__row {
   display: flex;
   align-items: center;
-  justify-content: center;
-  animation: paywall-in 180ms ease;
+  gap: 14px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--hairline);
+  font-size: 14px;
+  font-weight: 450;
+  color: rgba(var(--ink), 0.8);
 }
-.paywall-modal {
+
+.pw__row svg {
+  flex: none;
+  opacity: 0.4;
+}
+
+/* ---------- The one warm element ---------------------------------------- */
+
+.pw__cta {
   position: relative;
-  width: 92%;
-  max-width: 440px;
-  background: #FFFFFF;
-  border: 1px solid var(--launchly-border, #E2E8F0);
-  border-radius: 20px;
-  padding: 28px 24px 20px;
-  text-align: center;
-  box-shadow: 0 20px 60px rgba(15,23,42,0.18);
-  animation: paywall-pop 240ms cubic-bezier(0.22,1,0.36,1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 52px;
+  padding: 0 30px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--amber);
+  color: var(--room-0);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 550;
+  letter-spacing: -0.005em;
+  cursor: pointer;
+  overflow: hidden;
+  transition: filter 180ms var(--ease), transform 180ms var(--ease);
 }
-.paywall-close {
-  position: absolute; top: 10px; right: 10px;
-  width: 28px; height: 28px; border-radius: 8px;
-  border: 1px solid transparent; background: transparent;
-  color: #64748B; font-size: 18px; cursor: pointer;
+
+/* 1px inner highlight, top edge only — the light is above. */
+.pw__cta::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.32);
+  pointer-events: none;
 }
-.paywall-close:hover { background: #F1F5F9; color: #0F172A; }
-.paywall-badge {
-  display: inline-block; font-size: 10px; font-weight: 800; letter-spacing: 0.08em;
-  color: #7C3AED; background: rgba(124,58,237,0.1);
-  padding: 4px 8px; border-radius: 999px; margin-bottom: 10px;
+
+.pw__cta:hover:not(:disabled) {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
 }
-.paywall-title { font-size: 18px; font-weight: 800; color: #0F172A; margin: 0 0 6px; }
-.paywall-desc { font-size: 13px; color: #64748B; margin: 0 0 14px; line-height: 1.5; }
-.paywall-list { text-align: left; font-size: 12.5px; color: #334155; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 12px 14px 12px 22px; margin: 0 0 16px; display: flex; flex-direction: column; gap: 6px; }
-.paywall-actions { display: flex; flex-direction: column; gap: 8px; }
-.paywall-btn { padding: 10px 16px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; border: 1px solid transparent; transition: all 150ms ease; }
-.paywall-btn--primary { background: #0F172A; color: #fff; }
-.paywall-btn--primary:hover { background: #1E293B; transform: translateY(-1px); }
-.paywall-btn--ghost { background: #fff; border-color: #E2E8F0; color: #0F172A; }
-.paywall-btn--ghost:hover { background: #F8FAFC; }
-.paywall-footnote { font-size: 11px; color: #94A3B8; margin: 10px 0 0; }
-@keyframes paywall-in { from { opacity:0; } to { opacity:1; } }
-@keyframes paywall-pop { from { opacity:0; transform: translateY(8px) scale(0.97); } to { opacity:1; transform: translateY(0) scale(1); } }
+
+.pw__cta:disabled {
+  cursor: progress;
+  filter: brightness(0.86);
+}
+
+.pw__cta:focus-visible {
+  outline: 1px solid rgba(242, 169, 59, 0.5);
+  outline-offset: 3px;
+}
+
+.pw__micro {
+  margin-top: 14px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: rgba(var(--ink), 0.34);
+  font-variant-numeric: tabular-nums;
+}
+
+.pw__ghost {
+  margin-top: 20px;
+  display: inline-block;
+  background: none;
+  border: 0;
+  padding: 0;
+  font-family: inherit;
+  font-size: 12.5px;
+  color: rgba(var(--ink), 0.34);
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 180ms var(--ease);
+}
+.pw__ghost:hover {
+  color: rgba(var(--ink), 0.52);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.pw__error {
+  margin-top: 18px;
+  font-size: 12.5px;
+  color: rgba(var(--ink), 0.52);
+  border-left: 1px solid var(--hairline);
+  padding-left: 12px;
+}
+
+/* ---------- Verifying state: never show the paywall mid-verification ----- */
+
+.pw__verify {
+  grid-column: 2 / span 5;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  color: rgba(var(--ink), 0.52);
+}
+
+.pw__verify-bar {
+  position: relative;
+  width: 120px;
+  height: 1px;
+  background: var(--hairline);
+  overflow: hidden;
+}
+.pw__verify-bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  background: rgba(242, 169, 59, 0.55);
+  animation: pw-travel 1900ms cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+@keyframes pw-travel {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(320%); }
+}
+
+/* ---------- Unlock: phase 1, the amber travels the hairlines ------------- */
+
+.pw__release {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 25;
+  opacity: 0;
+  background: radial-gradient(
+    30% 40% at 30% 60%,
+    rgba(242, 169, 59, 0.28) 0%,
+    rgba(242, 169, 59, 0.06) 45%,
+    transparent 72%
+  );
+}
+
+.pw--releasing .pw__rows,
+.pw--releasing .pw__row {
+  border-color: rgba(242, 169, 59, 0.4);
+  transition: border-color 420ms var(--ease);
+}
+
+/* ---------- Mobile: stack, still left-aligned, 24px gutters -------------- */
+
+@media (max-width: 860px) {
+  .pw__grid {
+    padding: 0 24px;
+    align-items: center;
+  }
+  .pw__col,
+  .pw__verify {
+    grid-column: 1 / -1;
+    max-width: none;
+  }
+  .pw__headline {
+    font-size: 34px;
+  }
+  .pw__falloff {
+    background: radial-gradient(
+      92% 66% at 42% 44%,
+      rgba(22, 32, 42, 0.4) 0%,
+      rgba(16, 19, 24, 0.5) 40%,
+      rgba(10, 11, 13, 0.88) 82%,
+      rgba(10, 11, 13, 0.95) 100%
+    );
+  }
+}
+
+/* ---------- Reduced motion ---------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .pw__verify-bar::after {
+    animation: none;
+    width: 100%;
+    opacity: 0.4;
+  }
+}
+
+/* ---------- Active subscription: two actions, one of them warm ----------- */
+
+.pw__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.pw__quiet {
+  height: 52px;
+  padding: 0 22px;
+  border-radius: 14px;
+  border: 1px solid var(--hairline);
+  background: transparent;
+  color: rgba(var(--ink), 0.72);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 450;
+  cursor: pointer;
+  transition: border-color 180ms var(--ease), color 180ms var(--ease);
+}
+
+.pw__quiet:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.18);
+  color: rgb(var(--ink));
+}
+
+.pw__quiet:disabled {
+  cursor: progress;
+  color: rgba(var(--ink), 0.34);
+}
