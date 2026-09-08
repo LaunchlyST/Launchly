@@ -124,11 +124,14 @@ export function App() {
   const hasAnyKey = openaiKey.length > 0 || grokKey.length > 0;
 
   const user = useAuthStore((s) => s.user);
-  const loading = useAuthStore((s) => s.loading);
+  const authLoading = useAuthStore((s) => s.loading);
   const signOut = useAuthStore((s) => s.signOut);
   const [loggingOut, setLoggingOut] = useState(false);
 
   const [route, setRoute] = useState(getRoutePath);
+
+  // Subscription check for route protection
+  const { isActive, loading: subLoading } = useSubscription();
 
   const handlePopState = useCallback(() => {
     setRoute(getRoutePath());
@@ -151,7 +154,10 @@ export function App() {
     navigate('/');
   };
 
-  if (loading) {
+  // Combined loading: auth loading OR subscription loading (when user exists)
+  const isLoading = authLoading || (user && subLoading);
+
+  if (isLoading) {
     return (
       <div className="auth-loading">
         <span className="auth-spinner auth-spinner--lg" />
@@ -222,6 +228,17 @@ export function App() {
         </div>
       );
     }
+
+    // Route-level subscription guard: redirect unpaid users to pricing
+    if (!isActive) {
+      navigate('/pricing');
+      return (
+        <div className="auth-loading">
+          <span className="auth-spinner auth-spinner--lg" />
+        </div>
+      );
+    }
+
     return (
       <div className="app">
         <aside className="app__rail">
@@ -271,11 +288,17 @@ export function App() {
     );
   }
 
+  // Home route (/)
   useEffect(() => {
-    if (!loading && user && route === '/') {
-      navigate('/dashboard');
+    if (!authLoading && user && route === '/') {
+      // Redirect based on subscription status
+      if (isActive) {
+        navigate('/dashboard');
+      } else {
+        navigate('/pricing');
+      }
     }
-  }, [user, loading, route, navigate]);
+  }, [user, authLoading, route, navigate, isActive]);
 
   if (!user) {
     return (
@@ -291,6 +314,7 @@ export function App() {
     );
   }
 
+  // Fallback (should not reach here)
   return (
     <div className="auth-loading">
       <span className="auth-spinner auth-spinner--lg" />

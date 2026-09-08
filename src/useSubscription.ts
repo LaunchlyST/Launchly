@@ -17,7 +17,7 @@ export function useSubscription() {
 
   const fetchSubscription = useCallback(async () => {
     if (!user) {
-      setSubscription(null);
+      setSubscription({ subscription_status: "inactive", subscription_current_period_end: null });
       setLoading(false);
       return;
     }
@@ -25,10 +25,14 @@ export function useSubscription() {
     try {
       setLoading(true);
       const res = await fetch(`${WORKER_URL}/api/subscription?userId=${user.id}`);
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      }
       const data = await res.json();
       setSubscription(data);
       setError(null);
     } catch (err: any) {
+      console.error("[useSubscription] Failed to fetch subscription:", err);
       setError(err.message);
       setSubscription({ subscription_status: "inactive", subscription_current_period_end: null });
     } finally {
