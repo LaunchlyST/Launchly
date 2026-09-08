@@ -126,7 +126,7 @@ export function SignUp({ onSwitchToLogin }: SignUpProps) {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
-        options: { redirectTo: 'https://launchly.pazeruga.workers.dev/' },
+        options: { redirectTo: window.location.origin + '/' },
       });
       if (error) {
         setError(error.message || 'GitHub sign-in failed. Please try again.');
