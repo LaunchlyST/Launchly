@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useAuthStore } from './auth-store';
 import { supabase } from './lib/supabase';
 
-const WORKER_URL = import.meta.env.VITE_WORKER_URL || 'http://localhost:8787';
+import { WORKER_URL, fetchJson } from './useSubscription';
 
 interface LoginProps {
   onSwitchToSignUp: () => void;
@@ -164,8 +164,9 @@ export function Login({ onSwitchToSignUp }: LoginProps) {
 
       if (session && user) {
         try {
-          const res = await fetch(`${WORKER_URL}/api/subscription?userId=${user.id}`);
-          const data = await res.json();
+          const data = await fetchJson(
+            `${WORKER_URL}/api/subscription?userId=${encodeURIComponent(user.id)}`
+          );
           if (data.subscription_status === 'active') {
             window.location.href = '/dashboard';
           } else {

@@ -134,6 +134,15 @@ export function App() {
     navigate('/');
   };
 
+  // Home route (/): declared here, above every early return, so the hook count
+  // is identical on every render. Placing it lower made React see a different
+  // number of hooks once the loading branch stopped returning early.
+  useEffect(() => {
+    if (!authLoading && user && route === '/') {
+      navigate('/dashboard');
+    }
+  }, [user, authLoading, route, navigate]);
+
   // Combined loading: auth loading OR subscription loading (when user exists)
   const isLoading = authLoading || (user && subLoading);
 
@@ -262,13 +271,8 @@ export function App() {
     );
   }
 
-  // Home route (/)
-  useEffect(() => {
-    if (!authLoading && user && route === '/') {
-      navigate('/dashboard');
-    }
-  }, [user, authLoading, route, navigate]);
-
+  // Home route (/) — the redirect effect for this route is declared above, with
+  // the other hooks.
   if (!user) {
     return (
       <div className="app app--auth">

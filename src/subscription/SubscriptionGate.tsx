@@ -8,7 +8,7 @@ interface SubscriptionGateProps {
 }
 
 export function SubscriptionGate({ children }: SubscriptionGateProps) {
-  const { isActive, loading, checkoutLoading, createCheckout, refresh } = useSubscription();
+  const { isActive, loading, checkoutLoading, createCheckout, refresh, error } = useSubscription();
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   // True while we are waiting for the webhook after a completed checkout. The
@@ -94,6 +94,7 @@ export function SubscriptionGate({ children }: SubscriptionGateProps) {
         <Paywall
           onUnlock={createCheckout}
           busy={checkoutLoading}
+          error={error}
           onDismiss={() => window.location.assign('/')}
         />
       </>
