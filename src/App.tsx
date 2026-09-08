@@ -221,53 +221,56 @@ export function App() {
     // No route-level redirect here: an unpaid user stays on /dashboard and
     // meets the paywall in place, over their own blurred editor.
 
+    /* The gate wraps the whole shell, not just the canvas: an unpaid user sees
+       the paywall alone, with no rail and no space reserved for one. The paid
+       tree inside is unchanged. */
     return (
-      <div className="app">
-        <aside className="app__rail">
-          <div className="app__brand" title="Launchly">
-            <Sparkles size={22} strokeWidth={2.2} />
-          </div>
-          <div className="app__rail-divider" />
-          <button
-            className={`app__rail-btn ${!settingsOpen ? 'is-active' : ''}`}
-            title="Create"
-            aria-label="Create"
-          >
-            <Sparkles size={20} />
-          </button>
-          <div className="app__rail-spacer" />
-          <button
-            className="app__rail-btn"
-            onClick={() => setSettingsOpen(true)}
-            title="Settings — Manage API keys"
-            aria-label="Settings"
-          >
-            <Settings size={20} />
-          </button>
-          <div className="app__rail-status">
-            <span
-              className={`app__rail-dot ${hasAnyKey ? 'is-active' : ''}`}
-              title={hasAnyKey ? 'Models connected' : 'No API keys connected'}
-            />
-          </div>
-          <button
-            className="app__rail-btn"
-            onClick={handleLogout}
-            disabled={loggingOut}
-            title="Sign Out"
-            aria-label="Sign Out"
-          >
-            <LogOut size={20} />
-          </button>
-        </aside>
-        <main className="app__main">
-          <AmbientScene />
-          <SubscriptionGate>
+      <SubscriptionGate>
+        <div className="app">
+          <aside className="app__rail">
+            <div className="app__brand" title="Launchly">
+              <Sparkles size={22} strokeWidth={2.2} />
+            </div>
+            <div className="app__rail-divider" />
+            <button
+              className={`app__rail-btn ${!settingsOpen ? 'is-active' : ''}`}
+              title="Create"
+              aria-label="Create"
+            >
+              <Sparkles size={20} />
+            </button>
+            <div className="app__rail-spacer" />
+            <button
+              className="app__rail-btn"
+              onClick={() => setSettingsOpen(true)}
+              title="Settings — Manage API keys"
+              aria-label="Settings"
+            >
+              <Settings size={20} />
+            </button>
+            <div className="app__rail-status">
+              <span
+                className={`app__rail-dot ${hasAnyKey ? 'is-active' : ''}`}
+                title={hasAnyKey ? 'Models connected' : 'No API keys connected'}
+              />
+            </div>
+            <button
+              className="app__rail-btn"
+              onClick={handleLogout}
+              disabled={loggingOut}
+              title="Sign Out"
+              aria-label="Sign Out"
+            >
+              <LogOut size={20} />
+            </button>
+          </aside>
+          <main className="app__main">
+            <AmbientScene />
             <GeneratorPage />
-          </SubscriptionGate>
-        </main>
-        <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
-      </div>
+          </main>
+          <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+        </div>
+      </SubscriptionGate>
     );
   }
 

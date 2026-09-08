@@ -2,6 +2,7 @@ import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { useSubscription } from "../useSubscription";
 import { CheckCircle, XCircle } from "lucide-react";
 import { Paywall } from "../paywall/Paywall";
+import { DashboardPaywall } from "../paywall/DashboardPaywall";
 
 interface SubscriptionGateProps {
   children: ReactNode;
@@ -91,12 +92,7 @@ export function SubscriptionGate({ children }: SubscriptionGateProps) {
     return (
       <>
         {banner}
-        <Paywall
-          onUnlock={createCheckout}
-          busy={checkoutLoading}
-          error={error}
-          onDismiss={() => window.location.assign('/')}
-        />
+        <DashboardPaywall onUnlock={createCheckout} busy={checkoutLoading} error={error} />
       </>
     );
   }

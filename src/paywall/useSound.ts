@@ -81,9 +81,9 @@ export function useSound(enabledByDefault = false) {
       const spec: Record<Cue, [number, number, number, number, OscillatorType]> = {
         intro: [110, 220, 0.05, 2.2, 'sine'],
         reveal: [660, 990, 0.022, 0.5, 'sine'],
-        hover: [1180, 1180, 0.012, 0.12, 'sine'],
+        hover: [880, 880, 0.006, 0.1, 'sine'],
         focus: [520, 780, 0.028, 0.7, 'triangle'],
-        click: [320, 180, 0.04, 0.22, 'triangle'],
+        click: [300, 200, 0.018, 0.2, 'sine'],
         scroll: [240, 300, 0.016, 0.9, 'sine'],
       };
 
