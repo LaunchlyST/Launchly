@@ -1,0 +1,53 @@
+name: Deploy
+
+# Builds the SPA and publishes it to the "launchly" Cloudflare Worker
+# (see wrangler.jsonc — assets are served from ./dist).
+#
+# Requires two repository secrets before it can run:
+#   CLOUDFLARE_API_TOKEN   a token with the "Edit Cloudflare Workers" template
+#   CLOUDFLARE_ACCOUNT_ID  the account the worker lives in
+#
+# And these build-time values, as repository variables or secrets. VITE_WORKER_URL
+# is not optional: without it the built bundle has no subscription API base URL,
+# so the paywall cannot read entitlements or open checkout.
+#   VITE_WORKER_URL        the subscription worker's URL (NOT this site's origin)
+#   VITE_SUPABASE_URL      Supabase project URL
+#   VITE_SUPABASE_ANON_KEY Supabase anon key
+# Optional:
+#   VITE_PAYWALL_IMAGE / VITE_PAYWALL_HORIZON / VITE_PAYWALL_FOLIAGE
+#   VITE_FEEDBACK_EMAIL / VITE_BUG_URL / VITE_CHANGELOG_URL
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run build
+        env:
+          VITE_WORKER_URL: ${{ secrets.VITE_WORKER_URL }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_PAYWALL_IMAGE: ${{ vars.VITE_PAYWALL_IMAGE }}
+          VITE_PAYWALL_HORIZON: ${{ vars.VITE_PAYWALL_HORIZON }}
+          VITE_PAYWALL_FOLIAGE: ${{ vars.VITE_PAYWALL_FOLIAGE }}
+          VITE_FEEDBACK_EMAIL: ${{ vars.VITE_FEEDBACK_EMAIL }}
+          VITE_BUG_URL: ${{ vars.VITE_BUG_URL }}
+          VITE_CHANGELOG_URL: ${{ vars.VITE_CHANGELOG_URL }}
+
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
