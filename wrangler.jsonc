@@ -2,6 +2,12 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "launchly",
   "compatibility_date": "2026-08-31",
+  // Wrangler builds the site before uploading, so `wrangler deploy` — including
+  // the one Cloudflare Workers Builds runs — always ships fresh assets even
+  // though ./dist is git-ignored.
+  "build": {
+    "command": "npm run build"
+  },
   "assets": {
     "directory": "./dist",
     "not_found_handling": "single-page-application"

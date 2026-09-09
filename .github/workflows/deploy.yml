@@ -12,7 +12,7 @@ name: Deploy
 # so the paywall cannot read entitlements or open checkout.
 #   VITE_WORKER_URL        the subscription worker's URL (NOT this site's origin)
 #   VITE_SUPABASE_URL      Supabase project URL
-#   VITE_SUPABASE_ANON_KEY Supabase anon key
+#   VITE_SUPABASE_PUBLISHABLE_KEY  Supabase publishable (anon) key
 # Optional:
 #   VITE_PAYWALL_IMAGE / VITE_PAYWALL_HORIZON / VITE_PAYWALL_FOLIAGE
 #   VITE_FEEDBACK_EMAIL / VITE_BUG_URL / VITE_CHANGELOG_URL
@@ -39,7 +39,7 @@ jobs:
         env:
           VITE_WORKER_URL: ${{ secrets.VITE_WORKER_URL }}
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
           VITE_PAYWALL_IMAGE: ${{ vars.VITE_PAYWALL_IMAGE }}
           VITE_PAYWALL_HORIZON: ${{ vars.VITE_PAYWALL_HORIZON }}
           VITE_PAYWALL_FOLIAGE: ${{ vars.VITE_PAYWALL_FOLIAGE }}

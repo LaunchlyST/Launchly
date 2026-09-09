@@ -9,6 +9,7 @@ import { useSubscription } from './useSubscription';
 import { Loader, Tooltip } from './ui';
 import { useStore } from './store';
 import { useAuthStore } from './auth-store';
+import { supabaseConfigured } from './lib/supabase';
 import { Login } from './pages/get-in/Login';
 import { SignUp } from './pages/get-in/SignUp';
 import './App.css';
@@ -113,11 +114,52 @@ export function App() {
     );
   }
 
+  /* Built without Supabase keys: nobody can sign in, so say that plainly
+     rather than showing a login form that cannot work. */
+  if (!supabaseConfigured) {
+    return (
+      <div className="app app--auth">
+        <main className="app__main">
+          <div className="app__notice">
+            <h1>Sign-in is not available</h1>
+            <p>
+              This build of Launchly went out without its Supabase keys, so accounts
+              can&rsquo;t be created or used. Set <code>VITE_SUPABASE_URL</code> and{' '}
+              <code>VITE_SUPABASE_PUBLISHABLE_KEY</code> for the build, then deploy again.
+            </p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  /* Get in: log in or sign up, on /get-in, /signup and the home route. */
   if (route === '/signup') {
     return (
       <div className="app app--auth">
         <main className="app__main">
-          <SignUp onSwitchToLogin={() => navigate('/')} />
+          <SignUp onSwitchToLogin={() => navigate(PAGES.getIn)} />
+        </main>
+      </div>
+    );
+  }
+
+  if (route === PAGES.getIn) {
+    if (user) {
+      return (
+        <div className="auth-loading">
+          <Loader size="lg" />
+        </div>
+      );
+    }
+    return (
+      <div className="app app--auth">
+        <main className="app__main">
+          {authView === 'login' ? (
+            <Login onSwitchToSignUp={() => setAuthView('signup')} />
+          ) : (
+            <SignUp onSwitchToLogin={() => setAuthView('login')} />
+          )}
         </main>
       </div>
     );
@@ -128,7 +170,11 @@ export function App() {
       return (
         <div className="app app--auth">
           <main className="app__main">
-            <Login onSwitchToSignUp={() => navigate('/signup')} />
+            {authView === 'login' ? (
+              <Login onSwitchToSignUp={() => setAuthView('signup')} />
+            ) : (
+              <SignUp onSwitchToLogin={() => setAuthView('login')} />
+            )}
           </main>
         </div>
       );
@@ -176,7 +222,11 @@ export function App() {
       return (
         <div className="app app--auth">
           <main className="app__main">
-            <Login onSwitchToSignUp={() => navigate('/signup')} />
+            {authView === 'login' ? (
+              <Login onSwitchToSignUp={() => setAuthView('signup')} />
+            ) : (
+              <SignUp onSwitchToLogin={() => setAuthView('login')} />
+            )}
           </main>
         </div>
       );
@@ -257,10 +307,17 @@ export function App() {
     );
   }
 
-  // Fallback (should not reach here)
+  /* Anything else lands on Get in rather than a spinner, so no URL is a dead
+     end for someone trying to reach the app. */
   return (
-    <div className="auth-loading">
-      <Loader size="lg" />
+    <div className="app app--auth">
+      <main className="app__main">
+        {authView === 'login' ? (
+          <Login onSwitchToSignUp={() => setAuthView('signup')} />
+        ) : (
+          <SignUp onSwitchToLogin={() => setAuthView('login')} />
+        )}
+      </main>
     </div>
   );
 }
