@@ -1,6 +1,6 @@
 import React from 'react';
 import { Send } from 'lucide-react';
-import { Loader, ShineButton } from '../ui';
+import { Loader, ShineButton } from '../../ui';
 
 interface PromptInputProps {
   value: string;

@@ -1,5 +1,5 @@
-import { LakeScene } from './LakeScene';
-import { useStore } from '../store';
+import { LakeScene } from '../paywall/LakeScene';
+import { useStore } from '../../store';
 import './ambient.css';
 
 /**

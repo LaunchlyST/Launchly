@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Eye, EyeOff, Check, Trash2, KeyRound } from 'lucide-react';
-import { useStore } from '../store';
-import { LuxeButton, Switch } from '../ui';
+import { useStore } from '../../store';
+import { LuxeButton, Switch } from '../../ui';
 import './settings.css';
 
 interface SettingsPanelProps {

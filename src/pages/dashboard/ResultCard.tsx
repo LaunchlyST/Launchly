@@ -1,7 +1,7 @@
 import React from 'react';
 import { Download, RefreshCw, AlertCircle } from 'lucide-react';
-import { Loader } from '../ui';
-import { GenerationResult } from '../store';
+import { Loader } from '../../ui';
+import { GenerationResult } from '../../store';
 
 interface ResultCardProps {
   result: GenerationResult;

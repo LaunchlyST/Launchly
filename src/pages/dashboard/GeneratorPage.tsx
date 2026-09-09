@@ -1,12 +1,12 @@
 import React, { useRef } from 'react';
-import { useStore, GenerationResult } from '../store';
+import { useStore, GenerationResult } from '../../store';
 import { ModelPicker } from './ModelPicker';
 import { StylePicker } from './StylePicker';
 import { PromptInput } from './PromptInput';
 import { ResultCard, ResultEmpty } from './ResultCard';
 import { Image as ImageIcon, Video } from 'lucide-react';
-import * as openai from '../services/openai';
-import * as grok from '../services/grok';
+import * as openai from '../../services/openai';
+import * as grok from '../../services/grok';
 import './generator.css';
 
 export function GeneratorPage() {

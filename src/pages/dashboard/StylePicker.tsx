@@ -1,6 +1,6 @@
 import React from 'react';
 import { Camera, Palette } from 'lucide-react';
-import { StyleType } from '../store';
+import { StyleType } from '../../store';
 
 interface StylePickerProps {
   value: StyleType;

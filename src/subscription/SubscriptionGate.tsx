@@ -2,8 +2,8 @@ import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { useSubscription } from "../useSubscription";
 import { CheckCircle, XCircle } from "lucide-react";
 import { Toast } from '../ui';
-import { Paywall } from "../paywall/Paywall";
-import { DashboardPaywall } from "../paywall/DashboardPaywall";
+import { Paywall } from "../pages/paywall/Paywall";
+import { DashboardPaywall } from "../pages/paywall/DashboardPaywall";
 
 interface SubscriptionGateProps {
   children: ReactNode;

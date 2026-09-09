@@ -1,6 +1,6 @@
 import React from 'react';
 import { Bot, Sparkles } from 'lucide-react';
-import { ModelType } from '../store';
+import { ModelType } from '../../store';
 
 interface ModelPickerProps {
   value: ModelType;
