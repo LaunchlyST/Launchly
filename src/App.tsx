@@ -3,7 +3,7 @@ import { Sparkles, Settings, LogOut, CheckCircle, XCircle } from 'lucide-react';
 import { SettingsPanel } from './settings/SettingsPanel';
 import { GeneratorPage } from './generator/GeneratorPage';
 import { SubscriptionGate } from './subscription/SubscriptionGate';
-import { Paywall } from './paywall/Paywall';
+import { PricingView } from './pricing/PricingView';
 import { AmbientScene } from './paywall/AmbientScene';
 import { useSubscription } from './useSubscription';
 import { useStore } from './store';
@@ -56,7 +56,11 @@ function PricingPage({ onBackToEditor }: { onBackToEditor: () => void }) {
   }, [isActive, toast]);
 
   if (loading) {
-    return <Paywall verifying onUnlock={createCheckout} />;
+    return (
+      <div className="auth-loading">
+        <span className="auth-spinner auth-spinner--lg" />
+      </div>
+    );
   }
 
   return (
@@ -67,22 +71,14 @@ function PricingPage({ onBackToEditor }: { onBackToEditor: () => void }) {
           <span>{toast.message}</span>
         </div>
       )}
-      {isActive ? (
-        <Paywall
-          variant="active"
-          onUnlock={createCheckout}
-          onManage={manageSubscription}
-          onBack={onBackToEditor}
-          renewsOn={subscription?.subscription_current_period_end ?? null}
-          busy={checkoutLoading}
-        />
-      ) : (
-        <Paywall
-          onUnlock={createCheckout}
-          busy={checkoutLoading}
-          onDismiss={onBackToEditor}
-        />
-      )}
+      <PricingView
+        isActive={isActive}
+        busy={checkoutLoading}
+        renewsOn={subscription?.subscription_current_period_end ?? null}
+        onUnlock={createCheckout}
+        onManage={manageSubscription}
+        onBack={onBackToEditor}
+      />
     </>
   );
 }
