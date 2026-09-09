@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useAuthStore } from './auth-store';
-import { supabase } from './lib/supabase';
+import { useAuthStore } from '../../auth-store';
+import { supabase } from '../../lib/supabase';
 
 const WORKER_URL = import.meta.env.VITE_WORKER_URL || 'http://localhost:8787';
 
@@ -167,12 +167,12 @@ export function Login({ onSwitchToSignUp }: LoginProps) {
           const res = await fetch(`${WORKER_URL}/api/subscription?userId=${user.id}`);
           const data = await res.json();
           if (data.subscription_status === 'active') {
-            window.location.href = '/dashboard';
+            window.location.href = '/inside';
           } else {
-            window.location.href = '/pricing';
+            window.location.href = '/paywall';
           }
         } catch {
-          window.location.href = '/pricing';
+          window.location.href = '/paywall';
         }
       }
     } catch {

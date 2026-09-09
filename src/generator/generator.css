@@ -1,3 +1,399 @@
+.dashboard-scene {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  background: #063248;
+}
+
+.dashboard-nature {
+  position: fixed;
+  inset: 0;
+  transform: scale(1);
+  transition: transform 0.35s ease;
+  transform-origin: center;
+  z-index: 0;
+}
+
+.dashboard-scene.is-revealed .dashboard-nature {
+  transform: scale(1.12);
+}
+
+.dashboard-nature::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(3, 23, 42, 0.04) 0%, rgba(3, 23, 42, 0.18) 100%),
+    radial-gradient(circle at 50% 45%, rgba(255, 255, 255, 0.08), transparent 42%);
+  pointer-events: none;
+}
+
+.dashboard-nature__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+
+.dashboard-nature__clouds,
+.dashboard-nature__water,
+.dashboard-nature__trees {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.dashboard-nature__clouds {
+  background:
+    radial-gradient(ellipse at 18% 19%, rgba(255, 245, 224, 0.34), transparent 18%),
+    radial-gradient(ellipse at 58% 18%, rgba(255, 255, 255, 0.26), transparent 17%),
+    radial-gradient(ellipse at 83% 24%, rgba(255, 217, 188, 0.26), transparent 16%);
+  mix-blend-mode: screen;
+  animation: dashboard-clouds-drift 22s ease-in-out infinite alternate;
+}
+
+.dashboard-nature__clouds--back {
+  opacity: 0.45;
+  filter: blur(10px);
+  animation-duration: 32s;
+  animation-direction: alternate-reverse;
+}
+
+.dashboard-nature__water {
+  top: 43%;
+  background:
+    linear-gradient(100deg, transparent 0 34%, rgba(255, 255, 255, 0.18) 42%, transparent 50% 100%),
+    repeating-linear-gradient(176deg, transparent 0 22px, rgba(255, 255, 255, 0.13) 25px, transparent 31px);
+  opacity: 0.5;
+  transform-origin: center 70%;
+  animation: dashboard-water-shimmer 4.8s ease-in-out infinite;
+}
+
+.dashboard-nature__trees {
+  background:
+    radial-gradient(ellipse at 11% 75%, rgba(24, 91, 53, 0.28), transparent 20%),
+    radial-gradient(ellipse at 91% 76%, rgba(30, 107, 70, 0.22), transparent 18%),
+    linear-gradient(0deg, rgba(11, 55, 39, 0.28), transparent 30%);
+  animation: dashboard-trees-sway 5.5s ease-in-out infinite alternate;
+  transform-origin: bottom center;
+}
+
+.dashboard-topbar {
+  position: fixed;
+  top: 18px;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: start;
+  padding: 0 22px;
+  pointer-events: none;
+}
+
+.dashboard-brand-logo,
+.dashboard-feedback-box {
+  pointer-events: auto;
+  border: 1px solid rgba(255, 255, 255, 0.36);
+  background: rgba(5, 26, 42, 0.42);
+  color: #fff;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 10px 30px rgba(4, 18, 32, 0.22);
+}
+
+.dashboard-brand-logo {
+  grid-column: 2;
+  min-height: 42px;
+  padding: 0 18px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.dashboard-feedback-box {
+  grid-column: 3;
+  justify-self: end;
+  width: min(260px, 34vw);
+  min-height: 44px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.dashboard-scene__content {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+}
+
+.dashboard-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 96px 24px 72px;
+  text-align: center;
+  transition: opacity 0.34s ease, transform 0.34s ease;
+}
+
+.dashboard-scene.is-revealed .dashboard-intro {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-18px);
+}
+
+.unpaid-intro__title {
+  max-width: 660px;
+  color: #fff;
+  font-size: clamp(32px, 5vw, 64px);
+  font-weight: 850;
+  line-height: 1.04;
+  text-shadow: 0 4px 22px rgba(7, 38, 56, 0.34);
+}
+
+.unpaid-intro__button {
+  border: 1px solid rgba(255, 255, 255, 0.46);
+  color: #fff;
+  background: rgba(6, 43, 62, 0.34);
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.unpaid-intro__button {
+  min-height: 44px;
+  padding: 0 22px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.unpaid-plans {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(220px, 310px));
+  align-items: stretch;
+  justify-content: center;
+  gap: 18px;
+  padding: clamp(112px, 16vh, 170px) 28px 72px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(30px);
+  transition: opacity 0.34s ease, transform 0.34s ease;
+}
+
+.unpaid-plans.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.plan-card {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 430px;
+  padding: 28px;
+  border: 2px solid rgba(78, 145, 179, 0.22);
+  border-radius: 30px;
+  background: rgba(255, 252, 244, 0.9);
+  color: #173347;
+  box-shadow: 0 18px 38px rgba(10, 47, 65, 0.16);
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.42s ease, transform 0.42s ease;
+}
+
+.unpaid-plans.is-visible .plan-card {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.unpaid-plans.is-visible .plan-card:nth-child(2) {
+  transition-delay: 0.08s;
+}
+
+.unpaid-plans.is-visible .plan-card:nth-child(3) {
+  transition-delay: 0.16s;
+}
+
+.plan-card__accent {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 10px;
+  background: #4c9fd2;
+}
+
+.plan-card--model .plan-card__accent {
+  background: #1aa59a;
+}
+
+.plan-card--affiliate .plan-card__accent {
+  background: #f0a35d;
+}
+
+.plan-card__eyebrow {
+  color: #4a7691;
+  font-size: 12px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.plan-card h2 {
+  margin-top: 10px;
+  font-size: 28px;
+  line-height: 1.05;
+}
+
+.plan-card__price {
+  margin-top: 14px;
+  font-size: 32px;
+  font-weight: 850;
+  color: #0d5b80;
+}
+
+.plan-card--model .plan-card__price {
+  color: #11877e;
+}
+
+.plan-card--affiliate .plan-card__price {
+  color: #c86f27;
+}
+
+.plan-card__desc {
+  margin-top: 12px;
+  color: #40586a;
+  font-size: 14.5px;
+  line-height: 1.45;
+}
+
+.plan-card ul {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 22px 0 28px;
+  padding-left: 18px;
+  color: #29485b;
+  font-size: 13.5px;
+  line-height: 1.4;
+}
+
+.plan-card__button {
+  min-height: 46px;
+  margin-top: auto;
+  border: 0;
+  border-radius: 999px;
+  background: #d7e3e9;
+  color: #496272;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 850;
+}
+
+.plan-card__button--primary {
+  background: #166a92;
+  color: #fff;
+  box-shadow: 0 10px 22px rgba(16, 96, 132, 0.24);
+  cursor: pointer;
+}
+
+.plan-card__button--primary:hover:not(:disabled) {
+  background: #0f5a7d;
+}
+
+.plan-card__button--muted {
+  background: #e8edf0;
+}
+
+.plan-card__button:disabled {
+  cursor: not-allowed;
+}
+
+.pricing-legacy-gate {
+  display: none;
+}
+
+@keyframes dashboard-clouds-drift {
+  0% { transform: translate3d(-2.5%, 0, 0); }
+  100% { transform: translate3d(3.5%, -1%, 0); }
+}
+
+@keyframes dashboard-water-shimmer {
+  0%, 100% { opacity: 0.34; transform: translateX(-1.5%) scaleY(1); }
+  50% { opacity: 0.58; transform: translateX(1.5%) scaleY(1.02); }
+}
+
+@keyframes dashboard-trees-sway {
+  0% { transform: skewX(-0.45deg) translateX(-2px); }
+  100% { transform: skewX(0.45deg) translateX(2px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-nature,
+  .dashboard-nature__clouds,
+  .dashboard-nature__water,
+  .dashboard-nature__trees,
+  .dashboard-intro,
+  .unpaid-plans,
+  .plan-card {
+    animation: none;
+    transition-duration: 0.01ms;
+  }
+
+  .dashboard-scene.is-revealed .dashboard-nature {
+    transform: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .dashboard-topbar {
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    padding: 0 14px;
+  }
+
+  .dashboard-brand-logo {
+    grid-column: 1;
+    justify-self: start;
+  }
+
+  .dashboard-feedback-box {
+    grid-column: 2;
+    width: min(190px, 44vw);
+    font-size: 12px;
+    padding: 10px 12px;
+  }
+
+  .gen-page {
+    padding: 92px 18px 80px;
+  }
+
+  .unpaid-plans {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    padding: 108px 18px 44px;
+  }
+
+  .plan-card {
+    min-height: auto;
+    padding: 24px;
+    border-radius: 24px;
+  }
+}
+
 .gen-page {
   max-width: 680px;
   margin: 0 auto;

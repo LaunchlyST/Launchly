@@ -1,26 +1,25 @@
 import { ReactNode, useEffect, useState } from "react";
+import { CheckCircle, Loader2, XCircle } from "lucide-react";
+import { DashboardScene } from "../generator/DashboardScene";
 import { useSubscription } from "../useSubscription";
-import { Crown, Loader2, CheckCircle, XCircle } from "lucide-react";
 
 interface SubscriptionGateProps {
   children: ReactNode;
 }
 
 export function SubscriptionGate({ children }: SubscriptionGateProps) {
-  const { isActive, loading, checkoutLoading, createCheckout, manageSubscription, refresh } = useSubscription();
+  const { isActive, loading, refresh } = useSubscription();
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [plansVisible, setPlansVisible] = useState(false);
 
-  // Handle post-checkout redirect
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const subscription = params.get("subscription");
 
     if (subscription === "success") {
-      // Clean URL immediately
       window.history.replaceState({}, "", window.location.pathname);
       setToast({ type: "success", message: "Activating your subscription..." });
 
-      // Poll for subscription status until active
       let attempts = 0;
       const maxAttempts = 15;
       const poll = setInterval(async () => {
@@ -43,7 +42,6 @@ export function SubscriptionGate({ children }: SubscriptionGateProps) {
     }
   }, [refresh]);
 
-  // Show success toast after subscription becomes active during polling
   useEffect(() => {
     if (isActive && toast?.message === "Activating your subscription...") {
       setToast({ type: "success", message: "Pro activated!" });
@@ -53,45 +51,85 @@ export function SubscriptionGate({ children }: SubscriptionGateProps) {
 
   if (loading) {
     return (
-      <div className="sub-loading">
-        <Loader2 className="sub-spinner" />
-      </div>
+      <DashboardScene>
+        <div className="sub-loading">
+          <Loader2 className="sub-spinner" />
+        </div>
+      </DashboardScene>
     );
   }
 
   if (!isActive) {
     return (
-      <>
+      <DashboardScene
+        revealed={plansVisible}
+        onReveal={() => setPlansVisible(true)}
+        intro={
+          <>
+            <h1 className="unpaid-intro__title">Your next creation starts here.</h1>
+            <button className="unpaid-intro__button" type="button" onClick={() => setPlansVisible(true)}>
+              Explore plans
+            </button>
+          </>
+        }
+      >
         {toast && (
           <div className={`sub-toast sub-toast--${toast.type}`}>
             {toast.type === "success" ? <CheckCircle size={16} /> : <XCircle size={16} />}
             <span>{toast.message}</span>
           </div>
         )}
-        <div className="sub-gate">
-          <div className="sub-gate__icon">
-            <Crown size={48} />
-          </div>
-          <h2 className="sub-gate__title">Pro Subscription Required</h2>
-          <p className="sub-gate__desc">
-            Unlock the full editor with all features. Only £5/month.
-          </p>
-          <button
-            onClick={createCheckout}
-            className="sub-gate__btn"
-            disabled={checkoutLoading}
-          >
-            {checkoutLoading ? (
-              <>
-                <Loader2 className="sub-spinner--sm" />
-                Opening checkout...
-              </>
-            ) : (
-              "Subscribe Now — £5/month"
-            )}
-          </button>
-        </div>
-      </>
+
+        <section className={`unpaid-plans ${plansVisible ? "is-visible" : ""}`} aria-label="Launchly plans">
+          <article className="plan-card plan-card--free">
+            <div className="plan-card__accent" />
+            <p className="plan-card__eyebrow">Start here</p>
+            <h2>Free</h2>
+            <div className="plan-card__price">£0</div>
+            <p className="plan-card__desc">Explore Launchly before upgrading.</p>
+            <ul>
+              <li>Create and access your Launchly account</li>
+              <li>View available plan options</li>
+              <li>Keep subscription status synced</li>
+            </ul>
+            <button className="plan-card__button plan-card__button--muted" type="button" disabled>
+              Start free
+            </button>
+          </article>
+
+          <article className="plan-card plan-card--model">
+            <div className="plan-card__accent" />
+            <p className="plan-card__eyebrow">AI creation</p>
+            <h2>Model Access</h2>
+            <div className="plan-card__price">Coming soon</div>
+            <p className="plan-card__desc">Access the available AI models to create your content.</p>
+            <ul>
+              <li>Uses your own OpenAI or Grok API keys</li>
+              <li>Provider API charges are paid separately</li>
+              <li>Price and entitlement are not configured yet</li>
+            </ul>
+            <button className="plan-card__button" type="button" disabled>
+              Get model access
+            </button>
+          </article>
+
+          <article className="plan-card plan-card--affiliate">
+            <div className="plan-card__accent" />
+            <p className="plan-card__eyebrow">Workflow</p>
+            <h2>Affiliate Toolkit</h2>
+            <div className="plan-card__price">Coming soon</div>
+            <p className="plan-card__desc">Access features and tools to help with your TikTok Shop affiliate workflow.</p>
+            <ul>
+              <li>Billing portal support</li>
+              <li>Subscription status tracking</li>
+              <li>Toolkit features are not configured yet</li>
+            </ul>
+            <button className="plan-card__button" type="button" disabled>
+              Get affiliate tools
+            </button>
+          </article>
+        </section>
+      </DashboardScene>
     );
   }
 

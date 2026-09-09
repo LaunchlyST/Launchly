@@ -1,124 +1,31 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Sparkles, Settings, LogOut, Crown, Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { Sparkles, Settings, LogOut } from 'lucide-react';
 import { SettingsPanel } from './settings/SettingsPanel';
-import { GeneratorPage } from './generator/GeneratorPage';
 import { SubscriptionGate } from './subscription/SubscriptionGate';
 import { useSubscription } from './useSubscription';
 import { useStore } from './store';
 import { useAuthStore } from './auth-store';
-import { Login } from './Login';
-import { SignUp } from './SignUp';
+import { LandingPage } from './page/landing/page';
+import { Login } from './page/login/page';
+import { InsidePage } from './page/inside/page';
+import { PricingPage } from './page/pricing/page';
+import { SignUp } from './page/signup/page';
+import { GeneratorPage } from './page/dashboard/page';
 import './App.css';
-
-function PricingPage() {
-  const { createCheckout, manageSubscription, checkoutLoading, isActive, loading, refresh } = useSubscription();
-  const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
-
-  // Handle post-checkout redirect
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const subscription = params.get("subscription");
-
-    if (subscription === "success") {
-      window.history.replaceState({}, "", window.location.pathname);
-      setToast({ type: "success", message: "Activating your subscription..." });
-
-      let attempts = 0;
-      const maxAttempts = 15;
-      const poll = setInterval(async () => {
-        attempts++;
-        await refresh();
-        if (attempts >= maxAttempts) {
-          clearInterval(poll);
-          setToast({ type: "success", message: "Pro activated!" });
-          setTimeout(() => setToast(null), 4000);
-        }
-      }, 2000);
-
-      return () => clearInterval(poll);
-    }
-
-    if (subscription === "cancelled") {
-      window.history.replaceState({}, "", window.location.pathname);
-      setToast({ type: "error", message: "Checkout cancelled." });
-      setTimeout(() => setToast(null), 4000);
-    }
-  }, [refresh]);
-
-  useEffect(() => {
-    if (isActive && toast?.message === "Activating your subscription...") {
-      setToast({ type: "success", message: "Pro activated!" });
-      setTimeout(() => setToast(null), 4000);
-    }
-  }, [isActive, toast]);
-
-  if (loading) {
-    return (
-      <div className="sub-loading">
-        <Loader2 className="sub-spinner" />
-      </div>
-    );
-  }
-
-  return (
-    <>
-      {toast && (
-        <div className={`sub-toast sub-toast--${toast.type}`}>
-          {toast.type === "success" ? <CheckCircle size={16} /> : <XCircle size={16} />}
-          <span>{toast.message}</span>
-        </div>
-      )}
-      <div className="sub-gate">
-        <div className="sub-gate__icon">
-          <Crown size={48} />
-        </div>
-        <h2 className="sub-gate__title">
-          {isActive ? "You're Subscribed!" : "Pro Subscription Required"}
-        </h2>
-        <p className="sub-gate__desc">
-          {isActive
-            ? "You have full access to all features."
-            : "Unlock the full editor with all features. Only £5/month."}
-        </p>
-        {isActive ? (
-          <button onClick={manageSubscription} className="sub-gate__btn" disabled={checkoutLoading}>
-            {checkoutLoading ? (
-              <>
-                <Loader2 className="sub-spinner--sm" />
-                Opening...
-              </>
-            ) : (
-              "Manage Subscription"
-            )}
-          </button>
-        ) : (
-          <button onClick={createCheckout} className="sub-gate__btn" disabled={checkoutLoading}>
-            {checkoutLoading ? (
-              <>
-                <Loader2 className="sub-spinner--sm" />
-                Opening checkout...
-              </>
-            ) : (
-              "Subscribe Now — £5/month"
-            )}
-          </button>
-        )}
-      </div>
-    </>
-  );
-}
 
 function getRoutePath() {
   const path = window.location.pathname;
   if (path === '/signup') return '/signup';
   if (path === '/pricing') return '/pricing';
+  if (path === '/paywall') return '/paywall';
+  if (path === '/inside') return '/inside';
   if (path === '/dashboard') return '/dashboard';
+  if (path === '/login') return '/login';
   return '/';
 }
 
 export function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [authView, setAuthView] = useState<'login' | 'signup'>('login');
   const openaiKey = useStore((s) => s.openaiKey);
   const grokKey = useStore((s) => s.grokKey);
   const hasAnyKey = openaiKey.length > 0 || grokKey.length > 0;
@@ -165,52 +72,49 @@ export function App() {
     );
   }
 
+  if (route === '/login') {
+    return (
+      <div className="app app--auth">
+        <main className="app__main">
+          <Login onSwitchToSignUp={() => navigate('/signup')} />
+        </main>
+      </div>
+    );
+  }
+
   if (route === '/signup') {
     return (
       <div className="app app--auth">
         <main className="app__main">
-          <SignUp onSwitchToLogin={() => navigate('/')} />
+          <SignUp onSwitchToLogin={() => navigate('/login')} />
         </main>
       </div>
     );
   }
 
   if (route === '/pricing') {
-    if (!user) {
-      return (
-        <div className="app app--auth">
-          <main className="app__main">
-            <Login onSwitchToSignUp={() => navigate('/signup')} />
-          </main>
-        </div>
-      );
-    }
     return (
-      <div className="app">
-        <aside className="app__rail">
-          <div className="app__brand" title="Launchly">
-            <Sparkles size={22} strokeWidth={2.2} />
-          </div>
-          <div className="app__rail-divider" />
-          <button
-            className="app__rail-btn"
-            onClick={() => navigate('/dashboard')}
-            title="Create"
-            aria-label="Create"
-          >
-            <Sparkles size={20} />
-          </button>
-          <div className="app__rail-spacer" />
-          <button
-            className="app__rail-btn"
-            onClick={handleLogout}
-            disabled={loggingOut}
-            title="Sign Out"
-            aria-label="Sign Out"
-          >
-            <LogOut size={20} />
-          </button>
-        </aside>
+      <div className="app app--unpaid-dashboard">
+        <main className="app__main">
+          <PricingPage />
+        </main>
+      </div>
+    );
+  }
+
+  if (route === '/inside') {
+    return (
+      <div className="app app--inside">
+        <main className="app__main">
+          <InsidePage />
+        </main>
+      </div>
+    );
+  }
+
+  if (route === '/paywall') {
+    return (
+      <div className="app app--inside">
         <main className="app__main">
           <PricingPage />
         </main>
@@ -229,12 +133,14 @@ export function App() {
       );
     }
 
-    // Route-level subscription guard: redirect unpaid users to pricing
     if (!isActive) {
-      navigate('/pricing');
       return (
-        <div className="auth-loading">
-          <span className="auth-spinner auth-spinner--lg" />
+        <div className="app app--unpaid-dashboard">
+          <main className="app__main">
+            <SubscriptionGate>
+              <GeneratorPage />
+            </SubscriptionGate>
+          </main>
         </div>
       );
     }
@@ -293,22 +199,27 @@ export function App() {
     if (!authLoading && user && route === '/') {
       // Redirect based on subscription status
       if (isActive) {
-        navigate('/dashboard');
+        navigate('/inside');
       } else {
-        navigate('/pricing');
+        navigate('/paywall');
       }
     }
   }, [user, authLoading, route, navigate, isActive]);
 
   if (!user) {
+    if (route === '/') {
+      return (
+        <div className="app app--auth">
+          <main className="app__main">
+            <LandingPage />
+          </main>
+        </div>
+      );
+    }
     return (
       <div className="app app--auth">
         <main className="app__main">
-          {authView === 'login' ? (
-            <Login onSwitchToSignUp={() => setAuthView('signup')} />
-          ) : (
-            <SignUp onSwitchToLogin={() => setAuthView('login')} />
-          )}
+          <Login onSwitchToSignUp={() => navigate('/signup')} />
         </main>
       </div>
     );

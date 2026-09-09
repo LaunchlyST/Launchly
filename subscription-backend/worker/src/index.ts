@@ -41,6 +41,10 @@ export default {
         return await handleManageSubscription(request, env);
       }
 
+      if (url.pathname === "/api/confirm-email" && request.method === "POST") {
+        return await handleConfirmEmail(request, env);
+      }
+
       return new Response("Not Found", { status: 404, headers: corsHeaders });
     } catch (err: any) {
       console.error("Worker error:", err);
@@ -341,4 +345,36 @@ async function handleManageSubscription(request: Request, env: Env): Promise<Res
   });
 
   return json({ url: portalSession.url });
+}
+
+async function handleConfirmEmail(request: Request, env: Env): Promise<Response> {
+  const { email } = await request.json();
+
+  if (!email) {
+    return json({ error: "Missing email" }, 400);
+  }
+
+  const supabase = getSupabase(env);
+
+  // List users to find the one with this email
+  const { data: users, error: listError } = await supabase.auth.admin.listUsers();
+  if (listError) {
+    return json({ error: listError.message }, 500);
+  }
+
+  const user = users?.users?.find((u) => u.email === email);
+  if (!user) {
+    return json({ error: "User not found" }, 404);
+  }
+
+  // Update user to mark email as confirmed
+  const { error: updateError } = await supabase.auth.admin.updateUserById(user.id, {
+    email_confirmed_at: new Date().toISOString(),
+  });
+
+  if (updateError) {
+    return json({ error: updateError.message }, 500);
+  }
+
+  return json({ success: true, userId: user.id });
 }

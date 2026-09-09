@@ -152,6 +152,18 @@ body,
   background: var(--bg);
 }
 
+.app--inside,
+.app--inside .app__main,
+.inside-page {
+  width: 100vw;
+  height: 100vh;
+  background: #fff;
+}
+
+.inside-page {
+  min-height: 100vh;
+}
+
 /* ============ Auth Page ============ */
 .auth-page {
   position: fixed;
@@ -756,4 +768,8 @@ body,
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+.dashboard-scene .sub-gate {
+  display: none !important;
 }
