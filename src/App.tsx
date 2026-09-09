@@ -4,6 +4,7 @@ import { SettingsPanel } from './settings/SettingsPanel';
 import { GeneratorPage } from './generator/GeneratorPage';
 import { SubscriptionGate } from './subscription/SubscriptionGate';
 import { Paywall } from './paywall/Paywall';
+import { DashboardPaywall } from './paywall/DashboardPaywall';
 import { AmbientScene } from './paywall/AmbientScene';
 import { useSubscription } from './useSubscription';
 import { Loader, Toast, Tooltip } from './ui';
@@ -14,7 +15,7 @@ import { SignUp } from './SignUp';
 import './App.css';
 
 function PricingPage({ onBackToEditor }: { onBackToEditor: () => void }) {
-  const { subscription, createCheckout, manageSubscription, checkoutLoading, isActive, loading, refresh } =
+  const { subscription, createCheckout, manageSubscription, checkoutLoading, isActive, loading, error, refresh } =
     useSubscription();
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
@@ -79,10 +80,12 @@ function PricingPage({ onBackToEditor }: { onBackToEditor: () => void }) {
           busy={checkoutLoading}
         />
       ) : (
-        <Paywall
+        /* An unpaid visitor meets the same scenic gate here as on /dashboard,
+           so both URLs show one offer rather than two different ones. */
+        <DashboardPaywall
           onUnlock={createCheckout}
           busy={checkoutLoading}
-          onDismiss={onBackToEditor}
+          error={error}
         />
       )}
     </>

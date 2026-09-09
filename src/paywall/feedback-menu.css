@@ -1,128 +1,88 @@
 /* ==========================================================================
-   Feedback & updates — a compact frosted control with a popover.
-   Menu anatomy adapted from Uiverse.io by aadium (MIT).
+   Feedback and updates — a segmented icon group.
+   Adapted from Uiverse.io by Bodyhc (MIT): a rounded, bordered row of icon
+   buttons separated by hairlines, each with a quiet hover fill.
    ========================================================================== */
 
 .fm {
-  position: relative;
-  --fm-ink: #16233a;
-  --fm-ease: cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.fm__trigger {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  height: 36px;
-  padding: 0 13px;
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  border-radius: 999px;
-  background: rgba(255, 253, 248, 0.62);
-  backdrop-filter: blur(14px) saturate(1.1);
-  -webkit-backdrop-filter: blur(14px) saturate(1.1);
-  color: var(--fm-ink);
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 500;
-  letter-spacing: -0.01em;
-  cursor: pointer;
+  display: flex;
+  /* No overflow clipping here — the hover label has to escape the group — so
+     the end buttons carry the rounding instead. */
+  border: 1px solid rgba(20, 33, 58, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px) saturate(1.1);
+  -webkit-backdrop-filter: blur(12px) saturate(1.1);
   box-shadow: 0 6px 18px rgba(12, 22, 40, 0.16);
-  transition: background 220ms var(--fm-ease), box-shadow 220ms var(--fm-ease),
-    transform 220ms var(--fm-ease);
 }
 
-.fm__trigger:hover,
-.fm__trigger.is-open {
-  background: rgba(255, 253, 248, 0.82);
-  box-shadow: 0 10px 24px rgba(12, 22, 40, 0.2);
-}
-
-.fm__trigger:active { transform: translateY(1px); }
-
-.fm__trigger:focus-visible {
-  outline: 2px solid rgba(255, 255, 255, 0.9);
-  outline-offset: 2px;
-}
-
-.fm__chevron {
-  transition: transform 220ms var(--fm-ease);
-  opacity: 0.62;
-}
-
-.fm__trigger.is-open .fm__chevron { transform: rotate(180deg); }
-
-.fm__panel {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  z-index: 5;
-  display: flex;
-  flex-direction: column;
-  min-width: 208px;
-  max-width: min(280px, calc(100vw - 24px));
-  padding: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.55);
-  border-radius: 14px;
-  background: rgba(255, 253, 248, 0.9);
-  backdrop-filter: blur(18px) saturate(1.15);
-  -webkit-backdrop-filter: blur(18px) saturate(1.15);
-  box-shadow: 0 18px 44px rgba(12, 22, 40, 0.26);
-  animation: fm-in 180ms var(--fm-ease) both;
-  transform-origin: top right;
-}
-
-@keyframes fm-in {
-  from { opacity: 0; transform: translateY(-6px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-.fm__item {
+.fm__btn {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 9px 10px;
+  justify-content: center;
+  padding: 9px 16px;
   border: none;
-  border-radius: 9px;
   background: none;
-  color: var(--fm-ink);
-  font-family: inherit;
-  font-size: 13.5px;
-  text-align: left;
-  text-decoration: none;
+  color: #4b5563;
   cursor: pointer;
-  transition: background 160ms var(--fm-ease), color 160ms var(--fm-ease);
+  transition: background-color 200ms ease, color 200ms ease;
 }
 
-.fm__item:hover:not(:disabled),
-.fm__item:focus-visible {
-  background: rgba(22, 35, 58, 0.07);
-  outline: none;
+/* The hairline between buttons, as in the original's divide-x. */
+.fm__btn + .fm__btn {
+  border-left: 1px solid rgba(20, 33, 58, 0.12);
 }
 
-.fm__item:focus-visible {
-  box-shadow: inset 0 0 0 1.5px rgba(22, 35, 58, 0.32);
+.fm__btn:first-child { border-radius: 9px 0 0 9px; }
+.fm__btn:last-child { border-radius: 0 9px 9px 0; }
+
+.fm__btn:hover:not(:disabled) {
+  background-color: rgba(20, 33, 58, 0.06);
+  color: #14213a;
 }
 
-.fm__item:disabled {
-  color: rgba(22, 35, 58, 0.42);
+.fm__btn:focus-visible {
+  outline: 2px solid #14213a;
+  outline-offset: -2px;
+  color: #14213a;
+}
+
+.fm__btn:disabled {
+  color: rgba(75, 85, 99, 0.4);
   cursor: not-allowed;
 }
 
-.fm__item-note {
-  margin-left: auto;
-  font-size: 11px;
-  letter-spacing: 0.02em;
-  color: rgba(22, 35, 58, 0.42);
+/* The label the popover used to carry. */
+.fm__tip {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: #14213a;
+  color: #fffdf8;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(-4px);
+  pointer-events: none;
+  box-shadow: 0 10px 24px rgba(12, 22, 40, 0.28);
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.fm__btn:hover .fm__tip,
+.fm__btn:focus-visible .fm__tip {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 @media (max-width: 560px) {
-  .fm__trigger-label { display: none; }
-  .fm__trigger { padding: 0 11px; }
-  .fm__panel { right: 0; }
+  .fm__btn { padding: 8px 13px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .fm__panel { animation: none; }
-  .fm__trigger, .fm__chevron, .fm__item { transition-duration: 1ms; }
+  .fm__btn, .fm__tip { transition-duration: 1ms; }
 }
