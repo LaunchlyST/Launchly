@@ -6,3 +6,4 @@ dist/
 .wrangler/
 .openjet/
 .env
+.env.local
