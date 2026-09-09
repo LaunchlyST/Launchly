@@ -114,8 +114,8 @@ async function handleCreateCheckout(request: Request, env: Env): Promise<Respons
         quantity: 1,
       },
     ],
-    success_url: `${env.FRONTEND_URL}/dashboard?subscription=success`,
-    cancel_url: `${env.FRONTEND_URL}/dashboard?subscription=cancelled`,
+    success_url: `${env.FRONTEND_URL}/paywall?subscription=success`,
+    cancel_url: `${env.FRONTEND_URL}/paywall?subscription=cancelled`,
     metadata: { supabase_user_id: userId },
   });
 

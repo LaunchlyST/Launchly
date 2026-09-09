@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Sparkles, Settings, LogOut } from 'lucide-react';
-import { SettingsPanel } from './pages/dashboard/SettingsPanel';
-import { GeneratorPage } from './pages/dashboard/GeneratorPage';
+import { SettingsPanel } from './pages/inside/SettingsPanel';
+import { GeneratorPage } from './pages/inside/GeneratorPage';
 import { SubscriptionGate } from './subscription/SubscriptionGate';
-import { PricingPage } from './pages/pricing/PricingPage';
-import { AmbientScene } from './pages/dashboard/AmbientScene';
+import { PaywallPage } from './pages/paywall/PaywallPage';
+import { AmbientScene } from './pages/inside/AmbientScene';
 import { useSubscription } from './useSubscription';
 import { Loader, Tooltip } from './ui';
 import { useStore } from './store';
@@ -13,11 +13,34 @@ import { Login } from './pages/get-in/Login';
 import { SignUp } from './pages/get-in/SignUp';
 import './App.css';
 
+/**
+ * The pages, by name. The old paths stay as aliases so existing links — and
+ * the Stripe success/cancel URLs configured in the worker — keep working.
+ */
+const PAGES = {
+  getIn: '/get-in',
+  paywall: '/paywall',
+  inside: '/inside',
+} as const;
+
+const TITLES: Record<string, string> = {
+  [PAGES.getIn]: 'Get in — Launchly',
+  '/signup': 'Get in — Launchly',
+  [PAGES.paywall]: 'Paywall — Launchly',
+  [PAGES.inside]: 'Inside — Launchly',
+  '/': 'Launchly',
+};
+
 function getRoutePath() {
   const path = window.location.pathname;
   if (path === '/signup') return '/signup';
-  if (path === '/pricing') return '/pricing';
-  if (path === '/dashboard') return '/dashboard';
+  if (path === PAGES.getIn) return PAGES.getIn;
+  /* A return from Stripe is always handled by the Paywall page, wherever the
+     worker's success/cancel URL happens to point. */
+  if (new URLSearchParams(window.location.search).has('subscription')) return PAGES.paywall;
+  /* '/pricing' and '/dashboard' are the old names, kept as aliases. */
+  if (path === PAGES.paywall || path === '/pricing') return PAGES.paywall;
+  if (path === PAGES.inside || path === '/dashboard') return PAGES.inside;
   return '/';
 }
 
@@ -48,6 +71,16 @@ export function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, [handlePopState]);
 
+  /* Each page carries its own name, and an alias URL is rewritten to it so the
+     address bar agrees with the title. */
+  useEffect(() => {
+    document.title = TITLES[route] ?? 'Launchly';
+    const path = window.location.pathname;
+    if (path !== route && (path === '/pricing' || path === '/dashboard')) {
+      window.history.replaceState({}, '', route + window.location.search);
+    }
+  }, [route]);
+
   const navigate = useCallback((path: string) => {
     window.history.pushState({}, '', path);
     setRoute(getRoutePath());
@@ -65,7 +98,7 @@ export function App() {
   // number of hooks once the loading branch stopped returning early.
   useEffect(() => {
     if (!authLoading && user && route === '/') {
-      navigate('/dashboard');
+      navigate(PAGES.inside);
     }
   }, [user, authLoading, route, navigate]);
 
@@ -90,7 +123,7 @@ export function App() {
     );
   }
 
-  if (route === '/pricing') {
+  if (route === PAGES.paywall) {
     if (!user) {
       return (
         <div className="app app--auth">
@@ -110,7 +143,7 @@ export function App() {
           <Tooltip text="Create">
             <button
               className="app__rail-btn"
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate(PAGES.inside)}
               aria-label="Create"
             >
               <Sparkles size={20} />
@@ -129,13 +162,16 @@ export function App() {
           </Tooltip>
         </aside>
         <main className="app__main">
-          <PricingPage onBackToEditor={() => navigate('/dashboard')} />
+          <PaywallPage
+            onBackToEditor={() => navigate(PAGES.inside)}
+            onSubscribed={() => navigate(PAGES.inside)}
+          />
         </main>
       </div>
     );
   }
 
-  if (route === '/dashboard') {
+  if (route === PAGES.inside) {
     if (!user) {
       return (
         <div className="app app--auth">

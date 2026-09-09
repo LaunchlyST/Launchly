@@ -169,12 +169,12 @@ export function Login({ onSwitchToSignUp }: LoginProps) {
             `${WORKER_URL}/api/subscription?userId=${encodeURIComponent(user.id)}`
           );
           if (data.subscription_status === 'active') {
-            window.location.href = '/dashboard';
+            window.location.href = '/inside';
           } else {
-            window.location.href = '/pricing';
+            window.location.href = '/paywall';
           }
         } catch {
-          window.location.href = '/pricing';
+          window.location.href = '/paywall';
         }
       }
     } catch {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { BANDS, LANDSCAPE_IMAGE, LANDSCAPE_VIDEO, probeImage } from './landscape';
+import { BANDS, LANDSCAPE_FALLBACK, LANDSCAPE_IMAGE, LANDSCAPE_VIDEO, probeImage } from './landscape';
 import './coastal-scene.css';
 
 interface CoastalSceneProps {
@@ -35,11 +35,9 @@ export function CoastalScene({ zoom, still = false, scrim = 0 }: CoastalScenePro
   }, []);
 
   const scale = still ? 1.02 : 1.02 + zoom * 0.26;
-  const media = LANDSCAPE_VIDEO
-    ? null
-    : hasImage
-      ? LANDSCAPE_IMAGE
-      : null;
+  /* The configured photograph wins; the drawn scene is the standing fallback
+     while `hasImage` is still unknown or the file is not there. */
+  const media = LANDSCAPE_VIDEO ? null : hasImage ? LANDSCAPE_IMAGE : LANDSCAPE_FALLBACK;
 
   /* Masks are built from the configured band positions so one set of layers
      fits whatever artwork is dropped in. */
@@ -105,11 +103,7 @@ export function CoastalScene({ zoom, still = false, scrim = 0 }: CoastalScenePro
               </>
             )}
           </>
-        ) : (
-          /* No asset supplied: a graded sunset sky, deliberately empty rather
-             than a stand-in landscape. */
-          <div className="cs__empty" />
-        )}
+        ) : null}
       </div>
 
       {/* Just enough scrim for the cards to read, and only while they are up. */}

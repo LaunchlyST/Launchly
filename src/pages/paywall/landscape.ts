@@ -19,6 +19,13 @@
 export const LANDSCAPE_IMAGE: string =
   (import.meta.env.VITE_PAYWALL_IMAGE as string | undefined) || '/paywall/landscape.jpg';
 
+/**
+ * Ships with the app: an illustrated coastal sunset drawn to match the scene
+ * the gate was designed around. Used whenever no photograph or video resolves,
+ * so the page never falls back to an empty sky.
+ */
+export const LANDSCAPE_FALLBACK = '/paywall/landscape.svg';
+
 export const LANDSCAPE_VIDEO: string | null =
   (import.meta.env.VITE_PAYWALL_VIDEO as string | undefined) || null;
 

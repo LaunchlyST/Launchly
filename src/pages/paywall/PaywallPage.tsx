@@ -1,18 +1,26 @@
 import { useState, useEffect } from 'react';
 import { CheckCircle, XCircle } from 'lucide-react';
 import { useSubscription } from '../../useSubscription';
-import { Paywall } from '../paywall/Paywall';
-import { DashboardPaywall } from '../paywall/DashboardPaywall';
+import { Paywall } from './Paywall';
+import { DashboardPaywall } from './DashboardPaywall';
 import { Toast } from '../../ui';
 
 /**
- * /pricing.
+ * The Paywall page (/paywall).
  *
- * An unpaid visitor meets the same scenic gate as on /dashboard; an active
- * subscriber gets the manage view with their renewal date. Also handles the
- * post-checkout redirect, polling until the webhook lands.
+ * An unpaid visitor meets the scenic gate; an active subscriber gets the
+ * manage view with their renewal date. It also handles the return from Stripe:
+ * it polls until the webhook lands, then sends the new subscriber straight
+ * Inside.
  */
-export function PricingPage({ onBackToEditor }: { onBackToEditor: () => void }) {
+export function PaywallPage({
+  onBackToEditor,
+  onSubscribed,
+}: {
+  onBackToEditor: () => void;
+  /** Fired once a fresh checkout has been confirmed, to send them Inside. */
+  onSubscribed?: () => void;
+}) {
   const { subscription, createCheckout, manageSubscription, checkoutLoading, isActive, loading, error, refresh } =
     useSubscription();
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -48,12 +56,19 @@ export function PricingPage({ onBackToEditor }: { onBackToEditor: () => void }) 
     }
   }, [refresh]);
 
+  /* The webhook landed while we were polling: say so, then go Inside. The
+     redirect only fires for a checkout we just handled, never for someone who
+     opened this page with an existing subscription. */
   useEffect(() => {
     if (isActive && toast?.message === "Activating your subscription...") {
-      setToast({ type: "success", message: "Pro activated!" });
-      setTimeout(() => setToast(null), 4000);
+      setToast({ type: "success", message: "You're in — opening your workspace…" });
+      const t = setTimeout(() => {
+        setToast(null);
+        onSubscribed?.();
+      }, 1400);
+      return () => clearTimeout(t);
     }
-  }, [isActive, toast]);
+  }, [isActive, toast, onSubscribed]);
 
   if (loading) {
     return <Paywall verifying onUnlock={createCheckout} />;
