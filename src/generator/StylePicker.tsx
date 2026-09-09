@@ -21,7 +21,7 @@ export function StylePicker({ value, onChange }: StylePickerProps) {
           <button
             key={o.id}
             type="button"
-            className={`style-btn ${value === o.id ? 'is-selected' : ''}`}
+            className={`uv-pill style-btn ${value === o.id ? 'is-selected' : ''}`}
             onClick={() => onChange(o.id)}
           >
             {o.icon}

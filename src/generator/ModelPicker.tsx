@@ -26,7 +26,7 @@ export function ModelPicker({ value, onChange, openaiReady, grokReady }: ModelPi
             <button
               key={o.id}
               type="button"
-              className={`model-btn ${selected ? 'is-selected' : ''} ${locked ? 'is-locked' : ''}`}
+              className={`uv-pill model-btn ${selected ? 'is-selected' : ''} ${locked ? 'is-locked' : ''}`}
               onClick={() => !locked && onChange(o.id)}
               title={locked ? o.hint : `${o.label} ready`}
             >

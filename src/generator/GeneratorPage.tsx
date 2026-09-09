@@ -118,7 +118,7 @@ export function GeneratorPage() {
   const typeLabel = selectedModel === 'chatgpt' ? 'Image' : 'Video';
 
   return (
-    <div className="gen-page">
+    <div className="gen-page uv-light">
       <header className="gen-header">
         <h1 className="gen-title">TikTok Shop Creator</h1>
         <p className="gen-subtitle">Create AI-powered images and videos for your TikTok Shop</p>

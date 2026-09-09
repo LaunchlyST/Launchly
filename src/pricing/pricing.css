@@ -249,23 +249,10 @@
 
 /* The featured card gets a rotating conic border. */
 .pr__card--featured {
+  --uv-ring-width: 1.6px;
   border-color: transparent;
-  background:
-    linear-gradient(165deg, rgba(28, 22, 12, 0.86), rgba(14, 12, 20, 0.86)) padding-box,
-    conic-gradient(from var(--angle, 0deg), var(--amber), #ffd79a, var(--violet), var(--cyan), var(--amber)) border-box;
-  border: 1px solid transparent;
-  animation: pr-rotate 8s linear infinite;
+  background: linear-gradient(165deg, rgba(30, 23, 12, 0.9), rgba(14, 12, 20, 0.9));
   box-shadow: 0 24px 70px rgba(242, 169, 59, 0.16);
-}
-
-@property --angle {
-  syntax: '<angle>';
-  initial-value: 0deg;
-  inherits: false;
-}
-
-@keyframes pr-rotate {
-  to { --angle: 360deg; }
 }
 
 .pr__badge {
@@ -355,88 +342,9 @@
 
 .pr__card-foot { margin-top: auto; }
 
-/* ---- buttons ------------------------------------------------------------ */
-
-.pr__btn {
-  position: relative;
-  overflow: hidden;
-  width: 100%;
-  height: 52px;
-  border-radius: 14px;
-  border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.06);
-  color: rgb(var(--ink));
-  font-family: inherit;
-  font-size: 14.5px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  cursor: pointer;
-  transition: transform 240ms var(--ease), box-shadow 240ms var(--ease),
-    background 240ms var(--ease), border-color 240ms var(--ease), filter 240ms var(--ease);
-}
-
-.pr__btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.24);
-}
-
-.pr__btn:active:not(:disabled) { transform: translateY(0) scale(0.99); }
-
-.pr__btn:focus-visible {
-  outline: 2px solid rgba(255, 214, 150, 0.9);
-  outline-offset: 3px;
-}
-
-.pr__btn:disabled { cursor: progress; filter: saturate(0.6) brightness(0.9); }
-
-/* Primary: gradient fill, travelling shine, ripple on click. */
-.pr__btn--primary {
-  border: none;
-  color: #17110a;
-  background: linear-gradient(120deg, #ffd79a, var(--amber) 48%, #d98b22);
-  box-shadow: 0 14px 40px rgba(242, 169, 59, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.45);
-}
-
-.pr__btn--primary:hover:not(:disabled) {
-  box-shadow: 0 22px 56px rgba(242, 169, 59, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.55);
-  filter: brightness(1.05);
-}
-
-.pr__btn--primary::before {
-  content: '';
-  position: absolute;
-  top: 0; bottom: 0;
-  left: -60%;
-  width: 45%;
-  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.55), transparent);
-  transform: skewX(-18deg);
-  animation: pr-shine 3.6s var(--ease) infinite;
-  pointer-events: none;
-}
-
-@keyframes pr-shine {
-  0% { left: -60%; }
-  55%, 100% { left: 130%; }
-}
-
-.pr__btn-text { position: relative; z-index: 1; }
-
-.pr__ripple {
-  position: absolute;
-  left: 50%; top: 50%;
-  width: 12px; height: 12px;
-  margin: -6px 0 0 -6px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.5);
-  transform: scale(0);
-  animation: pr-ripple 700ms var(--ease) forwards;
-  pointer-events: none;
-}
-
-@keyframes pr-ripple {
-  to { transform: scale(36); opacity: 0; }
-}
+/* ---- buttons -------------------------------------------------------------
+   The plan buttons themselves come from the shared Uiverse-derived kit
+   (src/ui): ShineButton for the Pro CTA, LuxeButton for the quiet plans. */
 
 .pr__micro {
   margin: 12px 0 0;
@@ -581,8 +489,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pr__blob, .pr__aurora, .pr__spark, .pr__card--featured,
-  .pr__btn--primary::before, .pr__eyebrow-dot { animation: none; }
+  .pr__blob, .pr__aurora, .pr__spark, .pr__eyebrow-dot { animation: none; }
   .pr__rise { animation: none; opacity: 1; transform: none; }
-  .pr__ripple { display: none; }
 }

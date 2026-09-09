@@ -1,5 +1,6 @@
 import React from 'react';
 import { Download, RefreshCw, AlertCircle } from 'lucide-react';
+import { Loader } from '../ui';
 import { GenerationResult } from '../store';
 
 interface ResultCardProps {
@@ -45,7 +46,7 @@ export function ResultCard({ result, busy, onDownload, onRegenerate }: ResultCar
           onClick={onRegenerate}
           disabled={busy}
         >
-          {busy ? <span className="spinner spinner--dark" /> : <RefreshCw size={16} />}
+          {busy ? <Loader size="sm" /> : <RefreshCw size={16} />}
           Generate Again
         </button>
       </div>

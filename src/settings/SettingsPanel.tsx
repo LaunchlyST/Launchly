@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Eye, EyeOff, Check, Trash2, KeyRound } from 'lucide-react';
 import { useStore } from '../store';
+import { LuxeButton, Switch } from '../ui';
 import './settings.css';
 
 interface SettingsPanelProps {
@@ -61,9 +62,9 @@ function KeyField({
             {show ? <EyeOff size={16} /> : <Eye size={16} />}
           </button>
         </div>
-        <button type="button" className="settings-save" onClick={handleSave}>
+        <LuxeButton type="button" small onClick={handleSave}>
           {saved ? <Check size={16} /> : 'Save'}
-        </button>
+        </LuxeButton>
       </div>
     </div>
   );
@@ -82,7 +83,7 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
 
   return (
     <div className="settings-overlay" onClick={onClose}>
-      <aside className="settings-panel glass" onClick={(e) => e.stopPropagation()}>
+      <aside className="settings-panel glass uv-light" onClick={(e) => e.stopPropagation()}>
         <header className="settings-header">
           <h2 className="settings-title">Settings</h2>
           <button className="settings-close" onClick={onClose} aria-label="Close settings">
@@ -117,14 +118,11 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
 
         <div className="settings-section">
           <h3 className="settings-section__title">Appearance</h3>
-          <label className="settings-toggle">
-            <input
-              type="checkbox"
-              checked={ambientScene}
-              onChange={(e) => setAmbientScene(e.target.checked)}
-            />
-            <span>Ambient background scene</span>
-          </label>
+          <Switch
+            checked={ambientScene}
+            onChange={setAmbientScene}
+            label="Ambient background scene"
+          />
         </div>
 
         <div className="settings-section-divider" />

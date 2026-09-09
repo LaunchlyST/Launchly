@@ -156,27 +156,6 @@
   background: var(--primary-soft);
 }
 
-.settings-save {
-  padding: 11px 16px;
-  border: none;
-  background: linear-gradient(135deg, var(--primary), var(--primary-strong));
-  color: #fff;
-  font-size: 13px;
-  font-weight: 600;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  white-space: nowrap;
-  transition: all var(--transition);
-  box-shadow: 0 4px 12px rgba(91, 94, 244, 0.28);
-}
-
-.settings-save:hover {
-  box-shadow: 0 6px 18px rgba(91, 94, 244, 0.38);
-}
-
 .settings-section-divider {
   height: 1px;
   background: var(--border);
@@ -212,19 +191,4 @@
 @keyframes slide-in {
   from { transform: translateX(100%); }
   to { transform: translateX(0); }
-}
-.settings-toggle {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 13.5px;
-  color: var(--text-2);
-  cursor: pointer;
-}
-
-.settings-toggle input {
-  width: 16px;
-  height: 16px;
-  accent-color: var(--primary);
-  cursor: pointer;
 }

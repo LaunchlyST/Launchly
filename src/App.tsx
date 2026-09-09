@@ -6,6 +6,7 @@ import { SubscriptionGate } from './subscription/SubscriptionGate';
 import { PricingView } from './pricing/PricingView';
 import { AmbientScene } from './paywall/AmbientScene';
 import { useSubscription } from './useSubscription';
+import { Loader, Toast, Tooltip } from './ui';
 import { useStore } from './store';
 import { useAuthStore } from './auth-store';
 import { Login } from './Login';
@@ -58,7 +59,7 @@ function PricingPage({ onBackToEditor }: { onBackToEditor: () => void }) {
   if (loading) {
     return (
       <div className="auth-loading">
-        <span className="auth-spinner auth-spinner--lg" />
+        <Loader size="lg" />
       </div>
     );
   }
@@ -66,10 +67,11 @@ function PricingPage({ onBackToEditor }: { onBackToEditor: () => void }) {
   return (
     <>
       {toast && (
-        <div className={`sub-toast sub-toast--${toast.type}`}>
-          {toast.type === "success" ? <CheckCircle size={16} /> : <XCircle size={16} />}
-          <span>{toast.message}</span>
-        </div>
+        <Toast
+          type={toast.type}
+          message={toast.message}
+          icon={toast.type === "success" ? <CheckCircle size={18} /> : <XCircle size={18} />}
+        />
       )}
       <PricingView
         isActive={isActive}
@@ -145,7 +147,7 @@ export function App() {
   if (isLoading) {
     return (
       <div className="auth-loading">
-        <span className="auth-spinner auth-spinner--lg" />
+        <Loader size="lg" />
       </div>
     );
   }
@@ -177,24 +179,26 @@ export function App() {
             <Sparkles size={22} strokeWidth={2.2} />
           </div>
           <div className="app__rail-divider" />
-          <button
-            className="app__rail-btn"
-            onClick={() => navigate('/dashboard')}
-            title="Create"
-            aria-label="Create"
-          >
-            <Sparkles size={20} />
-          </button>
+          <Tooltip text="Create">
+            <button
+              className="app__rail-btn"
+              onClick={() => navigate('/dashboard')}
+              aria-label="Create"
+            >
+              <Sparkles size={20} />
+            </button>
+          </Tooltip>
           <div className="app__rail-spacer" />
-          <button
-            className="app__rail-btn"
-            onClick={handleLogout}
-            disabled={loggingOut}
-            title="Sign Out"
-            aria-label="Sign Out"
-          >
-            <LogOut size={20} />
-          </button>
+          <Tooltip text="Sign out">
+            <button
+              className="app__rail-btn"
+              onClick={handleLogout}
+              disabled={loggingOut}
+              aria-label="Sign Out"
+            >
+              <LogOut size={20} />
+            </button>
+          </Tooltip>
         </aside>
         <main className="app__main">
           <PricingPage onBackToEditor={() => navigate('/dashboard')} />
@@ -228,37 +232,40 @@ export function App() {
               <Sparkles size={22} strokeWidth={2.2} />
             </div>
             <div className="app__rail-divider" />
-            <button
-              className={`app__rail-btn ${!settingsOpen ? 'is-active' : ''}`}
-              title="Create"
-              aria-label="Create"
-            >
-              <Sparkles size={20} />
-            </button>
+            <Tooltip text="Create">
+              <button
+                className={`app__rail-btn ${!settingsOpen ? 'is-active' : ''}`}
+                aria-label="Create"
+              >
+                <Sparkles size={20} />
+              </button>
+            </Tooltip>
             <div className="app__rail-spacer" />
-            <button
-              className="app__rail-btn"
-              onClick={() => setSettingsOpen(true)}
-              title="Settings — Manage API keys"
-              aria-label="Settings"
-            >
-              <Settings size={20} />
-            </button>
+            <Tooltip text="Settings — manage API keys">
+              <button
+                className="app__rail-btn"
+                onClick={() => setSettingsOpen(true)}
+                aria-label="Settings"
+              >
+                <Settings size={20} />
+              </button>
+            </Tooltip>
             <div className="app__rail-status">
               <span
                 className={`app__rail-dot ${hasAnyKey ? 'is-active' : ''}`}
                 title={hasAnyKey ? 'Models connected' : 'No API keys connected'}
               />
             </div>
-            <button
-              className="app__rail-btn"
-              onClick={handleLogout}
-              disabled={loggingOut}
-              title="Sign Out"
-              aria-label="Sign Out"
-            >
-              <LogOut size={20} />
-            </button>
+            <Tooltip text="Sign out">
+              <button
+                className="app__rail-btn"
+                onClick={handleLogout}
+                disabled={loggingOut}
+                aria-label="Sign Out"
+              >
+                <LogOut size={20} />
+              </button>
+            </Tooltip>
           </aside>
           <main className="app__main">
             <AmbientScene />
@@ -289,7 +296,7 @@ export function App() {
   // Fallback (should not reach here)
   return (
     <div className="auth-loading">
-      <span className="auth-spinner auth-spinner--lg" />
+      <Loader size="lg" />
     </div>
   );
 }

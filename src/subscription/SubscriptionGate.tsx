@@ -1,6 +1,7 @@
 import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { useSubscription } from "../useSubscription";
 import { CheckCircle, XCircle } from "lucide-react";
+import { Toast } from '../ui';
 import { Paywall } from "../paywall/Paywall";
 import { DashboardPaywall } from "../paywall/DashboardPaywall";
 
@@ -73,10 +74,11 @@ export function SubscriptionGate({ children }: SubscriptionGateProps) {
   }, []);
 
   const banner = toast && (
-    <div className={`sub-toast sub-toast--${toast.type}`}>
-      {toast.type === "success" ? <CheckCircle size={16} /> : <XCircle size={16} />}
-      <span>{toast.message}</span>
-    </div>
+    <Toast
+      type={toast.type}
+      message={toast.message}
+      icon={toast.type === "success" ? <CheckCircle size={18} /> : <XCircle size={18} />}
+    />
   );
 
   // Never flash the paywall while entitlement is unknown or being confirmed.

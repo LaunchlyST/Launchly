@@ -62,49 +62,32 @@
   gap: 10px;
 }
 
+/* Skin comes from .uv-pill (src/ui); these rules only size the row. */
 .model-btn,
 .style-btn {
   flex: 1;
-  display: flex;
-  align-items: center;
   justify-content: center;
-  gap: 8px;
   padding: 14px 16px;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-md);
-  background: var(--surface-subtle);
-  color: var(--text);
-  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: all var(--transition);
   position: relative;
 }
 
-.model-btn:hover,
-.style-btn:hover {
-  border-color: var(--primary);
-  background: var(--primary-soft);
-}
-
 .model-btn.is-selected,
 .style-btn.is-selected {
-  background: linear-gradient(135deg, var(--primary), var(--primary-strong));
-  border-color: transparent;
-  color: #fff;
-  box-shadow: 0 8px 20px rgba(91, 94, 244, 0.32);
+  box-shadow: 0 10px 24px rgba(91, 94, 244, 0.18);
 }
 
 .model-btn.is-locked {
   opacity: 0.55;
   cursor: not-allowed;
-  background: var(--surface-subtle);
   color: var(--text-3);
 }
 
 .model-btn.is-locked:hover {
+  transform: none;
   border-color: var(--border-strong);
-  background: var(--surface-subtle);
 }
 
 .lock-dot {
@@ -174,30 +157,16 @@
   opacity: 0.6;
 }
 
+/* The button itself is the Uiverse-derived ShineButton (src/ui); only its
+   placement in the prompt box belongs here. */
 .prompt-generate {
   align-self: center;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 14px 36px;
-  border: none;
-  background: linear-gradient(135deg, var(--primary), #8b5cf6);
-  color: #fff;
-  font-size: 15px;
-  font-weight: 600;
+  min-width: 210px;
   border-radius: 999px;
-  cursor: pointer;
-  box-shadow: 0 8px 22px rgba(91, 94, 244, 0.35);
-  transition: all var(--transition);
-}
-
-.prompt-generate:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 12px 28px rgba(91, 94, 244, 0.42);
 }
 
 .prompt-generate:disabled {
-  opacity: 0.5;
+  opacity: 0.55;
   cursor: not-allowed;
 }
 
@@ -354,26 +323,6 @@
 
 .result-empty p {
   font-size: 14px;
-}
-
-/* ============ Spinner ============ */
-.spinner {
-  width: 18px;
-  height: 18px;
-  border: 2px solid rgba(255, 255, 255, 0.4);
-  border-top-color: #fff;
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-  display: inline-block;
-}
-
-.spinner--dark {
-  border-color: rgba(0, 0, 0, 0.15);
-  border-top-color: var(--primary);
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
 }
 
 /* Keeps the generator above the ambient background layer. */

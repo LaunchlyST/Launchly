@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
-import { Check, Minus, Sparkles } from 'lucide-react';
+import { useMemo } from 'react';
+import { ArrowRight, Check, Minus, Sparkles } from 'lucide-react';
+import { Loader, LuxeButton, ShineButton } from '../ui';
 import './pricing.css';
 
 export interface PricingViewProps {
@@ -82,7 +83,6 @@ export function PricingView({
   onBack,
 }: PricingViewProps) {
   const sparks = useSparks();
-  const [ripple, setRipple] = useState(0);
 
   const track = (e: React.MouseEvent<HTMLDivElement>) => {
     const r = e.currentTarget.getBoundingClientRect();
@@ -92,7 +92,6 @@ export function PricingView({
 
   const handlePrimary = async () => {
     if (busy) return;
-    setRipple((r) => r + 1);
     if (isActive) await onManage?.();
     else await onUnlock();
   };
@@ -163,17 +162,15 @@ export function PricingView({
               ))}
             </ul>
             <div className="pr__card-foot">
-              <button type="button" className="pr__btn" onClick={onBack}>
-                <span className="pr__btn-text">
-                  {isActive ? 'Back to the editor' : 'Keep the free plan'}
-                </span>
-              </button>
+              <LuxeButton type="button" block onClick={onBack}>
+                {isActive ? 'Back to the editor' : 'Keep the free plan'}
+              </LuxeButton>
             </div>
           </div>
 
           {/* ---- Pro ---- */}
           <div
-            className="pr__card pr__card--featured pr__rise"
+            className="pr__card pr__card--featured uv-ring pr__rise"
             style={{ animationDelay: '380ms' }}
             onMouseMove={track}
           >
@@ -193,23 +190,21 @@ export function PricingView({
               ))}
             </ul>
             <div className="pr__card-foot">
-              <button
+              <ShineButton
                 type="button"
-                className="pr__btn pr__btn--primary"
+                block
                 onClick={handlePrimary}
                 disabled={busy}
+                icon={busy ? <Loader size="sm" onLight /> : <ArrowRight size={18} />}
               >
-                <span className="pr__btn-text">
-                  {busy
-                    ? isActive
-                      ? 'Opening…'
-                      : 'Opening Stripe…'
-                    : isActive
-                      ? 'Manage subscription'
-                      : 'Unlock Launchly Pro'}
-                </span>
-                {ripple > 0 && <span key={ripple} className="pr__ripple" aria-hidden="true" />}
-              </button>
+                {busy
+                  ? isActive
+                    ? 'Opening…'
+                    : 'Opening Stripe…'
+                  : isActive
+                    ? 'Manage subscription'
+                    : 'Unlock Launchly Pro'}
+              </ShineButton>
               <p className="pr__micro">
                 {isActive
                   ? renews
@@ -235,9 +230,9 @@ export function PricingView({
               <li><span className="pr__tick"><Sparkles size={12} strokeWidth={2.5} /></span><span>One invoice for the team</span></li>
             </ul>
             <div className="pr__card-foot">
-              <button type="button" className="pr__btn" disabled>
-                <span className="pr__btn-text">Not available yet</span>
-              </button>
+              <LuxeButton type="button" block disabled>
+                Not available yet
+              </LuxeButton>
             </div>
           </div>
         </div>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Send } from 'lucide-react';
+import { Loader, ShineButton } from '../ui';
 
 interface PromptInputProps {
   value: string;
@@ -29,21 +30,15 @@ export function PromptInput({ value, onChange, onGenerate, canGenerate, busy }: 
         maxLength={1200}
         disabled={busy}
       />
-      <button
+      <ShineButton
         type="button"
         className="prompt-generate"
         onClick={onGenerate}
         disabled={!canGenerate || busy}
+        icon={busy ? <Loader size="sm" onLight /> : <Send size={18} />}
       >
-        {busy ? (
-          <span className="spinner" />
-        ) : (
-          <>
-            <Send size={18} />
-            Generate
-          </>
-        )}
-      </button>
+        {busy ? 'Generating…' : 'Generate'}
+      </ShineButton>
     </div>
   );
 }

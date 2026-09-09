@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuthStore } from './auth-store';
+import { FloatField, Loader, ShineButton } from './ui';
 import { supabase } from './lib/supabase';
 
 import { WORKER_URL, fetchJson } from './useSubscription';
@@ -216,20 +217,22 @@ export function Login({ onSwitchToSignUp }: LoginProps) {
             <div />
           </div>
 
-          <input
+          <FloatField
+            label="Email"
             type="email"
-            placeholder="Email"
             name="email"
+            id="login-email"
             value={email}
             onChange={(e) => { setEmail(e.target.value); setError(''); }}
             disabled={locked}
             required
           />
 
-          <input
+          <FloatField
+            label="Password"
             type="password"
-            placeholder="Password"
             name="password"
+            id="login-password"
             value={password}
             onChange={(e) => { setPassword(e.target.value); setError(''); }}
             disabled={locked}
@@ -239,27 +242,40 @@ export function Login({ onSwitchToSignUp }: LoginProps) {
 
           {error && <div className={locked ? 'auth-error auth-error--locked' : 'auth-error'}>{error}</div>}
 
-          <button type="submit" className={`oauthButton ${locked ? 'oauthButton--locked' : ''}`} disabled={loading || locked}>
-            {locked ? (
-              <>
-                <svg className="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          {locked ? (
+            <ShineButton
+              type="submit"
+              block
+              quiet
+              disabled
+              icon={
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                 </svg>
-                Sign up first
-              </>
-            ) : loading ? (
-              'Logging in...'
-            ) : (
-              <>
-                Log In
-                <svg className="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="m6 17 5-5-5-5" />
-                  <path d="m13 17 5-5-5-5" />
-                </svg>
-              </>
-            )}
-          </button>
+              }
+            >
+              Sign up first
+            </ShineButton>
+          ) : (
+            <ShineButton
+              type="submit"
+              block
+              disabled={loading}
+              icon={
+                loading ? (
+                  <Loader size="sm" onLight />
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="m6 17 5-5-5-5" />
+                    <path d="m13 17 5-5-5-5" />
+                  </svg>
+                )
+              }
+            >
+              {loading ? 'Logging in…' : 'Log In'}
+            </ShineButton>
+          )}
 
           <p className="form-switch">
             Don't have an account?{' '}
