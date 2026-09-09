@@ -7,7 +7,6 @@ import { useStore } from './store';
 import { useAuthStore } from './auth-store';
 import { LandingPage } from './page/landing/page';
 import { Login } from './page/login/page';
-import { InsidePage } from './page/inside/page';
 import { PricingPage } from './page/pricing/page';
 import { SignUp } from './page/signup/page';
 import { GeneratorPage } from './page/dashboard/page';
@@ -106,7 +105,7 @@ export function App() {
     return (
       <div className="app app--inside">
         <main className="app__main">
-          <InsidePage />
+          <PricingPage />
         </main>
       </div>
     );
