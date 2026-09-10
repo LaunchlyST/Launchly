@@ -1,17 +1,17 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 import { Sparkles, Settings, LogOut } from 'lucide-react';
 import { SettingsPanel } from './settings/SettingsPanel';
 import { SubscriptionGate } from './subscription/SubscriptionGate';
 import { useSubscription } from './useSubscription';
 import { useStore } from './store';
 import { useAuthStore } from './auth-store';
-import { FrontPage } from '../page/front-page/page/page';
-import { Login } from '../page/login/page/page';
-import { InsidePage } from '../page/inside/page/page';
-import { SignUp } from '../page/signup/page/page';
-import { GeneratorPage } from '../page/dashboard/page/page';
-import { PricingPage } from '../page/pricing/page/page';
-import { OwnTrainModelPage } from '../page/own-train-model/page/page';
+import { FrontPage } from './pages/front-page/page';
+import { Login } from './pages/login/page';
+import { InsidePage } from './pages/inside/page';
+import { SignUp } from './pages/signup/page';
+import { GeneratorPage } from './pages/dashboard/page';
+import { PricingPage } from './pages/pricing/page';
+import { OwnTrainModelPage } from './pages/own-train-model/page';
 import './App.css';
 
 function getRoutePath() {
@@ -197,7 +197,7 @@ export function App() {
           <button
             className="app__rail-btn"
             onClick={() => setSettingsOpen(true)}
-            title="Settings — Manage API keys"
+            title="Settings â€” Manage API keys"
             aria-label="Settings"
           >
             <Settings size={20} />

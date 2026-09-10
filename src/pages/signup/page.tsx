@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { useAuthStore } from '../../../src/auth-store';
-import { supabase } from '../../../src/lib/supabase';
+﻿import React, { useState, useEffect } from 'react';
+import { useAuthStore } from 'src/auth-store';
+import { supabase } from 'src/lib/supabase';
 
 const WORKER_URL = import.meta.env.VITE_WORKER_URL || 'http://localhost:8787';
 
@@ -32,7 +32,7 @@ export function SignUp({ onSwitchToLogin }: SignUpProps) {
   const validateEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   const colors = ['#5b5ef4', '#8b5cf6', '#00d4ff', '#f59e0b', '#10b981', '#e5484d', '#ec4899', '#a855f7', '#06b6d4'];
-  const sparkles = ['✦', '✧', '⚡', '★', '❋', '✦', '◆'];
+  const sparkles = ['âœ¦', 'âœ§', 'âš¡', 'â˜…', 'â‹', 'âœ¦', 'â—†'];
   const handleSplash = (e: React.MouseEvent) => {
     const color = colors[Math.floor(Math.random() * colors.length)];
     const color2 = colors[Math.floor(Math.random() * colors.length)];

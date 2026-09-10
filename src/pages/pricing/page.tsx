@@ -1,4 +1,4 @@
-import {
+﻿import {
   useEffect,
   useRef,
   useState,
@@ -20,9 +20,9 @@ import {
   Video,
   X,
 } from 'lucide-react';
-import { useSubscription } from '../../../src/useSubscription';
-import { useAuthStore } from '../../../src/auth-store';
-import { useStore } from '../../../src/store';
+import { useSubscription } from 'src/useSubscription';
+import { useAuthStore } from 'src/auth-store';
+import { useStore } from 'src/store';
 
 const clamp = (n: number) => Math.max(0, Math.min(1, n));
 
@@ -250,7 +250,7 @@ function PlanArtwork({ kind }: { kind: 'ghost' | 'creator' | 'studio' }) {
         <span><Video size={13} /> Video</span>
         <span><Sparkles size={13} /> Hook</span>
       </div>
-      <span className="lx-art-caption">Campaign Studio · Concept preview</span>
+      <span className="lx-art-caption">Campaign Studio Â· Concept preview</span>
     </div>
   );
 }
@@ -406,10 +406,10 @@ function LaunchlyIntroScene() {
       </div>
       <div className="lx-prompt-card">
         <span>AI CREATIVE DIRECTION</span>
-        <strong>Soft light · 9:16 · Product focus</strong>
+        <strong>Soft light Â· 9:16 Â· Product focus</strong>
         <i /><i /><i />
       </div>
-      <div className="lx-scene-tag">PRODUCT → AD</div>
+      <div className="lx-scene-tag">PRODUCT â†’ AD</div>
     </div>
   );
 }
@@ -563,7 +563,7 @@ export function PricingPage() {
     if (status === 'cancelled') {
       setNotice('Checkout cancelled. You have not been upgraded.');
     } else {
-      setNotice('Confirming your subscription…');
+      setNotice('Confirming your subscriptionâ€¦');
       setActivationPending(true);
     }
   }, []);
@@ -716,7 +716,7 @@ export function PricingPage() {
               <PlanObject kind="creator" />
               <h3>Creator</h3>
               <p className="lx-description">Start creating TikTok Shop product content with image and video generation.</p>
-              <div className="lx-price">£5 <small>/ month</small></div>
+              <div className="lx-price">Â£5 <small>/ month</small></div>
               <div className="lx-divider" />
               <ul>
                 <li><Check /> Access the Launchly dashboard</li>
@@ -730,7 +730,7 @@ export function PricingPage() {
                   disabled={checkoutLoading || loading}
                   onClick={() => void checkout()}
                 >
-                  {checkoutLoading ? <><Loader2 className="lx-spin" size={17} /> Opening…</> :
+                  {checkoutLoading ? <><Loader2 className="lx-spin" size={17} /> Openingâ€¦</> :
                     <>{isActive ? 'Manage subscription' : 'Get Creator Access'}<ArrowRight size={16} /></>}
                 </button>
                 <small>Provider API usage is billed separately.</small>
@@ -758,7 +758,7 @@ export function PricingPage() {
               </div>
             </article>
           </div>
-          <p className="lx-footer-note">Scroll up to return to space · Creator subscriptions can be cancelled through billing</p>
+          <p className="lx-footer-note">Scroll up to return to space Â· Creator subscriptions can be cancelled through billing</p>
         </div>
       </div>
 
@@ -815,13 +815,13 @@ function GhostPreview({ onClose }: { onClose: () => void }) {
       <div className="lx-preview-grid">
         <div className="lx-preview-controls">
           <span className="lx-kicker">YOUR PROMPT</span>
-          <textarea disabled value="Create a premium product image with warm studio lighting…" readOnly />
+          <textarea disabled value="Create a premium product image with warm studio lightingâ€¦" readOnly />
           <div className="lx-preview-tags"><span>Image</span><span>9:16</span><span>Studio light</span></div>
           <button className="lx-button" disabled><LockKeyhole size={15} /> Generation locked</button>
         </div>
         <div className="lx-preview-output">
           <PlanArtwork kind="creator" />
-          <span>Example output · Not a generated project</span>
+          <span>Example output Â· Not a generated project</span>
         </div>
       </div>
       <button className="lx-button lx-creator-button" onClick={onClose}>Return to plans <ArrowRight size={16} /></button>

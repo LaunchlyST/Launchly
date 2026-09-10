@@ -1,13 +1,13 @@
-import React, { useRef } from 'react';
-import { useStore, GenerationResult } from '../../../src/store';
-import { ModelPicker } from '../../../src/generator/ModelPicker';
-import { StylePicker } from '../../../src/generator/StylePicker';
-import { PromptInput } from '../../../src/generator/PromptInput';
-import { ResultCard, ResultEmpty } from '../../../src/generator/ResultCard';
+﻿import React, { useRef } from 'react';
+import { useStore, GenerationResult } from 'src/store';
+import { ModelPicker } from 'src/generator/ModelPicker';
+import { StylePicker } from 'src/generator/StylePicker';
+import { PromptInput } from 'src/generator/PromptInput';
+import { ResultCard, ResultEmpty } from 'src/generator/ResultCard';
 import { Image as ImageIcon, Video } from 'lucide-react';
-import * as openai from '../../../src/services/openai';
-import * as grok from '../../../src/services/grok';
-import '../../../src/generator/generator.css';
+import * as openai from 'src/services/openai';
+import * as grok from 'src/services/grok';
+import '../../generator/generator.css';
 
 export function GeneratorPage() {
   const openaiKey = useStore((s) => s.openaiKey);
@@ -154,7 +154,7 @@ export function GeneratorPage() {
 
         {videoStatus && videoStatus !== 'done' && (
           <p className="gen-status">
-            {videoStatus === 'processing' ? 'Video is being generated…' : `Status: ${videoStatus}`}
+            {videoStatus === 'processing' ? 'Video is being generatedâ€¦' : `Status: ${videoStatus}`}
           </p>
         )}
 
