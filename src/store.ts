@@ -39,6 +39,7 @@ interface AppStore {
   setError: (e: string | null) => void;
   setVideoJobId: (id: string | null) => void;
   setVideoStatus: (status: string | null) => void;
+  resetUserState: () => void;
 }
 
 export const useStore = create<AppStore>()(
@@ -70,6 +71,20 @@ export const useStore = create<AppStore>()(
       setError: (e) => set({ error: e }),
       setVideoJobId: (id) => set({ videoJobId: id }),
       setVideoStatus: (status) => set({ videoStatus: status }),
+      resetUserState: () =>
+        set({
+          openaiKey: '',
+          grokKey: '',
+          selectedModel: 'chatgpt',
+          selectedType: 'image',
+          selectedStyle: 'realistic',
+          prompt: '',
+          isGenerating: false,
+          result: null,
+          error: null,
+          videoJobId: null,
+          videoStatus: null,
+        }),
     }),
     { name: 'tiktok-shop-creator-v2' }
   )

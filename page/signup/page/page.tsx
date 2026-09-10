@@ -1,26 +1,33 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { useAuthStore } from '../../auth-store';
-import { supabase } from '../../lib/supabase';
+import React, { useState, useEffect } from 'react';
+import { useAuthStore } from '../../../src/auth-store';
+import { supabase } from '../../../src/lib/supabase';
 
 const WORKER_URL = import.meta.env.VITE_WORKER_URL || 'http://localhost:8787';
 
-interface LoginProps {
-  onSwitchToSignUp: () => void;
+interface SignUpProps {
+  onSwitchToLogin: () => void;
 }
 
-export function Login({ onSwitchToSignUp }: LoginProps) {
+export function SignUp({ onSwitchToLogin }: SignUpProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [locked, setLocked] = useState(false);
+  const [success, setSuccess] = useState('');
   const [oauthLoading, setOauthLoading] = useState(false);
-  const lockTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const signIn = useAuthStore((s) => s.signIn);
+  const signUp = useAuthStore((s) => s.signUp);
+
+  const pendingEmail = typeof window !== 'undefined' ? sessionStorage.getItem('pendingSignUpEmail') : '';
 
   useEffect(() => {
-    return () => { if (lockTimer.current) clearTimeout(lockTimer.current); };
+    if (pendingEmail) {
+      setEmail(pendingEmail);
+      sessionStorage.removeItem('pendingSignUpEmail');
+    }
   }, []);
+
+  const isReturningUser = !!pendingEmail;
 
   const validateEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
@@ -32,14 +39,12 @@ export function Login({ onSwitchToSignUp }: LoginProps) {
     const x = e.clientX;
     const y = e.clientY;
 
-    // Screen flash
     const flash = document.createElement('div');
     flash.className = 'splash-flash';
     flash.style.background = `radial-gradient(circle at ${x}px ${y}px, ${color}40, transparent 60%)`;
     document.body.appendChild(flash);
     flash.addEventListener('animationend', () => flash.remove());
 
-    // Glow burst
     const glow = document.createElement('div');
     glow.className = 'splash-glow';
     glow.style.left = `${x}px`;
@@ -49,7 +54,6 @@ export function Login({ onSwitchToSignUp }: LoginProps) {
     document.body.appendChild(glow);
     glow.addEventListener('animationend', () => glow.remove());
 
-    // 3 expanding rings
     for (let i = 0; i < 3; i++) {
       const ring = document.createElement('div');
       ring.className = 'splash-ring';
@@ -61,7 +65,6 @@ export function Login({ onSwitchToSignUp }: LoginProps) {
       ring.addEventListener('animationend', () => ring.remove());
     }
 
-    // 16 particles flying outward in all directions
     for (let i = 0; i < 16; i++) {
       const particle = document.createElement('div');
       particle.className = 'splash-particle';
@@ -83,7 +86,6 @@ export function Login({ onSwitchToSignUp }: LoginProps) {
       particle.addEventListener('animationend', () => particle.remove());
     }
 
-    // 8 trailing particles (slower, smaller)
     for (let i = 0; i < 8; i++) {
       const trail = document.createElement('div');
       trail.className = 'splash-trail';
@@ -99,7 +101,6 @@ export function Login({ onSwitchToSignUp }: LoginProps) {
       trail.addEventListener('animationend', () => trail.remove());
     }
 
-    // 5 floating sparkles
     for (let i = 0; i < 5; i++) {
       const sparkle = document.createElement('div');
       sparkle.className = 'splash-sparkle';
@@ -120,6 +121,7 @@ export function Login({ onSwitchToSignUp }: LoginProps) {
 
   const handleGitHub = async () => {
     setError('');
+    setSuccess('');
     setOauthLoading(true);
     try {
       const { error } = await supabase.auth.signInWithOAuth({
@@ -139,41 +141,49 @@ export function Login({ onSwitchToSignUp }: LoginProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
 
     if (!validateEmail(email)) {
       setError('Please enter a valid email address.');
       return;
     }
 
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters.');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
+
     setLoading(true);
     try {
-      const { error: signInError, user, session } = await signIn(email, password);
-      if (signInError) {
-        const msg = signInError.message;
-        if (msg.includes('Email not confirmed') || msg.includes('email not confirmed')) {
-          setError('Please confirm your email before logging in. Check your inbox for the confirmation link.');
-        } else if (msg.includes('Invalid login credentials')) {
-          setError('Account not found. Please sign up first.');
-          setLocked(true);
-          lockTimer.current = setTimeout(() => setLocked(false), 3000);
+      const { error: signUpError, session } = await signUp(email, password);
+      if (signUpError) {
+        const msg = signUpError.message;
+        if (msg.includes('Email rate limit exceeded') || msg.includes('rate limit')) {
+          setError('Too many attempts. Please wait a few minutes and try again.');
+        } else if (msg.includes('already registered') || msg.includes('already been registered') || msg.includes('User already')) {
+          setError('An account with this email already exists. Please log in.');
         } else {
-          setError('Incorrect email or password.');
+          setError('We couldn\'t create your account. Please try again.');
         }
-        return;
-      }
-
-      if (session && user) {
+      } else if (session && session.user) {
         try {
-          const res = await fetch(`${WORKER_URL}/api/subscription?userId=${user.id}`);
+          const res = await fetch(`${WORKER_URL}/api/subscription?userId=${session.user.id}`);
           const data = await res.json();
           if (data.subscription_status === 'active') {
-            window.location.href = '/inside';
+            window.location.href = '/dashboard';
           } else {
             window.location.href = '/paywall';
           }
         } catch {
           window.location.href = '/paywall';
         }
+      } else {
+        setSuccess('Check your email to confirm your account.');
       }
     } catch {
       setError('An unexpected error occurred.');
@@ -188,8 +198,10 @@ export function Login({ onSwitchToSignUp }: LoginProps) {
       <div className="auth-container" onClick={(e) => e.stopPropagation()}>
         <form className="form" onSubmit={handleSubmit}>
           <p>
-            Welcome back,
-            <span>log in to continue</span>
+            {isReturningUser ? 'Welcome back,' : 'Welcome,'}
+            <span>
+              {isReturningUser ? ` ${email}, create your account` : ' create your account'}
+            </span>
           </p>
 
           <button type="button" className="oauthButton">
@@ -221,7 +233,6 @@ export function Login({ onSwitchToSignUp }: LoginProps) {
             name="email"
             value={email}
             onChange={(e) => { setEmail(e.target.value); setError(''); }}
-            disabled={locked}
             required
           />
 
@@ -231,39 +242,34 @@ export function Login({ onSwitchToSignUp }: LoginProps) {
             name="password"
             value={password}
             onChange={(e) => { setPassword(e.target.value); setError(''); }}
-            disabled={locked}
             required
             minLength={6}
           />
 
-          {error && <div className={locked ? 'auth-error auth-error--locked' : 'auth-error'}>{error}</div>}
+          <input
+            type="password"
+            placeholder="Confirm Password"
+            name="confirmPassword"
+            value={confirmPassword}
+            onChange={(e) => { setConfirmPassword(e.target.value); setError(''); }}
+            required
+          />
 
-          <button type="submit" className={`oauthButton ${locked ? 'oauthButton--locked' : ''}`} disabled={loading || locked}>
-            {locked ? (
-              <>
-                <svg className="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                </svg>
-                Sign up first
-              </>
-            ) : loading ? (
-              'Logging in...'
-            ) : (
-              <>
-                Log In
-                <svg className="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="m6 17 5-5-5-5" />
-                  <path d="m13 17 5-5-5-5" />
-                </svg>
-              </>
-            )}
+          {error && <div className="auth-error">{error}</div>}
+          {success && <div className="auth-success">{success}</div>}
+
+          <button type="submit" className="oauthButton" disabled={loading}>
+            {loading ? 'Creating Account...' : 'Create Account'}
+            <svg className="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m6 17 5-5-5-5" />
+              <path d="m13 17 5-5-5-5" />
+            </svg>
           </button>
 
           <p className="form-switch">
-            Don't have an account?{' '}
-            <button type="button" className="form-switch-link" onClick={onSwitchToSignUp}>
-              Sign Up
+            Already have an account?{' '}
+            <button type="button" className="form-switch-link" onClick={onSwitchToLogin}>
+              Log In
             </button>
           </p>
         </form>

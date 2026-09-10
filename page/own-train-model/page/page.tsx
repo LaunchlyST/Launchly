@@ -251,7 +251,7 @@ function PlanArtwork({ kind }: { kind: 'ghost' | 'creator' | 'studio' }) {
   );
 }
 
-export function InsidePage() {
+export function OwnTrainModelPage() {
   const {
     createCheckout,
     manageSubscription,

@@ -6,9 +6,10 @@ interface DashboardSceneProps {
   intro?: ReactNode;
   revealed?: boolean;
   onReveal?: () => void;
+  variant?: 'photo' | 'illustration';
 }
 
-export function DashboardScene({ children, intro, revealed, onReveal }: DashboardSceneProps) {
+export function DashboardScene({ children, intro, revealed, onReveal, variant = 'photo' }: DashboardSceneProps) {
   const [internalRevealed, setInternalRevealed] = useState(false);
   const touchStartY = useRef<number | null>(null);
   const isRevealed = revealed ?? internalRevealed;
@@ -79,7 +80,7 @@ export function DashboardScene({ children, intro, revealed, onReveal }: Dashboar
   }, [isRevealed, revealed, onReveal]);
 
   return (
-    <div className={`dashboard-scene ${isRevealed ? 'is-revealed' : ''}`}>
+    <div className={`dashboard-scene dashboard-scene--${variant} ${isRevealed ? 'is-revealed' : ''}`}>
       <div className="dashboard-nature">
         <img className="dashboard-nature__image" src="/launchly-nature-bg.png" alt="" />
         <div className="dashboard-nature__clouds dashboard-nature__clouds--front" />

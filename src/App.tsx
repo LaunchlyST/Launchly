@@ -5,11 +5,13 @@ import { SubscriptionGate } from './subscription/SubscriptionGate';
 import { useSubscription } from './useSubscription';
 import { useStore } from './store';
 import { useAuthStore } from './auth-store';
-import { LandingPage } from './page/landing/page';
-import { Login } from './page/login/page';
-import { PricingPage } from './page/pricing/page';
-import { SignUp } from './page/signup/page';
-import { GeneratorPage } from './page/dashboard/page';
+import { FrontPage } from '../page/front-page/page/page';
+import { Login } from '../page/login/page/page';
+import { InsidePage } from '../page/inside/page/page';
+import { SignUp } from '../page/signup/page/page';
+import { GeneratorPage } from '../page/dashboard/page/page';
+import { PricingPage } from '../page/pricing/page/page';
+import { OwnTrainModelPage } from '../page/own-train-model/page/page';
 import './App.css';
 
 function getRoutePath() {
@@ -18,9 +20,24 @@ function getRoutePath() {
   if (path === '/pricing') return '/pricing';
   if (path === '/paywall') return '/paywall';
   if (path === '/inside') return '/inside';
+  if (path === '/own-train-model') return '/own-train-model';
+  if (path === '/front-page') return '/front-page';
   if (path === '/dashboard') return '/dashboard';
   if (path === '/login') return '/login';
   return '/';
+}
+
+function RedirectTo({ path }: { path: string }) {
+  useEffect(() => {
+    window.history.replaceState({}, '', path);
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  }, [path]);
+
+  return (
+    <div className="auth-loading">
+      <span className="auth-spinner auth-spinner--lg" />
+    </div>
+  );
 }
 
 export function App() {
@@ -71,6 +88,10 @@ export function App() {
     );
   }
 
+  if (route === '/' && user) {
+    return <RedirectTo path={isActive ? '/dashboard' : '/paywall'} />;
+  }
+
   if (route === '/login') {
     return (
       <div className="app app--auth">
@@ -93,7 +114,7 @@ export function App() {
 
   if (route === '/pricing') {
     return (
-      <div className="app app--unpaid-dashboard">
+      <div className="app app--inside">
         <main className="app__main">
           <PricingPage />
         </main>
@@ -105,7 +126,27 @@ export function App() {
     return (
       <div className="app app--inside">
         <main className="app__main">
-          <PricingPage />
+          <InsidePage />
+        </main>
+      </div>
+    );
+  }
+
+  if (route === '/own-train-model') {
+    return (
+      <div className="app app--inside">
+        <main className="app__main">
+          <OwnTrainModelPage />
+        </main>
+      </div>
+    );
+  }
+
+  if (route === '/front-page') {
+    return (
+      <div className="app app--inside">
+        <main className="app__main">
+          <FrontPage />
         </main>
       </div>
     );
@@ -132,16 +173,10 @@ export function App() {
       );
     }
 
-    if (!isActive) {
-      return (
-        <div className="app app--unpaid-dashboard">
-          <main className="app__main">
-            <SubscriptionGate>
-              <GeneratorPage />
-            </SubscriptionGate>
-          </main>
-        </div>
-      );
+    const subscriptionResult = new URLSearchParams(window.location.search).get('subscription');
+
+    if (!isActive && subscriptionResult !== 'success') {
+      return <RedirectTo path="/paywall" />;
     }
 
     return (
@@ -193,24 +228,12 @@ export function App() {
     );
   }
 
-  // Home route (/)
-  useEffect(() => {
-    if (!authLoading && user && route === '/') {
-      // Redirect based on subscription status
-      if (isActive) {
-        navigate('/inside');
-      } else {
-        navigate('/paywall');
-      }
-    }
-  }, [user, authLoading, route, navigate, isActive]);
-
   if (!user) {
     if (route === '/') {
       return (
         <div className="app app--auth">
           <main className="app__main">
-            <LandingPage />
+            <FrontPage />
           </main>
         </div>
       );
