@@ -1,4 +1,4 @@
-﻿import {
+import {
   useEffect,
   useRef,
   useState,
@@ -78,7 +78,7 @@ function SpaceBackground() {
             : 0.8 + Math.sin(elapsed * 0.0004 + star.phase) * 0.2;
 
         context.beginPath();
-        context.fillStyle = `rgba(255,210,149,${star.alpha * twinkle * 0.72})`;
+        context.fillStyle = `rgba(226,232,240,${star.alpha * twinkle * 0.7})`;
         context.arc(x, star.y * height, star.radius, 0, Math.PI * 2);
         context.fill();
 
@@ -250,7 +250,7 @@ function PlanArtwork({ kind }: { kind: 'ghost' | 'creator' | 'studio' }) {
         <span><Video size={13} /> Video</span>
         <span><Sparkles size={13} /> Hook</span>
       </div>
-      <span className="lx-art-caption">Campaign Studio Â· Concept preview</span>
+      <span className="lx-art-caption">Campaign Studio Ã‚Â· Concept preview</span>
     </div>
   );
 }
@@ -406,10 +406,10 @@ function LaunchlyIntroScene() {
       </div>
       <div className="lx-prompt-card">
         <span>AI CREATIVE DIRECTION</span>
-        <strong>Soft light Â· 9:16 Â· Product focus</strong>
+        <strong>Soft light Ã‚Â· 9:16 Ã‚Â· Product focus</strong>
         <i /><i /><i />
       </div>
-      <div className="lx-scene-tag">PRODUCT â†’ AD</div>
+      <div className="lx-scene-tag">PRODUCT Ã¢â€ â€™ AD</div>
     </div>
   );
 }
@@ -563,7 +563,7 @@ export function PricingPage() {
     if (status === 'cancelled') {
       setNotice('Checkout cancelled. You have not been upgraded.');
     } else {
-      setNotice('Confirming your subscriptionâ€¦');
+      setNotice('Confirming your subscriptionÃ¢â‚¬Â¦');
       setActivationPending(true);
     }
   }, []);
@@ -716,7 +716,7 @@ export function PricingPage() {
               <PlanObject kind="creator" />
               <h3>Creator</h3>
               <p className="lx-description">Start creating TikTok Shop product content with image and video generation.</p>
-              <div className="lx-price">Â£5 <small>/ month</small></div>
+              <div className="lx-price">Ã‚Â£5 <small>/ month</small></div>
               <div className="lx-divider" />
               <ul>
                 <li><Check /> Access the Launchly dashboard</li>
@@ -730,7 +730,7 @@ export function PricingPage() {
                   disabled={checkoutLoading || loading}
                   onClick={() => void checkout()}
                 >
-                  {checkoutLoading ? <><Loader2 className="lx-spin" size={17} /> Openingâ€¦</> :
+                  {checkoutLoading ? <><Loader2 className="lx-spin" size={17} /> OpeningÃ¢â‚¬Â¦</> :
                     <>{isActive ? 'Manage subscription' : 'Get Creator Access'}<ArrowRight size={16} /></>}
                 </button>
                 <small>Provider API usage is billed separately.</small>
@@ -758,7 +758,7 @@ export function PricingPage() {
               </div>
             </article>
           </div>
-          <p className="lx-footer-note">Scroll up to return to space Â· Creator subscriptions can be cancelled through billing</p>
+          <p className="lx-footer-note">Scroll up to return to space Ã‚Â· Creator subscriptions can be cancelled through billing</p>
         </div>
       </div>
 
@@ -815,13 +815,13 @@ function GhostPreview({ onClose }: { onClose: () => void }) {
       <div className="lx-preview-grid">
         <div className="lx-preview-controls">
           <span className="lx-kicker">YOUR PROMPT</span>
-          <textarea disabled value="Create a premium product image with warm studio lightingâ€¦" readOnly />
+          <textarea disabled value="Create a premium product image with warm studio lightingÃ¢â‚¬Â¦" readOnly />
           <div className="lx-preview-tags"><span>Image</span><span>9:16</span><span>Studio light</span></div>
           <button className="lx-button" disabled><LockKeyhole size={15} /> Generation locked</button>
         </div>
         <div className="lx-preview-output">
           <PlanArtwork kind="creator" />
-          <span>Example output Â· Not a generated project</span>
+          <span>Example output Ã‚Â· Not a generated project</span>
         </div>
       </div>
       <button className="lx-button lx-creator-button" onClick={onClose}>Return to plans <ArrowRight size={16} /></button>
@@ -832,40 +832,37 @@ function GhostPreview({ onClose }: { onClose: () => void }) {
 const styles = `
 .lx{
   --zoom:0;--reveal:0;--intro:1;--mx:0px;--my:0px;
-  position:fixed;inset:0;isolation:isolate;overflow:hidden;
-  background:#050710;color:#f1f2f8;
+  position:fixed;inset:0;width:100vw;height:100dvh;min-height:100vh;isolation:isolate;overflow:hidden;
+  background:#05070d;color:#e8eaef;
   font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
   overscroll-behavior:none;color-scheme:dark;
 }
-.lx:before{content:"";position:absolute;inset:-28%;z-index:-1;pointer-events:none;opacity:var(--reveal);
+.lx:before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;opacity:var(--reveal);
   background:
-    radial-gradient(ellipse at 14% 18%,#60a5fa78 0 11%,transparent 33%),
-    radial-gradient(ellipse at 84% 13%,#c084fc78 0 13%,transparent 35%),
-    radial-gradient(ellipse at 20% 86%,#2dd4bf70 0 12%,transparent 34%),
-    radial-gradient(ellipse at 78% 78%,#f0abfc55 0 12%,transparent 36%),
-    radial-gradient(ellipse at 50% 50%,#38bdf84d 0 16%,transparent 42%),
-    linear-gradient(135deg,#07111f 0%,#151d31 38%,#281f38 72%,#090911 100%);
-  filter:blur(42px) saturate(1.45);transform:translate(calc(var(--reveal)*-18px),calc(var(--reveal)*10px)) scale(1.12);
-  animation:lx-watercolor-flow 16s ease-in-out infinite alternate;transition:opacity .2s ease}
-.lx:after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;opacity:var(--reveal);
-  background:linear-gradient(135deg,#ffffff30,#ffffff08 30%,#ffffff1b 46%,#ffffff06 74%),repeating-linear-gradient(110deg,#ffffff0b 0 1px,transparent 1px 18px),radial-gradient(circle at 50% 18%,#ffffff24,transparent 40%);
-  backdrop-filter:blur(20px) saturate(1.2);border-top:1px solid #ffffff2b;transition:opacity .2s ease}
+    radial-gradient(ellipse at 12% 0%,rgba(37,99,235,.18) 0 18%,transparent 48%),
+    radial-gradient(ellipse at 88% 8%,rgba(245,158,11,.10) 0 14%,transparent 42%),
+    radial-gradient(ellipse at 50% 100%,rgba(15,23,42,.9) 0 35%,transparent 70%),
+    linear-gradient(165deg,#05070d 0%,#0b1220 42%,#0a0f1a 78%,#05070d 100%);
+  filter:none;transform:none;animation:none;transition:opacity .25s ease}
+.lx:after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;opacity:calc(var(--reveal)*.55);
+  background:radial-gradient(ellipse at 50% 0%,rgba(255,255,255,.04),transparent 42%),linear-gradient(180deg,rgba(5,7,13,.15),rgba(5,7,13,.55));
+  backdrop-filter:none;border-top:0;transition:opacity .25s ease}
 .lx *,.lx *::before,.lx *::after{box-sizing:border-box}
 .lx button,.lx a{-webkit-tap-highlight-color:transparent}
 .lx button{font:inherit;cursor:pointer}
 .lx button:disabled{cursor:not-allowed}
 .lx button:focus-visible,.lx a:focus-visible{outline:2px solid #ffbe78;outline-offset:5px}
 .lx button{color:inherit}
-.lx-space{position:absolute;inset:-5%;z-index:-2;pointer-events:none;overflow:hidden;
+.lx-space{position:absolute;inset:0;z-index:-2;pointer-events:none;overflow:hidden;
   transform:translate(var(--mx),var(--my)) scale(calc(1 + var(--zoom)*.19));
   opacity:calc(1 - var(--reveal)*.24);background:#050710}
 .lx-stars{position:absolute;width:100%;height:100%;inset:0}
 .lx-nebula{position:absolute;filter:blur(45px);border-radius:50%;opacity:.5}
 .lx-nebula-one{width:95%;height:60%;left:-12%;top:-5%;
-  background:radial-gradient(ellipse,#30305455,transparent 65%),radial-gradient(ellipse at 65% 60%,#3b4b7a55,transparent 60%);
+  background:radial-gradient(ellipse,rgba(30,58,138,.28),transparent 65%),radial-gradient(ellipse at 65% 60%,rgba(15,23,42,.55),transparent 60%);
   transform:rotate(-28deg);animation:lx-cloud 65s ease-in-out infinite alternate}
 .lx-nebula-two{width:65%;height:70%;right:-20%;bottom:-22%;
-  background:radial-gradient(ellipse,#43245250,transparent 65%);
+  background:radial-gradient(ellipse,rgba(245,158,11,.08),transparent 65%);
   animation:lx-cloud 83s ease-in-out infinite alternate-reverse}
 .lx-planet{position:absolute;right:5%;top:9%;width:clamp(140px,22vw,330px);aspect-ratio:1;border-radius:50%;
   background:radial-gradient(circle at 29% 22%,#7f88a0 0%,#34394d 22%,#111524 49%,#04060d 72%);
@@ -919,7 +916,7 @@ const styles = `
 .lx-mouse i{display:block;width:2px;height:5px;margin:5px auto;background:#d1d5e4;animation:lx-wheel 1.8s ease-in-out infinite}
 .lx-plan-layer{position:absolute;inset:0;display:grid;place-items:stretch;pointer-events:none;overflow:visible}
 .lx-plan-panel{width:100%;height:100%;max-height:none;overflow:auto;padding:132px clamp(28px,4vw,56px) 30px;overscroll-behavior:contain;border-radius:0;
-  background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.07));border:1px solid #ffffff2b;box-shadow:0 30px 100px #0008,0 0 90px #ffca8030;backdrop-filter:blur(22px);
+  background:linear-gradient(180deg,rgba(8,12,22,.72),rgba(5,7,13,.88));border:0;box-shadow:none;backdrop-filter:blur(18px);
   opacity:var(--reveal);transform:scale(calc(.94 + var(--reveal)*.06));scrollbar-width:thin;scrollbar-color:#ffffff25 transparent;outline:none}
 .lx-plan-panel[aria-hidden="false"]{pointer-events:auto}
 .lx-plan-heading{display:flex;align-items:center;justify-content:center;text-align:center;gap:16px;margin-bottom:25px}
@@ -927,37 +924,37 @@ const styles = `
 .lx-plan-heading h2{font-size:clamp(24px,2.7vw,34px);font-weight:700;letter-spacing:-1px;margin:8px 0 0;color:#fff}
 .lx-plans{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;align-items:stretch;padding:8px 0 0;max-width:1100px;margin:0 auto}
 .lx-plan{--tint:180,188,210;position:relative;display:grid;grid-template-rows:auto auto 1fr auto auto;min-height:370px;padding:24px;
-  background:linear-gradient(180deg,rgba(255,255,255,.94),rgba(246,247,255,.88));border:1px solid rgba(255,255,255,.72);border-radius:20px;box-shadow:0 24px 60px #0004;backdrop-filter:blur(10px);text-align:left;min-width:0;outline:none;isolation:isolate;
+  background:linear-gradient(180deg,#121722,#0c1018);border:1px solid rgba(255,255,255,.10);border-radius:16px;box-shadow:0 18px 50px rgba(0,0,0,.45);backdrop-filter:none;text-align:left;min-width:0;outline:none;isolation:isolate;
   transition:transform .28s ease,filter .28s ease}
 .lx-plan:hover,.lx-plan:focus-within,.lx-plan:focus{transform:translateY(-8px);filter:drop-shadow(0 28px 44px rgba(var(--tint),.13))}
 .lx-plan:focus-visible{outline:2px solid rgba(var(--tint),.72);outline-offset:10px;border-radius:32px}
-.lx-ghost-plan{--tint:203,214,255}
-.lx-creator-plan{--tint:255,182,89;background:linear-gradient(180deg,#fffdf8,#fff3df);border-color:#ffc772;box-shadow:0 30px 80px #ffb25938,0 0 0 2px #ffbd62}
-.lx-studio-plan{--tint:181,136,255}
-.lx-plan-top{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:18px;font-size:9px;font-weight:800;letter-spacing:1.65px;color:#69708c}
-.lx-pick{display:inline-flex;align-items:center;gap:4px;padding:4px 8px;border-radius:999px;background:#fff0d8;color:#9a5b05;font-size:9px;letter-spacing:0}
-.lx-studio-badge{display:grid;place-items:center;width:30px;height:30px;border-radius:10px;background:linear-gradient(180deg,#f1e9ff,#ddd0ff);color:#7b4ee6;box-shadow:inset 0 1px #fff,0 8px 18px #7b4ee62b}
-.lx-plan h3{font-size:26px;font-weight:800;letter-spacing:-.9px;margin:20px 0 8px;color:#171925}
-.lx-description{font-size:13px;line-height:1.55;color:#596074;min-height:62px;margin:0 0 18px}
-.lx-price{display:flex;align-items:baseline;justify-content:flex-start;gap:9px;font-size:23px;letter-spacing:-.5px;font-weight:850;min-height:31px;color:#171925}
-.lx-price small{font-size:12px;font-weight:700;color:#8a627d;letter-spacing:0}
+.lx-ghost-plan{--tint:148,163,184}
+.lx-creator-plan{--tint:245,158,11;background:linear-gradient(180deg,#161b27,#10151f);border-color:rgba(245,158,11,.55);box-shadow:0 22px 60px rgba(0,0,0,.5),0 0 0 1px rgba(245,158,11,.35)}
+.lx-studio-plan{--tint:148,163,184}
+.lx-plan-top{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:18px;font-size:9px;font-weight:800;letter-spacing:1.65px;color:#94a3b8}
+.lx-pick{display:inline-flex;align-items:center;gap:4px;padding:4px 8px;border-radius:999px;background:rgba(245,158,11,.14);color:#fbbf24;font-size:9px;letter-spacing:0;border:1px solid rgba(245,158,11,.28)}
+.lx-studio-badge{display:grid;place-items:center;width:30px;height:30px;border-radius:10px;background:rgba(148,163,184,.12);color:#cbd5e1;box-shadow:inset 0 1px rgba(255,255,255,.06);border:1px solid rgba(148,163,184,.2)}
+.lx-plan h3{font-size:26px;font-weight:800;letter-spacing:-.9px;margin:20px 0 8px;color:#f8fafc}
+.lx-description{font-size:13px;line-height:1.55;color:#94a3b8;min-height:62px;margin:0 0 18px}
+.lx-price{display:flex;align-items:baseline;justify-content:flex-start;gap:9px;font-size:23px;letter-spacing:-.5px;font-weight:850;min-height:31px;color:#f8fafc}
+.lx-price small{font-size:12px;font-weight:700;color:#94a3b8;letter-spacing:0}
 .lx-soon{font-size:18px;align-items:center;letter-spacing:-.3px}
 .lx-divider{height:1px;background:linear-gradient(90deg,rgba(var(--tint),.23),rgba(var(--tint),.03));margin:20px 0}
 .lx-plan ul{display:flex;flex-direction:column;gap:12px;padding:0;margin:0 0 20px;list-style:none}
-.lx-plan li{display:flex;align-items:flex-start;gap:9px;font-size:12px;line-height:1.5;color:#2b3040}
+.lx-plan li{display:flex;align-items:flex-start;gap:9px;font-size:12px;line-height:1.5;color:#cbd5e1}
 .lx-plan li svg{width:14px;height:14px;flex-shrink:0;margin-top:1px;color:rgb(var(--tint));stroke-width:1.6}
 .lx-inset{display:flex;gap:10px;align-items:flex-start;background:rgba(var(--tint),.04);border:1px solid rgba(var(--tint),.09);border-radius:11px;padding:12px;color:#a0a6b9;font-size:10px;line-height:1.6;margin:1px 0 20px}
 .lx-inset svg{flex-shrink:0;margin-top:2px}
-.lx-inset strong{display:block;color:#d8c8f7;font-size:11px;margin-bottom:3px;font-weight:500}
-.lx-planned{font-size:8px;letter-spacing:1.5px;color:#948aa9;margin:-3px 0 13px}
+.lx-inset strong{display:block;color:#e2e8f0;font-size:11px;margin-bottom:3px;font-weight:500}
+.lx-planned{font-size:8px;letter-spacing:1.5px;color:#64748b;margin:-3px 0 13px}
 .lx-plan>.lx-divider,.lx-plan>.lx-inset,.lx-plan>.lx-planned{display:none}
 .lx-plan-bottom{margin-top:auto;padding-top:16px}
 .lx-button{width:100%;min-height:48px;margin:0 auto;padding:12px 18px;display:flex;align-items:center;justify-content:center;gap:10px;border:1px solid rgba(var(--tint),.24);border-radius:14px;background:#171925;color:#fff;font-size:12px!important;font-weight:750!important;transition:background .2s,box-shadow .2s,border-color .2s}
 .lx-button svg{flex-shrink:0}
 .lx-button:not(:disabled):hover{background:#25293a;border-color:rgba(var(--tint),.46)}
-.lx-button:disabled{color:#8a8392;background:#edeaf4;border-color:#d8d2e5}
-.lx-ghost-button{background:#f1f4ff!important;color:#05070d!important;border-color:#d7def8}
-.lx-creator-button{position:relative;overflow:hidden;background:linear-gradient(180deg,#ffd295,#ffad4f)!important;color:#231204!important;border-color:#ffe0b670;box-shadow:inset 0 1px #fff0d7a8,0 9px 28px #ffab4322,0 0 0 1px #ffcc8420;font-size:13px!important}
+.lx-button:disabled{color:#64748b;background:#1e2433;border-color:#2a3344}
+.lx-ghost-button{background:#1a2030!important;color:#f8fafc!important;border-color:rgba(148,163,184,.35)}
+.lx-creator-button{position:relative;overflow:hidden;background:linear-gradient(180deg,#f59e0b,#d97706)!important;color:#0b0f14!important;border-color:rgba(251,191,36,.45);box-shadow:0 10px 28px rgba(245,158,11,.22);font-size:13px!important}
 .lx-creator-button:before{content:"";position:absolute;inset:-1px;transform:translateX(-120%);background:linear-gradient(105deg,transparent 25%,#fff3d970 50%,transparent 72%);transition:transform .55s ease}
 .lx-creator-button:hover:not(:disabled){box-shadow:inset 0 1px #fff0d7a8,0 12px 35px #ffab4342,0 0 0 1px #ffcc8438}
 .lx-creator-button:hover:not(:disabled):before{transform:translateX(120%)}

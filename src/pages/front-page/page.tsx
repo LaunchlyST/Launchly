@@ -1,565 +1,443 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
-import { ArrowRight, Download, Image as ImageIcon, Sparkles, Video, Wand2 } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowRight, Flame, Waves, Crown } from 'lucide-react';
 
-const sceneCopies = [
+type Theme = 'signal' | 'fire' | 'ocean' | 'hood';
+
+const CHAPTERS = [
   {
-    label: 'FOR TIKTOK SHOP AFFILIATES',
-    title: ['Your product.', 'A whole new creative.'],
-    body: 'Create AI prompts, images and video ads for TikTok Shop. Download your content and make it yours.',
-    action: 'Start creating',
-    secondary: 'Explore the demo',
-    note: 'GBP 5/month for access. AI usage charged separately.',
+    id: 'fire',
+    theme: 'fire' as Theme,
+    kicker: '01 / FIRE',
+    title: 'Ignite the creative.',
+    body: 'Launchly turns product ideas into heat — prompts, images and video ads built for TikTok Shop affiliates who need scroll-stopping energy.',
+    points: ['Prompt → image → video ad flow', 'Built for affiliate creatives', 'Download and post on your terms'],
   },
   {
-    label: 'ILLUSTRATIVE DEMO',
-    title: ['Give your product', 'a direction.'],
-    body: 'Turn your idea into a clear creative prompt before you make images or video ads.',
-    action: 'Start creating',
-    secondary: 'See the reveal',
-    note: 'Lighting, setting, and camera movement are shown as example creative controls.',
+    id: 'ocean',
+    theme: 'ocean' as Theme,
+    kicker: '02 / OCEAN',
+    title: 'Go deeper on every idea.',
+    body: 'Clear direction before you generate. Shape lighting, setting and camera move so every creative feels intentional — not random.',
+    points: ['Guided creative controls', 'Illustrative demos you can feel', 'GBP 5/month access — AI usage separate'],
   },
   {
-    label: 'EXAMPLE CREATIVE',
-    title: ['Make them stop.', 'Show them why.'],
-    body: 'Give your next affiliate post a stronger visual story with polished product imagery.',
-    action: 'Start creating',
-    secondary: 'Continue',
-    note: 'This preview is illustrative. Your final creative is made inside Launchly.',
-  },
-  {
-    label: 'DOWNLOAD AND POST',
-    title: ['Create it.', 'Download it.', 'Post it.'],
-    body: 'Download your finished content, then post it on TikTok and add your affiliate product.',
-    action: 'Start creating',
-    secondary: 'See pricing',
-    note: 'Launchly does not post automatically or guarantee earnings.',
-  },
-  {
-    label: 'LAUNCHLY ACCESS',
-    title: ['Your next creative', 'starts here.'],
-    body: 'Launchly access is GBP 5/month. AI usage is paid separately, with no generation credits included.',
-    action: 'Get access - GBP 5/month',
-    secondary: 'Questions',
-    note: 'Launchly Prompt AI is GBP 0.05 per successful prompt when available.',
+    id: 'hood',
+    theme: 'hood' as Theme,
+    kicker: '03 / HOOD',
+    title: 'Make it look expensive.',
+    body: 'Bold, premium, street-confident output. Create it, download it, post it — your product, your story, your feed.',
+    points: ['Premium visual attitude', 'No auto-posting — you stay in control', 'Start creating in minutes'],
   },
 ];
 
-const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
+const CHARS = 'Xx01$/>+*=#%@';
 
-export function FrontPage() {
-  const pageRef = useRef<HTMLElement | null>(null);
-  const [activeScene, setActiveScene] = useState(0);
-  const [creativeMode, setCreativeMode] = useState<'original' | 'ad'>('original');
-  const copy = sceneCopies[activeScene];
+function mixTheme(theme: Theme, t: number) {
+  if (theme === 'fire') {
+    return {
+      r: 255,
+      g: Math.floor(40 + 140 * t),
+      b: Math.floor(10 + 30 * (1 - t)),
+    };
+  }
+  if (theme === 'ocean') {
+    return {
+      r: Math.floor(20 + 40 * (1 - t)),
+      g: Math.floor(140 + 80 * t),
+      b: Math.floor(200 + 55 * t),
+    };
+  }
+  if (theme === 'hood') {
+    return {
+      r: Math.floor(180 + 60 * t),
+      g: Math.floor(140 + 40 * t),
+      b: Math.floor(60 + 20 * t),
+    };
+  }
+  // signal / ascii electric blue burst
+  return {
+    r: Math.floor(180 + 75 * t),
+    g: Math.floor(210 + 45 * t),
+    b: 255,
+  };
+}
+
+function AsciiField({
+  theme,
+  intensity,
+  burst,
+}: {
+  theme: Theme;
+  intensity: number;
+  burst: number;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    const page = pageRef.current;
-    if (!page) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
     let raf = 0;
-    const update = () => {
-      raf = 0;
-      const scrollTop = window.scrollY;
-      const viewportHeight = window.innerHeight;
-      const maxScroll = Math.max(1, page.scrollHeight - viewportHeight);
-      const progress = clamp01(scrollTop / maxScroll);
-      const scene = Math.min(sceneCopies.length - 1, Math.floor(progress * sceneCopies.length + 0.08));
+    let w = 0;
+    let h = 0;
+    let cols = 0;
+    let rows = 0;
+    let cell = 10;
+    let tick = 0;
 
-      page.style.setProperty('--story-progress', progress.toFixed(4));
-      page.style.setProperty('--scene-two', clamp01((progress - 0.18) / 0.2).toFixed(4));
-      page.style.setProperty('--scene-three', clamp01((progress - 0.38) / 0.2).toFixed(4));
-      page.style.setProperty('--scene-four', clamp01((progress - 0.58) / 0.2).toFixed(4));
-      page.style.setProperty('--scene-five', clamp01((progress - 0.78) / 0.18).toFixed(4));
-      setActiveScene(scene);
+    const resize = () => {
+      const rect = canvas.getBoundingClientRect();
+      w = Math.max(1, rect.width);
+      h = Math.max(1, rect.height);
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      cell = Math.max(8, Math.floor(Math.min(w, h) / 72));
+      cols = Math.ceil(w / cell) + 1;
+      rows = Math.ceil(h / cell) + 1;
     };
 
-    const requestUpdate = () => {
-      if (!raf) raf = window.requestAnimationFrame(update);
+    const draw = (now: number) => {
+      tick = now * 0.001;
+      ctx.fillStyle = '#02040a';
+      ctx.fillRect(0, 0, w, h);
+
+      const cx = w * 0.5;
+      const cy = h * 0.48;
+      const maxR = Math.hypot(w, h) * 0.55;
+      const pulse = reduced.matches ? 0.55 : 0.45 + 0.55 * Math.sin(tick * 1.6);
+      const boom = Math.max(intensity, burst) * (0.75 + pulse * 0.35);
+
+      ctx.font = `700 ${Math.floor(cell * 0.92)}px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          const px = x * cell + cell * 0.5;
+          const py = y * cell + cell * 0.5;
+          const dx = px - cx;
+          const dy = py - cy;
+          const dist = Math.hypot(dx, dy) / maxR;
+          const angle = Math.atan2(dy, dx);
+          const ray = 0.55 + 0.45 * Math.cos(angle * 6 + tick * 2.2);
+          const core = Math.exp(-dist * dist * (4.2 - boom * 1.8));
+          const ripple = reduced.matches
+            ? 0
+            : 0.12 * Math.sin(dist * 18 - tick * 8 + angle * 3);
+          let v = (core * ray + ripple) * (0.35 + boom * 0.9);
+          v = Math.max(0, Math.min(1, v));
+          if (v < 0.05) continue;
+
+          const ch = CHARS[(x * 17 + y * 31 + Math.floor(tick * 10 + v * 20)) % CHARS.length];
+          const c = mixTheme(theme, v);
+          const a = 0.15 + v * 0.85;
+          ctx.fillStyle = `rgba(${c.r},${c.g},${c.b},${a})`;
+          ctx.fillText(ch, px, py);
+        }
+      }
+
+      // hot core
+      const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, maxR * 0.28);
+      if (theme === 'fire') {
+        g.addColorStop(0, `rgba(255,250,220,${0.35 * boom})`);
+        g.addColorStop(0.35, `rgba(255,120,20,${0.18 * boom})`);
+        g.addColorStop(1, 'rgba(0,0,0,0)');
+      } else if (theme === 'ocean') {
+        g.addColorStop(0, `rgba(220,250,255,${0.28 * boom})`);
+        g.addColorStop(0.4, `rgba(40,180,255,${0.16 * boom})`);
+        g.addColorStop(1, 'rgba(0,0,0,0)');
+      } else if (theme === 'hood') {
+        g.addColorStop(0, `rgba(255,230,170,${0.3 * boom})`);
+        g.addColorStop(0.4, `rgba(180,120,40,${0.14 * boom})`);
+        g.addColorStop(1, 'rgba(0,0,0,0)');
+      } else {
+        g.addColorStop(0, `rgba(255,255,255,${0.42 * boom})`);
+        g.addColorStop(0.25, `rgba(170,220,255,${0.2 * boom})`);
+        g.addColorStop(1, 'rgba(0,0,0,0)');
+      }
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+
+      raf = requestAnimationFrame(draw);
     };
 
-    update();
-    window.addEventListener('scroll', requestUpdate, { passive: true });
-    document.addEventListener('scroll', requestUpdate, { passive: true });
-    document.documentElement.addEventListener('scroll', requestUpdate, { passive: true });
-    document.body.addEventListener('scroll', requestUpdate, { passive: true });
-    window.addEventListener('wheel', requestUpdate, { passive: true });
-    window.addEventListener('touchmove', requestUpdate, { passive: true });
-    window.addEventListener('resize', requestUpdate);
+    resize();
+    raf = requestAnimationFrame(draw);
+    window.addEventListener('resize', resize);
     return () => {
-      window.removeEventListener('scroll', requestUpdate);
-      document.removeEventListener('scroll', requestUpdate);
-      document.documentElement.removeEventListener('scroll', requestUpdate);
-      document.body.removeEventListener('scroll', requestUpdate);
-      window.removeEventListener('wheel', requestUpdate);
-      window.removeEventListener('touchmove', requestUpdate);
-      window.removeEventListener('resize', requestUpdate);
-      if (raf) window.cancelAnimationFrame(raf);
+      cancelAnimationFrame(raf);
+      window.removeEventListener('resize', resize);
+    };
+  }, [theme, intensity, burst]);
+
+  return <canvas ref={canvasRef} className="fp2-ascii" aria-hidden="true" />;
+}
+
+export function FrontPage() {
+  const rootRef = useRef<HTMLElement>(null);
+  const [progress, setProgress] = useState(0);
+  const [burst, setBurst] = useState(0);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const t1 = window.setTimeout(() => setBurst(1), 180);
+    const t2 = window.setTimeout(() => setReady(true), 900);
+    return () => {
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
     };
   }, []);
 
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    let raf = 0;
+    const onScroll = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        const max = Math.max(1, el.scrollHeight - window.innerHeight);
+        setProgress(Math.max(0, Math.min(1, window.scrollY / max)));
+      });
+    };
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, []);
+
+  const phase = useMemo(() => {
+    if (progress < 0.12) return { theme: 'signal' as Theme, chapter: -1, local: progress / 0.12 };
+    if (progress < 0.28) return { theme: 'fire' as Theme, chapter: -1, local: (progress - 0.12) / 0.16 };
+    if (progress < 0.52) return { theme: 'fire' as Theme, chapter: 0, local: (progress - 0.28) / 0.24 };
+    if (progress < 0.76) return { theme: 'ocean' as Theme, chapter: 1, local: (progress - 0.52) / 0.24 };
+    return { theme: 'hood' as Theme, chapter: 2, local: (progress - 0.76) / 0.24 };
+  }, [progress]);
+
+  const intensity = phase.theme === 'signal' ? 0.55 + burst * 0.45 : 0.7 + phase.local * 0.25;
+
   return (
     <main
-      ref={pageRef}
-      className={`front-page fp-scene-${activeScene + 1}`}
-      style={{
-        '--story-progress': 0,
-        '--scene-two': 0,
-        '--scene-three': 0,
-        '--scene-four': 0,
-        '--scene-five': 0,
-      } as CSSProperties}
+      ref={rootRef}
+      className={`fp2 fp2-${phase.theme} ${ready ? 'is-ready' : ''}`}
+      data-chapter={phase.chapter}
+      style={{ ['--p' as string]: progress, ['--local' as string]: phase.local }}
     >
-      <style>{frontPageStyles}</style>
-      <div className="fp-page-light" aria-hidden="true">
-        <i />
-        <i />
-        <i />
+      <style>{styles}</style>
+
+      <div className="fp2-stage" aria-hidden="true">
+        <AsciiField theme={phase.theme} intensity={intensity} burst={burst} />
+        <div className="fp2-vignette" />
+        <div className="fp2-heat" />
+        <div className="fp2-scan" />
       </div>
 
-      <header className="fp-header">
-        <a className="fp-brand" href="/" aria-label="Launchly home">
-          <span><Sparkles size={18} /></span>
-          <strong>Launchly</strong>
+      <header className="fp2-header">
+        <a className="fp2-brand" href="/">
+          <span>◆</span> Launchly
         </a>
-        <nav className="fp-nav" aria-label="Main navigation">
-          <a href="#scene-2">How it works</a>
-          <a href="#scene-4">Examples</a>
-          <a href="#scene-5">Pricing</a>
+        <nav>
+          <a href="#fire">Fire</a>
+          <a href="#ocean">Ocean</a>
+          <a href="#hood">Hood</a>
           <a href="/login">Sign in</a>
+          <a className="fp2-cta" href="/signup">
+            Get access <ArrowRight size={14} />
+          </a>
         </nav>
       </header>
 
-      <section className="fp-story" aria-label="Launchly product story">
-        <span id="demo" className="fp-demo-anchor" aria-hidden="true" />
-        <div className="fp-sticky">
-          <div className={`fp-studio is-${creativeMode}`} aria-hidden="true">
-            <div className="fp-curved-glass" />
-            <div className="fp-water" />
-            <div className="fp-stone fp-stone-a" />
-            <div className="fp-stone fp-stone-b" />
-            <div className="fp-vertical-frame">
-              <span>9:16</span>
-              <strong>Example creative</strong>
-            </div>
-            <div className="fp-example-strip">
-              <CreativePreview kind="fashion" />
-              <CreativePreview kind="perfume" />
-              <CreativePreview kind="lifestyle" />
-            </div>
-            <div className="fp-prompt-panel">
-              <span>Demo prompt</span>
-              <p>Create a premium perfume ad with soft daylight, gentle reflections and a slow close-up.</p>
-              <div className="fp-controls">
-                <b>Lighting</b>
-                <b>Setting</b>
-                <b>Camera move</b>
-              </div>
-            </div>
-            <div className="fp-output-card">
-              <span><ImageIcon size={14} /> Image</span>
-              <span><Video size={14} /> Video ad</span>
-              <strong><Download size={16} /> Download</strong>
-            </div>
-            <div className="fp-pricing-panel">
-              <span>Launchly access</span>
-              <strong>GBP 5/month</strong>
-              <p>AI usage is paid separately. No generation credits included.</p>
-              <a href="/signup">Get access - GBP 5/month <ArrowRight size={16} /></a>
-              <div className="fp-faq" id="faq">
-                <b>What does access include?</b>
-                <small>The Launchly workspace for creating prompts, images, and video ads.</small>
-                <b>Are generation costs included?</b>
-                <small>No. Provider AI usage is billed separately.</small>
-                <b>Can I download my content?</b>
-                <small>Yes. Download your content and post it yourself on TikTok.</small>
-              </div>
-            </div>
-            <PerfumeBottle />
-          </div>
-
-          <article className="fp-copy" key={activeScene}>
-            <span className="fp-label">{copy.label}</span>
-            <h1>
-              {copy.title.map((line) => (
-                <span key={line}>{line}</span>
-              ))}
-            </h1>
-            <p>{copy.body}</p>
-            <div className="fp-actions">
-              <a className="fp-primary" href="/signup">
-                {copy.action} <ArrowRight size={18} />
-              </a>
-              <a
-                className="fp-secondary"
-                href={activeScene >= 3 ? '#scene-5' : activeScene === 0 ? '#scene-2' : '#scene-3'}
-              >
-                <Wand2 size={16} />
-                {copy.secondary}
-              </a>
-            </div>
-            <small>{copy.note}</small>
-          </article>
-
-          <div className="fp-original-control" role="group" aria-label="Original or ad creative preview">
-            <button
-              type="button"
-              className={creativeMode === 'original' ? 'is-active' : ''}
-              onClick={() => setCreativeMode('original')}
-            >
-              Original
-            </button>
-            <button
-              type="button"
-              className={creativeMode === 'ad' ? 'is-active' : ''}
-              onClick={() => setCreativeMode('ad')}
-            >
-              Ad creative
-            </button>
-          </div>
-
-          <div className="fp-scene-markers" aria-label="Story progress">
-            {sceneCopies.map((item, index) => (
-              <a
-                key={item.label}
-                className={activeScene === index ? 'is-active' : ''}
-                href={`#scene-${index + 1}`}
-                aria-label={`Go to scene ${index + 1}`}
-              />
-            ))}
-          </div>
+      <aside className="fp2-rail" aria-label="Story progress">
+        <div className="fp2-rail-track">
+          <i style={{ height: `${Math.max(8, progress * 100)}%` }} />
         </div>
-
-        <div className="fp-scroll-sections" aria-hidden="true">
-          <div id="top" />
-          <div id="scene-1" />
-          <div id="scene-2" />
-          <div id="scene-3" />
-          <div id="scene-4" />
-          <div id="scene-5" />
-        </div>
-      </section>
-
-      <aside className="fp-dock" aria-label="Launchly story controls">
-        <span>{String(activeScene + 1).padStart(2, '0')} / 05</span>
-        <a href="/signup">Start creating</a>
-        <i style={{ '--dock-progress': `${(activeScene + 1) / sceneCopies.length}` } as CSSProperties} />
+        <ol>
+          <li className={progress < 0.28 ? 'is-on' : ''}>
+            <b>00</b>
+            <span>Signal</span>
+          </li>
+          <li className={phase.chapter === 0 ? 'is-on' : progress >= 0.28 ? 'is-done' : ''}>
+            <Flame size={12} />
+            <span>Fire</span>
+          </li>
+          <li className={phase.chapter === 1 ? 'is-on' : progress >= 0.52 ? 'is-done' : ''}>
+            <Waves size={12} />
+            <span>Ocean</span>
+          </li>
+          <li className={phase.chapter === 2 ? 'is-on' : progress >= 0.76 ? 'is-done' : ''}>
+            <Crown size={12} />
+            <span>Hood</span>
+          </li>
+        </ol>
       </aside>
 
-      <section className="fp-footer" aria-label="Launchly summary">
-        <p>Launchly is for TikTok Shop affiliates creating their own product content.</p>
-        <a href="/signup">Start creating <ArrowRight size={16} /></a>
+      <section className="fp2-intro" id="top">
+        <p className="fp2-kicker">LAUNCHLY SIGNAL</p>
+        <h1>
+          A whole new
+          <br />
+          creative blast.
+        </h1>
+        <p className="fp2-lead">
+          Crazy ASCII intro energy — then scroll into fire, ocean and hood worlds built for TikTok Shop creatives.
+        </p>
+        <div className="fp2-actions">
+          <a className="fp2-primary" href="/signup">
+            Start creating <ArrowRight size={16} />
+          </a>
+          <a className="fp2-secondary" href="#fire">
+            Enter the drop
+          </a>
+        </div>
+        <small>GBP 5/month access. AI usage charged separately.</small>
+        <div className="fp2-scroll-hint">Scroll into the fire →</div>
       </section>
+
+      <section className="fp2-bridge" aria-hidden="true">
+        <div className="fp2-bridge-copy">
+          <span>PART 02</span>
+          <strong>Same grid. Now it burns.</strong>
+        </div>
+      </section>
+
+      {CHAPTERS.map((chapter, index) => (
+        <section
+          key={chapter.id}
+          id={chapter.id}
+          className={`fp2-chapter fp2-chapter-${chapter.id}`}
+        >
+          <div
+            className="fp2-slab"
+            style={{ transform: `translate3d(${(1 - Math.min(1, Math.max(0, (progress - (0.28 + index * 0.24)) / 0.2))) * 40}px, 0, 0)` }}
+          >
+            <div className="fp2-box">
+              <div className="fp2-box-edge" />
+              <div className="fp2-box-edge fp2-box-edge-b" />
+              <p className="fp2-kicker">{chapter.kicker}</p>
+              <h2>{chapter.title}</h2>
+              <p>{chapter.body}</p>
+              <ul>
+                {chapter.points.map((point) => (
+                  <li key={point}>{point}</li>
+                ))}
+              </ul>
+              <a href={index === 2 ? '/signup' : '/pricing'}>
+                {index === 2 ? 'Get access — GBP 5/month' : 'See access'} <ArrowRight size={15} />
+              </a>
+            </div>
+          </div>
+          <div className="fp2-chapter-mark">{String(index + 1).padStart(2, '0')}</div>
+        </section>
+      ))}
+
+      <footer className="fp2-footer">
+        <div>
+          <strong>Launchly</strong>
+          <p>Create. Download. Post. Your affiliate creative system.</p>
+        </div>
+        <div className="fp2-actions">
+          <a className="fp2-primary" href="/signup">
+            Get access <ArrowRight size={16} />
+          </a>
+          <a className="fp2-secondary" href="/login">
+            Sign in
+          </a>
+        </div>
+      </footer>
     </main>
   );
 }
 
-function PerfumeBottle() {
-  return (
-    <div className="fp-bottle" aria-label="Illustrative perfume bottle">
-      <div className="fp-bottle-shadow" />
-      <div className="fp-cap" />
-      <div className="fp-neck" />
-      <div className="fp-body">
-        <div className="fp-liquid" />
-        <div className="fp-label-card">
-          <span>Launchly</span>
-          <strong>FORM 08</strong>
-          <em>soft daylight</em>
-        </div>
-      </div>
-    </div>
-  );
+const styles = `
+.app--auth:has(.fp2),.app--inside:has(.fp2){height:auto!important;min-height:100vh;overflow:visible!important;background:#02040a!important}
+.app--auth .app__main:has(.fp2),.app--inside .app__main:has(.fp2){height:auto!important;min-height:100vh;overflow:visible!important;display:block!important;padding:0!important;background:transparent!important}
+.fp2{position:relative;color:#e8eef8;background:#02040a;font-family:Inter,ui-sans-serif,system-ui,sans-serif;min-height:420vh}
+.fp2 *{box-sizing:border-box}
+.fp2 a{color:inherit;text-decoration:none}
+.fp2-stage{position:fixed;inset:0;z-index:0;pointer-events:none}
+.fp2-ascii{width:100%;height:100%;display:block}
+.fp2-vignette{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 10%,#02040acc 70%,#02040af2 100%)}
+.fp2-heat{position:absolute;inset:0;opacity:0;transition:opacity .35s ease;background:
+  radial-gradient(ellipse at 50% 60%,rgba(255,90,0,.18),transparent 45%),
+  radial-gradient(ellipse at 30% 80%,rgba(255,40,0,.12),transparent 40%)}
+.fp2-fire .fp2-heat{opacity:1;animation:fp2-ember 2.8s ease-in-out infinite alternate}
+.fp2-ocean .fp2-heat{opacity:.7;background:radial-gradient(ellipse at 60% 70%,rgba(0,180,255,.16),transparent 50%),radial-gradient(ellipse at 20% 30%,rgba(40,255,220,.08),transparent 45%);animation:none}
+.fp2-hood .fp2-heat{opacity:.75;background:radial-gradient(ellipse at 70% 40%,rgba(255,200,80,.14),transparent 45%),radial-gradient(ellipse at 20% 80%,rgba(120,60,20,.2),transparent 50%);animation:none}
+.fp2-scan{position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(255,255,255,.03) 0 1px,transparent 1px 4px);mix-blend-mode:overlay;opacity:.35}
+.fp2-header{position:fixed;top:0;left:0;right:0;z-index:30;display:flex;align-items:center;justify-content:space-between;padding:18px clamp(16px,4vw,40px);backdrop-filter:blur(10px);background:linear-gradient(#02040ae6,#02040a00)}
+.fp2-brand{display:inline-flex;gap:10px;align-items:center;font-weight:800;letter-spacing:-.4px}
+.fp2-brand span{color:#8ec5ff}
+.fp2-fire .fp2-brand span{color:#ffb14a}
+.fp2-ocean .fp2-brand span{color:#5ce1ff}
+.fp2-hood .fp2-brand span{color:#f0c36a}
+.fp2-header nav{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.fp2-header nav a{font-size:12px;font-weight:700;padding:8px 12px;border-radius:999px;color:#9aa6bc}
+.fp2-header nav a:hover{color:#fff;background:#ffffff12}
+.fp2-cta{display:inline-flex!important;gap:6px;align-items:center;background:#ffffff14!important;color:#fff!important;border:1px solid #ffffff22}
+.fp2-rail{position:fixed;right:clamp(10px,2vw,28px);top:50%;transform:translateY(-50%);z-index:25;display:flex;gap:12px;align-items:center}
+.fp2-rail-track{width:3px;height:min(42vh,320px);border-radius:99px;background:#ffffff14;overflow:hidden}
+.fp2-rail-track i{display:block;width:100%;border-radius:99px;background:linear-gradient(180deg,#9ad0ff,#ffffff)}
+.fp2-fire .fp2-rail-track i{background:linear-gradient(180deg,#ffb347,#ff4d00)}
+.fp2-ocean .fp2-rail-track i{background:linear-gradient(180deg,#7af0ff,#1a6dff)}
+.fp2-hood .fp2-rail-track i{background:linear-gradient(180deg,#ffe09a,#c48a2a)}
+.fp2-rail ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.fp2-rail li{display:flex;align-items:center;gap:8px;min-height:28px;padding:6px 10px;border:1px solid #ffffff14;border-radius:12px;background:#070b14cc;color:#7f8aa0;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;backdrop-filter:blur(8px)}
+.fp2-rail li.is-on{color:#fff;border-color:#ffffff35;box-shadow:0 0 24px #ffffff14}
+.fp2-rail li.is-done{color:#c6d0e2}
+.fp2-rail li b{font-size:9px;opacity:.7}
+.fp2-intro,.fp2-bridge,.fp2-chapter,.fp2-footer{position:relative;z-index:2}
+.fp2-intro{min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:120px clamp(18px,6vw,80px) 80px;max-width:920px}
+.fp2-kicker{font-size:11px;letter-spacing:.28em;font-weight:800;color:#9ec9ff;margin:0 0 18px}
+.fp2-fire .fp2-kicker{color:#ffb14a}
+.fp2-ocean .fp2-kicker{color:#6de7ff}
+.fp2-hood .fp2-kicker{color:#f0c36a}
+.fp2-intro h1{margin:0;font-size:clamp(48px,9vw,92px);line-height:.92;letter-spacing:-.06em;font-weight:900}
+.fp2-lead{margin:22px 0 0;max-width:34rem;font-size:17px;line-height:1.6;color:#b7c0d2}
+.fp2-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px}
+.fp2-primary,.fp2-secondary,.fp2-box a{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 18px;border-radius:999px;font-size:13px;font-weight:800}
+.fp2-primary{background:linear-gradient(180deg,#f4f8ff,#c8d9ff);color:#071018}
+.fp2-fire .fp2-primary{background:linear-gradient(180deg,#ffd39a,#ff7a18);color:#1a0a00}
+.fp2-ocean .fp2-primary{background:linear-gradient(180deg,#d7f8ff,#39b7ff);color:#021018}
+.fp2-hood .fp2-primary{background:linear-gradient(180deg,#ffe6ad,#d7a243);color:#1a1200}
+.fp2-secondary{border:1px solid #ffffff28;background:#ffffff0d;color:#fff}
+.fp2-intro small{margin-top:16px;color:#8090a8;font-size:12px}
+.fp2-scroll-hint{margin-top:48px;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#91a0b8;animation:fp2-nudge 1.8s ease-in-out infinite}
+.fp2-bridge{min-height:70vh;display:grid;place-items:center;padding:40px 20px}
+.fp2-bridge-copy{text-align:center}
+.fp2-bridge-copy span{display:block;font-size:11px;letter-spacing:.3em;color:#ff9a4a;margin-bottom:12px;font-weight:800}
+.fp2-bridge-copy strong{font-size:clamp(28px,5vw,48px);letter-spacing:-.04em}
+.fp2-chapter{min-height:100vh;display:flex;align-items:center;padding:100px clamp(18px,5vw,72px);position:relative}
+.fp2-slab{width:min(520px,100%)}
+.fp2-box{position:relative;padding:28px 26px 26px;background:linear-gradient(160deg,#0b1220e8,#070b14f2);border:1px solid #ffffff1f;clip-path:polygon(0 0, calc(100% - 28px) 0, 100% 28px, 100% 100%, 28px 100%, 0 calc(100% - 28px));box-shadow:0 30px 80px #000a, inset 0 1px #ffffff14;backdrop-filter:blur(16px)}
+.fp2-box-edge{position:absolute;top:0;right:0;width:28px;height:28px;background:linear-gradient(135deg,#ffffff33,#ffffff00);clip-path:polygon(0 0,100% 0,100% 100%)}
+.fp2-box-edge-b{top:auto;right:auto;left:0;bottom:0;clip-path:polygon(0 0,0 100%,100% 100%);background:linear-gradient(135deg,#ffffff00,#ffffff22)}
+.fp2-box h2{margin:8px 0 14px;font-size:clamp(30px,4vw,44px);letter-spacing:-.045em;line-height:1}
+.fp2-box p{margin:0;color:#b8c3d6;line-height:1.6;font-size:15px}
+.fp2-box ul{margin:18px 0 22px;padding:0;list-style:none;display:grid;gap:10px}
+.fp2-box li{position:relative;padding-left:18px;font-size:13px;color:#d5deee}
+.fp2-box li:before{content:"";position:absolute;left:0;top:8px;width:8px;height:2px;background:currentColor;opacity:.7}
+.fp2-box a{margin-top:4px;background:#ffffff12;border:1px solid #ffffff24}
+.fp2-chapter-mark{position:absolute;right:clamp(70px,12vw,180px);bottom:12vh;font-size:clamp(80px,18vw,180px);font-weight:900;letter-spacing:-.08em;opacity:.08;pointer-events:none}
+.fp2-footer{min-height:50vh;display:flex;flex-wrap:wrap;gap:24px;align-items:flex-end;justify-content:space-between;padding:80px clamp(18px,5vw,72px) 60px;border-top:1px solid #ffffff14;background:linear-gradient(#02040a00,#02040a)}
+.fp2-footer strong{font-size:22px}
+.fp2-footer p{margin:8px 0 0;color:#93a0b6;max-width:28rem}
+@keyframes fp2-ember{from{filter:hue-rotate(-6deg) brightness(.95)}to{filter:hue-rotate(8deg) brightness(1.08)}}
+@keyframes fp2-nudge{50%{transform:translateY(6px);opacity:.55}}
+@media(max-width:860px){
+  .fp2-rail{right:8px}
+  .fp2-rail span{display:none}
+  .fp2-header nav a:not(.fp2-cta){display:none}
+  .fp2-chapter{padding-right:58px}
+  .fp2-chapter-mark{right:18px;font-size:96px}
 }
-
-function CreativePreview({ kind }: { kind: 'fashion' | 'perfume' | 'lifestyle' }) {
-  return (
-    <figure className={`fp-creative fp-creative--${kind}`}>
-      <div>
-        <span>Example creative</span>
-        {kind === 'fashion' ? <b>Fashion drop</b> : kind === 'perfume' ? <b>Perfume ad</b> : <b>Lifestyle scene</b>}
-      </div>
-    </figure>
-  );
-}
-
-const frontPageStyles = `
-.front-page{
-  --ivory:#fbf7ef;
-  --paper:#f5f0e7;
-  --ink:#1c2029;
-  --muted:#667085;
-  --blue:#b9daf2;
-  --lime:#d9ff61;
-  min-height:570vh;
-  position:relative;
-  overflow:clip;
-  background:
-    radial-gradient(circle at 12% 12%,#fff 0 8%,transparent 28%),
-    linear-gradient(135deg,#fffdf8 0%,#edf4f8 42%,#f7f1e8 100%);
-  color:var(--ink);
-  font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-}
-.app--auth:has(.front-page),.app--inside:has(.front-page){height:auto;min-height:100vh;overflow:visible}
-.app--auth .app__main:has(.front-page),.app--inside .app__main:has(.front-page){height:auto;min-height:100vh;overflow:visible;display:block}
-.front-page *,.front-page *::before,.front-page *::after{box-sizing:border-box}
-.front-page a{color:inherit;text-decoration:none}
-.front-page button,.front-page a{-webkit-tap-highlight-color:transparent}
-.front-page :focus-visible{outline:2px solid #9fbeff;outline-offset:4px}
-.fp-page-light{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
-.fp-page-light:before{
-  content:"";position:absolute;inset:0;
-  background:
-    linear-gradient(90deg,#ffffff40 1px,transparent 1px),
-    linear-gradient(#ffffff40 1px,transparent 1px);
-  background-size:72px 72px;opacity:.28;mask-image:radial-gradient(circle at 50% 46%,#000 0 32%,transparent 76%);
-}
-.fp-page-light:after{
-  content:"";position:absolute;inset:0;
-  background:radial-gradient(circle at 50% 48%,transparent 0 48%,#d6e0e7c7 100%);
-}
-.fp-page-light i{position:absolute;border-radius:999px;filter:blur(70px);opacity:.72;animation:fp-light-drift 18s ease-in-out infinite alternate}
-.fp-page-light i:nth-child(1){width:44vw;height:34vw;left:-8vw;top:12vh;background:#d8f0ff}
-.fp-page-light i:nth-child(2){width:36vw;height:30vw;right:-10vw;top:24vh;background:#fff1c8;animation-delay:-6s}
-.fp-page-light i:nth-child(3){width:48vw;height:28vw;left:30vw;bottom:-8vh;background:#f4d9ff;opacity:.44;animation-delay:-11s}
-.fp-header{
-  position:fixed;left:0;right:0;top:0;z-index:20;
-  display:flex;align-items:center;justify-content:space-between;gap:24px;
-  padding:24px clamp(20px,4vw,58px);
-  background:linear-gradient(180deg,#ffffffc7,#ffffff00);
-}
-.fp-brand{display:inline-flex;align-items:center;gap:10px;font-size:21px;font-weight:800;letter-spacing:-.055em;color:#20242e}
-.fp-brand span{display:grid;place-items:center;width:36px;height:36px;border-radius:13px;border:1px solid #1d25301c;background:#ffffffb5;box-shadow:0 16px 34px #64748b22;color:#8aa200}
-.fp-nav{display:flex;align-items:center;gap:8px;padding:6px;border:1px solid #1d253014;border-radius:999px;background:#ffffffa6;box-shadow:0 18px 60px #34405414;backdrop-filter:blur(18px)}
-.fp-nav a{display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:0 14px;border-radius:999px;color:#475467;font-size:13px;font-weight:700;transition:background .16s ease,color .16s ease,box-shadow .16s ease}
-.fp-nav a:hover{background:#eef4f8;color:#101828}
-.fp-nav .fp-nav-cta{background:#1f2732;color:#fff;box-shadow:inset 0 1px #ffffff20,0 10px 24px #1f27321f}
-.fp-story{position:relative;z-index:2;height:510vh}
-.fp-sticky{position:sticky;top:0;height:100vh;min-height:720px;overflow:hidden}
-.fp-demo-anchor{position:absolute;top:115vh}
-.fp-studio{position:absolute;inset:0;transform-style:preserve-3d;perspective:1400px}
-.fp-studio:before{
-  content:"";position:absolute;left:8vw;right:8vw;bottom:8vh;height:18vh;border-radius:50%;
-  background:radial-gradient(ellipse at center,#fff 0 8%,#d7e3ea8c 34%,transparent 70%);
-  filter:blur(12px);transform:translateY(calc(var(--scene-three) * -18px));
-}
-.fp-curved-glass{
-  position:absolute;left:47%;top:13%;width:min(560px,40vw);height:min(620px,62vh);
-  border:1px solid #ffffffc9;border-left-color:#cfd8e3;border-radius:46% 54% 50% 50% / 18% 28% 72% 82%;
-  background:linear-gradient(110deg,#ffffff4f,#dbe9f34a 36%,#ffffff12 64%,#b9daf22b);
-  box-shadow:inset 22px 0 48px #fff9,inset -18px 0 44px #91b0c222,0 30px 120px #52606d24;
-  transform:translate3d(calc(var(--scene-two) * -6vw),calc(var(--scene-three) * 7vh),-80px) rotateY(calc(-16deg - var(--scene-two) * 10deg));
-  opacity:calc(1 - (var(--scene-three) * .45));
-}
-.fp-water{
-  position:absolute;left:0;right:0;bottom:0;height:31vh;opacity:var(--scene-three);
-  background:
-    radial-gradient(ellipse at 52% 0%,#ffffffd4 0 14%,transparent 42%),
-    linear-gradient(180deg,#dbeef7 0%,#b8d5e1 50%,#f8f3ea 100%);
-  box-shadow:inset 0 1px #fff,inset 0 30px 80px #ffffff91;
-}
-.fp-water:after{
-  content:"";position:absolute;inset:0;
-  background:repeating-linear-gradient(178deg,#ffffff00 0 16px,#ffffff8a 17px 18px,#ffffff00 20px 44px);
-  opacity:.38;animation:fp-water 7s linear infinite;
-}
-.fp-stone{position:absolute;opacity:var(--scene-three);filter:drop-shadow(0 32px 40px #77838f2b)}
-.fp-stone-a{left:12vw;bottom:23vh;width:28vw;height:11vh;border-radius:48% 52% 42% 58%;background:linear-gradient(135deg,#e9e2d7,#ffffff);transform:rotate(-7deg)}
-.fp-stone-b{right:7vw;bottom:26vh;width:22vw;height:13vh;border-radius:55% 45% 58% 42%;background:linear-gradient(145deg,#ffffff,#ded8d0);transform:rotate(9deg)}
-.fp-bottle{
-  position:absolute;left:50%;top:52%;
-  width:clamp(170px,19vw,270px);height:clamp(270px,31vw,440px);
-  transform:
-    translate(-50%,-50%)
-    translateX(calc((var(--scene-two) * 13vw) - (var(--scene-three) * 8vw) + (var(--scene-four) * -8vw)))
-    translateY(calc((var(--scene-two) * -2vh) + (var(--scene-three) * 7vh) + (var(--scene-five) * -8vh)))
-    rotateY(calc((var(--scene-two) * -18deg) + (var(--scene-three) * 10deg)))
-    scale(calc(1 + var(--scene-two) * .12 + var(--scene-three) * .24 - var(--scene-four) * .16 - var(--scene-five) * .36));
-  transition:filter .2s ease;
-  z-index:5;
-}
-.fp-bottle-shadow{position:absolute;left:2%;right:2%;bottom:-18px;height:42px;border-radius:50%;background:#5e687429;filter:blur(14px);transform:scaleX(1.3)}
-.fp-cap{position:absolute;left:31%;top:0;width:38%;height:17%;border-radius:22px 22px 12px 12px;background:linear-gradient(120deg,#e9eef2,#8794a3 38%,#f9fbfc 68%,#a9b4bf);box-shadow:inset 8px 0 18px #fff9,inset -8px 0 18px #54606d4a,0 18px 30px #34405418;z-index:3}
-.fp-neck{position:absolute;left:39%;top:13%;width:22%;height:16%;border-radius:12px;background:linear-gradient(90deg,#fff,#b8c3cd 45%,#eef4f7);box-shadow:inset -8px 0 16px #64748b30;z-index:2}
-.fp-body{
-  position:absolute;left:9%;right:9%;bottom:0;height:76%;border-radius:48% 48% 28px 28px / 20% 20% 28px 28px;
-  background:
-    linear-gradient(105deg,#ffffffd9 0 18%,#d8edf98a 20% 27%,#ffffff40 42%,#8fb0c744 62%,#ffffffbf 78%),
-    linear-gradient(180deg,#f8fbff,#cbd9e6 54%,#aebdcb);
-  border:1px solid #ffffffdf;
-  box-shadow:inset 24px 0 36px #fff9,inset -24px 0 40px #5c728830,0 36px 90px #5b6b7d36;
-  overflow:hidden;
-}
-.fp-body:before{content:"";position:absolute;left:14%;top:10%;width:16%;height:72%;border-radius:999px;background:#ffffffa6;filter:blur(4px)}
-.fp-liquid{position:absolute;left:8%;right:8%;bottom:7%;height:48%;border-radius:24px;background:linear-gradient(180deg,#f5dfb9cc,#d4a764d9);box-shadow:inset 0 16px 38px #fff5}
-.fp-label-card{
-  position:absolute;left:17%;right:17%;bottom:18%;min-height:30%;display:grid;place-items:center;text-align:center;
-  border:1px solid #ffffffc4;border-radius:20px;background:#fffaf0d9;box-shadow:0 12px 24px #6b4b2230;
-}
-.fp-label-card span{font-size:10px;text-transform:uppercase;letter-spacing:.22em;color:#8b7352}.fp-label-card strong{font-size:20px;letter-spacing:.04em;color:#1d2530}.fp-label-card em{font-size:11px;color:#8b7352;font-style:normal}
-.fp-prompt-panel{
-  position:absolute;left:clamp(20px,8vw,120px);top:28vh;width:min(420px,36vw);z-index:4;
-  padding:22px;border:1px solid #ffffffb5;border-radius:26px;background:#ffffff83;box-shadow:0 30px 90px #52606d26;backdrop-filter:blur(22px);
-  transform:translate3d(calc((1 - var(--scene-two)) * -100px),calc((1 - var(--scene-two)) * 20px),0) scale(calc(.92 + var(--scene-two) * .08));
-  opacity:var(--scene-two);
-}
-.fp-prompt-panel span,.fp-output-card span:first-child{display:block;color:#667085;font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase}
-.fp-prompt-panel p{margin:10px 0 0;color:#263241;font-size:19px;line-height:1.45;font-weight:700}
-.fp-controls{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
-.fp-controls b{font-size:12px;color:#344054;padding:8px 10px;border-radius:999px;background:#eef5fa;border:1px solid #d6e5ee}
-.fp-vertical-frame{
-  position:absolute;right:9vw;top:15vh;width:min(350px,28vw);height:min(620px,68vh);z-index:3;
-  border:2px solid #ffffff;outline:1px solid #9fb5c5;border-radius:34px;
-  background:
-    linear-gradient(180deg,#ffffff2e,#ffffff10),
-    radial-gradient(circle at 52% 44%,rgba(244,218,177,.55),transparent 16%),
-    linear-gradient(160deg,#f6f0e8,#dfeaf0 45%,#fbf7ef);
-  box-shadow:0 40px 130px #8393a129,inset 0 0 0 10px #ffffff1a;
-  transform:
-    translate3d(calc((1 - var(--scene-three)) * 120px - var(--scene-four) * 8vw),calc((1 - var(--scene-three)) * 40px - var(--scene-four) * 2vh),0)
-    rotateY(calc(-14deg + var(--scene-three) * 14deg + var(--scene-four) * 8deg))
-    scale(calc(.86 + var(--scene-three) * .14 - var(--scene-four) * .08));
-  opacity:calc(var(--scene-three) * (1 - var(--scene-five)));
-  overflow:hidden;
-}
-.fp-vertical-frame:before{content:"";position:absolute;inset:18% 18% 24%;border-radius:42% 42% 20px 20px;background:linear-gradient(120deg,#ffffffd9,#bfd4e5 42%,#fff),linear-gradient(#f3d8ae,#d6a669);box-shadow:0 24px 50px #5b6b7d2e}
-.fp-vertical-frame:after{content:"Original product";position:absolute;left:18px;top:48px;padding:8px 10px;border-radius:999px;background:#ffffffd9;color:#475467;font-size:11px;font-weight:800;opacity:calc(1 - var(--scene-three))}
-.fp-studio.is-ad .fp-vertical-frame{background:linear-gradient(180deg,#eef8ff,#fff8ed 50%,#d8edf6)}
-.fp-studio.is-ad .fp-vertical-frame:after{content:"Ad creative";opacity:1;background:#1f2732;color:#fff}
-.fp-vertical-frame span{position:absolute;left:18px;top:18px;color:#334155;font-size:12px;font-weight:800}
-.fp-vertical-frame strong{position:absolute;left:18px;right:18px;bottom:18px;padding:13px;border-radius:999px;background:#ffffffd9;color:#1d2530;text-align:center;font-size:13px;box-shadow:0 12px 30px #64748b24}
-.fp-example-strip{
-  position:absolute;left:50%;top:51%;z-index:4;display:flex;align-items:center;justify-content:center;gap:22px;
-  width:min(900px,78vw);transform:translate(-50%,-50%) translateY(calc((1 - var(--scene-four)) * 80px)) scale(calc(.92 + var(--scene-four) * .08));
-  opacity:calc(var(--scene-four) * (1 - var(--scene-five)));
-  pointer-events:none;
-}
-.fp-creative{position:relative;margin:0;width:clamp(160px,18vw,230px);aspect-ratio:9/16;border-radius:28px;overflow:hidden;border:1px solid #fff;box-shadow:0 30px 75px #5362732b;background:#fff}
-.fp-creative:nth-child(1){transform:translateY(34px) rotate(-8deg)}
-.fp-creative:nth-child(2){width:clamp(190px,22vw,280px);transform:translateY(-8px);z-index:2}
-.fp-creative:nth-child(3){transform:translateY(42px) rotate(7deg)}
-.fp-creative:before{content:"";position:absolute;inset:0}
-.fp-creative--fashion:before{background:linear-gradient(160deg,#ece7df,#9fb1bd 42%,#ffffff),radial-gradient(circle at 55% 34%,#d8ff67 0 8%,transparent 20%)}
-.fp-creative--perfume:before{background:linear-gradient(180deg,#f8f1e5,#cfe9f4 50%,#fdfbf8),radial-gradient(circle at 50% 56%,#d6a669 0 11%,transparent 26%)}
-.fp-creative--lifestyle:before{background:linear-gradient(150deg,#eef7fb,#f5e7d3 48%,#ffffff),radial-gradient(circle at 42% 62%,#9abfce 0 10%,transparent 28%)}
-.fp-creative:after{content:"";position:absolute;left:26%;right:26%;top:22%;bottom:32%;border-radius:45% 45% 22px 22px;background:linear-gradient(120deg,#ffffffd9,#acbfd1 44%,#fff);box-shadow:0 18px 46px #3e536426}
-.fp-creative div{position:absolute;left:14px;right:14px;bottom:14px;z-index:2;padding:12px;border-radius:18px;background:#ffffffd9;backdrop-filter:blur(12px);box-shadow:0 12px 26px #64748b24}
-.fp-creative span{display:block;color:#667085;font-size:10px;font-weight:900;letter-spacing:.15em;text-transform:uppercase}.fp-creative b{display:block;margin-top:5px;color:#1f2732;font-size:15px}
-.fp-output-card{
-  position:absolute;right:clamp(20px,9vw,150px);top:30vh;width:min(330px,30vw);z-index:6;
-  padding:20px;border:1px solid #ffffffb8;border-radius:28px;background:#ffffffe0;box-shadow:0 30px 80px #61728224;backdrop-filter:blur(18px);
-  transform:translateY(calc((1 - var(--scene-four)) * 60px)) scale(calc(.94 + var(--scene-four) * .06));
-  opacity:calc(var(--scene-four) * (1 - var(--scene-five)));
-}
-.fp-output-card span,.fp-output-card strong{display:flex;align-items:center;gap:8px}
-.fp-output-card span{margin-bottom:12px;color:#475467;font-size:13px;font-weight:800;letter-spacing:0;text-transform:none}
-.fp-output-card strong{justify-content:center;margin-top:16px;min-height:46px;border-radius:999px;background:#1f2732;color:#fff;font-size:14px}
-.fp-pricing-panel{
-  position:absolute;left:50%;top:52%;z-index:10;width:min(510px,90vw);
-  padding:28px;border:1px solid #ffffffd8;border-radius:32px;background:#ffffffd9;box-shadow:0 40px 120px #6670852b;backdrop-filter:blur(22px);
-  transform:translate(-50%,-50%) translateY(calc((1 - var(--scene-five)) * 46px)) scale(calc(.95 + var(--scene-five) * .05));
-  opacity:var(--scene-five);
-  pointer-events:none;
-}
-.fp-scene-5 .fp-pricing-panel{pointer-events:auto}
-.fp-pricing-panel span{display:block;color:#667085;font-size:11px;font-weight:900;letter-spacing:.16em;text-transform:uppercase}
-.fp-pricing-panel strong{display:block;margin-top:10px;color:#151922;font-size:38px;letter-spacing:-.05em}
-.fp-pricing-panel p{margin:10px 0 0;color:#475467;line-height:1.55}
-.fp-pricing-panel>a{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:20px;min-height:50px;border-radius:999px;background:#1f2732;color:#fff;font-weight:850}
-.fp-faq{display:grid;gap:6px;margin-top:22px;padding-top:20px;border-top:1px solid #d6dde5}
-.fp-faq b{color:#1f2732;font-size:14px}.fp-faq small{color:#667085;line-height:1.45}
-.fp-copy{
-  position:absolute;left:clamp(22px,6vw,86px);top:50%;z-index:9;width:min(580px,46vw);
-  transform:translateY(-50%);
-  animation:fp-copy-in .42s cubic-bezier(.2,.8,.2,1) both;
-}
-.fp-scene-2 .fp-copy,.fp-scene-4 .fp-copy{left:auto;right:clamp(22px,6vw,86px)}
-.fp-scene-3 .fp-copy{top:30%;width:min(540px,44vw)}
-.fp-scene-5 .fp-copy{top:28%;left:clamp(22px,6vw,86px);width:min(520px,44vw)}
-.fp-label{display:inline-flex;align-items:center;gap:12px;color:#5a6d82;font-size:11px;font-weight:900;letter-spacing:.22em;text-transform:uppercase}
-.fp-label:before{content:"";width:34px;height:1px;background:#9cafbf}
-.fp-copy h1{margin:18px 0 0;color:#171b24;font-size:clamp(54px,7.2vw,112px);line-height:.92;letter-spacing:-.08em;font-weight:800}
-.fp-copy h1 span{display:block}
-.fp-copy p{margin:24px 0 0;max-width:530px;color:#475467;font-size:clamp(17px,1.5vw,21px);line-height:1.62;font-weight:520}
-.fp-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:30px}
-.fp-primary,.fp-secondary{
-  display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:48px;padding:0 20px;border-radius:999px;
-  font-size:14px;font-weight:800;transition:transform .16s ease,box-shadow .16s ease,background .16s ease;
-}
-.fp-primary{background:#1f2732;color:#fff;box-shadow:0 18px 42px #1f27322a}
-.fp-secondary{border:1px solid #cad6df;background:#ffffffa6;color:#344054;backdrop-filter:blur(14px)}
-.fp-primary:hover,.fp-secondary:hover{transform:translateY(-2px);box-shadow:0 18px 46px #52606d24}
-.fp-copy small{display:block;margin-top:18px;color:#667085;font-size:13px;font-weight:650}
-.fp-original-control{
-  position:absolute;left:50%;bottom:28px;z-index:18;display:flex;gap:4px;padding:5px;border:1px solid #cad6df;border-radius:999px;background:#ffffffb5;box-shadow:0 18px 50px #6670851c;backdrop-filter:blur(18px);
-  opacity:calc(var(--scene-three) * (1 - var(--scene-five)));
-}
-.fp-original-control button{border:0;border-radius:999px;background:transparent;color:#667085;min-height:36px;padding:0 14px;font:inherit;font-size:13px;font-weight:850;cursor:pointer}
-.fp-original-control button.is-active{background:#1f2732;color:#fff}
-.fp-scene-markers{position:absolute;right:26px;top:50%;z-index:12;display:grid;gap:10px;transform:translateY(-50%)}
-.fp-scene-markers a{width:8px;height:28px;border-radius:999px;background:#a9b7c461;border:1px solid #ffffffd4}
-.fp-scene-markers a.is-active{background:#1f2732}
-.fp-scroll-sections{position:absolute;inset:0;display:grid;grid-template-rows:repeat(6,85vh);pointer-events:none}
-.fp-dock{
-  position:fixed;left:50%;bottom:max(18px,env(safe-area-inset-bottom));z-index:30;display:grid;grid-template-columns:auto auto 72px;align-items:center;gap:12px;
-  padding:7px 8px 7px 14px;border:1px solid #1d253014;border-radius:999px;background:#ffffffc7;box-shadow:0 20px 60px #3440541f;backdrop-filter:blur(18px);transform:translateX(-50%);
-}
-.fp-dock span{color:#475467;font-size:12px;font-weight:900;letter-spacing:.12em}.fp-dock a{display:inline-flex;align-items:center;min-height:36px;padding:0 14px;border-radius:999px;background:#1f2732;color:#fff;font-size:12px;font-weight:850}.fp-dock i{height:4px;border-radius:999px;background:linear-gradient(90deg,#1f2732 calc(var(--dock-progress) * 100%),#d8e1e8 0)}
-.fp-footer{
-  position:relative;z-index:3;min-height:60vh;display:flex;align-items:center;justify-content:center;gap:22px;flex-wrap:wrap;
-  padding:80px 22px;background:linear-gradient(180deg,#ffffff00,#f8fafc 35%,#fff);
-}
-.fp-footer p{margin:0;color:#344054;font-size:18px;font-weight:700}
-.fp-footer a{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 18px;border-radius:999px;background:#1f2732;color:#fff;font-weight:800}
-@keyframes fp-light-drift{to{transform:translate3d(5vw,-3vh,0) scale(1.12)}}
-@keyframes fp-water{to{transform:translateX(-80px)}}
-@keyframes fp-copy-in{from{opacity:0;transform:translateY(calc(-50% + 20px))}to{opacity:1;transform:translateY(-50%)}}
-@media(max-width:940px){
-  .front-page{min-height:570vh;overflow:clip}
-  .fp-header{position:sticky;padding:16px 18px;background:#ffffffe6;backdrop-filter:blur(16px)}
-  .fp-nav a:not(.fp-nav-cta){display:none}
-  .fp-story{height:510vh}
-  .fp-sticky{position:sticky;top:0;height:100vh;min-height:720px;overflow:hidden;padding:0}
-  .fp-studio{position:absolute;inset:0;height:auto}
-  .fp-curved-glass{left:36%;top:28%;width:64vw;height:380px}
-  .fp-bottle{width:168px;height:282px;top:66%;transform:
-    translate(-50%,-50%)
-    translateX(calc((var(--scene-two) * 22vw) - (var(--scene-three) * 9vw) + (var(--scene-four) * -18vw)))
-    translateY(calc((var(--scene-two) * -4vh) + (var(--scene-three) * 8vh)))
-    scale(calc(.92 + var(--scene-two) * .1 + var(--scene-three) * .16 - var(--scene-four) * .06));}
-  .fp-prompt-panel{left:18px;right:18px;top:43%;width:auto}
-  .fp-vertical-frame{right:18px;top:36%;width:44vw;height:46vh;min-width:160px;border-radius:24px}
-  .fp-output-card{right:18px;left:18px;top:53%;width:auto}
-  .fp-example-strip{width:110vw;gap:10px;top:62%}
-  .fp-creative{width:32vw;border-radius:22px}.fp-creative:nth-child(2){width:38vw}
-  .fp-pricing-panel{top:58%;width:calc(100vw - 32px);padding:20px;border-radius:24px}
-  .fp-water,.fp-stone{opacity:var(--scene-three)}
-  .fp-copy,.fp-scene-2 .fp-copy,.fp-scene-3 .fp-copy,.fp-scene-4 .fp-copy,.fp-scene-5 .fp-copy{
-    position:absolute;left:20px;right:20px;top:118px;width:auto;max-width:none;margin:0;text-align:left;transform:none;animation:fp-mobile-copy-in .36s ease both;
-  }
-  .fp-copy h1{font-size:clamp(48px,15vw,72px)}
-  .fp-copy p{font-size:16px;max-width:31rem}
-  .fp-scene-markers{right:12px}
-  .fp-original-control{bottom:84px}
-  .fp-scroll-sections{display:grid}
-  .fp-footer{min-height:44vh}
-}
-@media(max-width:540px){
-  .fp-brand{font-size:18px}.fp-brand span{width:32px;height:32px}
-  .fp-nav{padding:4px}.fp-nav .fp-nav-cta{min-height:34px;padding:0 12px;font-size:12px}
-  .fp-sticky{min-height:690px}
-  .fp-actions{display:grid}
-  .fp-primary,.fp-secondary{width:100%}
-  .fp-copy small{font-size:12px}
-  .fp-prompt-panel{top:48%;padding:16px;border-radius:20px}
-  .fp-prompt-panel p{font-size:15px}
-  .fp-controls b{font-size:10px;padding:7px 8px}
-  .fp-vertical-frame{top:48%;right:16px;width:42vw;height:36vh}
-  .fp-output-card{top:55%;padding:16px}
-  .fp-dock{grid-template-columns:auto auto 48px;max-width:calc(100vw - 20px)}
-  .fp-dock span{font-size:10px}.fp-dock a{font-size:11px;padding:0 10px}
-  .fp-pricing-panel strong{font-size:28px}
-}
-@keyframes fp-mobile-copy-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){
-  .front-page *,.front-page *::before,.front-page *::after{animation:none!important;transition:none!important}
+  .fp2-scroll-hint,.fp2-fire .fp2-heat{animation:none!important}
 }
 `;

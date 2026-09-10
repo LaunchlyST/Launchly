@@ -1,4 +1,4 @@
-*,
+﻿*,
 *::before,
 *::after {
   margin: 0;
@@ -156,8 +156,11 @@ body,
 .app--inside .app__main,
 .inside-page {
   width: 100vw;
-  height: 100vh;
-  background: #08131f;
+  height: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: #05070d;
+  overflow: hidden;
 }
 
 .inside-page {
