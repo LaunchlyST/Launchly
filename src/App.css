@@ -808,25 +808,38 @@ body,
 
 .auth-page--signup {
   background:
-    radial-gradient(ellipse at 50% 18%, rgba(18, 41, 67, 0.72), transparent 58%),
-    radial-gradient(ellipse at 16% 82%, rgba(8, 38, 55, 0.44), transparent 45%),
-    linear-gradient(180deg, #09111d 0%, #050914 55%, #02040a 100%);
+    radial-gradient(ellipse at 50% 18%, rgba(16, 35, 54, 0.72), transparent 58%),
+    radial-gradient(ellipse at 16% 82%, rgba(8, 26, 38, 0.44), transparent 45%),
+    linear-gradient(180deg, #08101b 0%, #050914 55%, #02040a 100%);
   isolation: isolate;
 }
 
 .auth-page--signup::before {
   content: "";
-  position: absolute;
-  inset: -8%;
+  position: fixed;
+  inset: -4%;
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(ellipse at 44% -8%, rgba(132, 229, 255, 0.24), transparent 38%),
-    radial-gradient(ellipse at 18% 26%, rgba(20, 122, 156, 0.18), transparent 34%),
-    radial-gradient(ellipse at 82% 44%, rgba(10, 82, 116, 0.22), transparent 42%);
-  filter: saturate(1.18);
+    linear-gradient(180deg, rgba(3, 16, 27, 0.08), rgba(0, 5, 10, 0.3) 62%, rgba(0, 0, 0, 0.5)),
+    radial-gradient(ellipse at 50% 9%, rgba(201, 247, 255, 0.22), transparent 36%),
+    url('/signup-underwater-cinematic.png') center / cover no-repeat;
+  filter: saturate(1.08) contrast(1.06) brightness(0.9);
   opacity: 0;
   animation: signup-ocean-drift 18s ease-in-out infinite alternate;
+  transition: opacity 1.15s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.auth-page--signup::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% 42%, rgba(3, 10, 17, 0) 0 34%, rgba(0, 5, 10, 0.42) 82%),
+    linear-gradient(180deg, rgba(2, 18, 30, 0.08), rgba(0, 3, 7, 0.72));
+  opacity: 0;
   transition: opacity 1.15s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -854,6 +867,11 @@ body,
   opacity: 1;
 }
 
+.auth-page--signup[data-ocean-state="enteringOcean"]::after,
+.auth-page--signup[data-ocean-state="oceanActive"]::after {
+  opacity: 1;
+}
+
 .auth-page--signup[data-ocean-state="enteringOcean"] .ocean-world,
 .auth-page--signup[data-ocean-state="oceanActive"] .ocean-world {
   opacity: 1;
@@ -862,6 +880,11 @@ body,
 }
 
 .auth-page--signup[data-ocean-state="returningNormal"]::before {
+  opacity: 0;
+  transition-duration: 420ms;
+}
+
+.auth-page--signup[data-ocean-state="returningNormal"]::after {
   opacity: 0;
   transition-duration: 420ms;
 }

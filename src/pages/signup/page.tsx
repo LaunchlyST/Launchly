@@ -113,10 +113,10 @@ const OceanScene = memo(function OceanScene() {
       ctx.clearRect(0, 0, width, height);
 
       const water = ctx.createLinearGradient(0, 0, 0, height);
-      water.addColorStop(0, '#145f86');
-      water.addColorStop(0.24, '#073b5c');
-      water.addColorStop(0.58, '#03273d');
-      water.addColorStop(1, '#010b13');
+      water.addColorStop(0, 'rgba(20, 95, 134, 0.14)');
+      water.addColorStop(0.24, 'rgba(7, 59, 92, 0.2)');
+      water.addColorStop(0.58, 'rgba(3, 39, 61, 0.24)');
+      water.addColorStop(1, 'rgba(1, 11, 19, 0.36)');
       ctx.fillStyle = water;
       ctx.fillRect(0, 0, width, height);
 
@@ -173,8 +173,8 @@ const OceanScene = memo(function OceanScene() {
       const floorY = height * 0.84;
       const sand = ctx.createLinearGradient(0, floorY, 0, height);
       sand.addColorStop(0, 'rgba(24, 48, 45, 0)');
-      sand.addColorStop(0.18, '#0d221e');
-      sand.addColorStop(1, '#050807');
+      sand.addColorStop(0.18, 'rgba(13, 34, 30, 0.42)');
+      sand.addColorStop(1, 'rgba(5, 8, 7, 0.62)');
       ctx.fillStyle = sand;
       ctx.beginPath();
       ctx.moveTo(0, floorY);
