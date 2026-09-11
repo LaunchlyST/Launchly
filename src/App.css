@@ -1196,3 +1196,171 @@ body,
     transform: none;
   }
 }
+
+/* Signup should match login: ocean is only the fast-click background state. */
+.auth-page--signup {
+  background: #0a0a1a;
+}
+
+.auth-page--signup::before,
+.auth-page--signup::after {
+  transition: opacity 0.45s ease;
+}
+
+.auth-page--signup.is-under-ocean::before,
+.auth-page--signup.is-under-ocean::after {
+  opacity: 1;
+}
+
+.auth-page--signup .stars {
+  display: block;
+  pointer-events: none;
+}
+
+.auth-page--signup.is-under-ocean .stars {
+  opacity: 0.15;
+  filter: hue-rotate(160deg) blur(0.5px);
+}
+
+.auth-page--signup .ocean-world {
+  opacity: 0;
+  transform: scale(1.02) translateY(10px);
+  filter: blur(5px);
+  transition:
+    opacity 0.45s ease,
+    transform 0.45s ease,
+    filter 0.45s ease;
+}
+
+.auth-page--signup.is-under-ocean .ocean-world {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  filter: blur(0);
+}
+
+.auth-page--signup .auth-container {
+  z-index: 1;
+  min-height: auto;
+  padding: 20px;
+  animation: none;
+}
+
+.auth-page--signup .form {
+  --background: #1a1a2e;
+  --input-focus: #00d4ff;
+  --font-color: #e0e0e0;
+  --font-color-sub: #888;
+  --bg-color: #16213e;
+  --main-color: #e0e0e0;
+  padding: 20px;
+  background: var(--background);
+  gap: 20px;
+  border-radius: 5px;
+  border: 2px solid var(--main-color);
+  box-shadow: 4px 4px var(--main-color), 0 0 40px rgba(0, 212, 255, 0.05);
+  width: 100%;
+  max-width: 320px;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  animation: form-glow 3s ease-in-out infinite alternate;
+}
+
+.auth-page--signup .form::before {
+  display: none;
+}
+
+.auth-page--signup .form > p {
+  color: var(--font-color);
+  font-weight: 700;
+  font-size: 20px;
+  margin-bottom: 15px;
+  gap: 0;
+  line-height: normal;
+}
+
+.auth-page--signup .form > p > span {
+  color: var(--font-color-sub);
+  font-weight: 600;
+  font-size: 17px;
+  line-height: normal;
+}
+
+.auth-page--signup .oauthButton {
+  gap: 5px;
+  height: 40px;
+  border-radius: 5px;
+  border: 2px solid var(--main-color);
+  background-color: var(--bg-color);
+  box-shadow: 4px 4px var(--main-color);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--font-color);
+}
+
+.auth-page--signup .oauthButton::before {
+  background-color: #00d4ff;
+  background-image: none;
+  box-shadow: 4px 8px 19px -3px rgba(0, 212, 255, 0.27);
+}
+
+.auth-page--signup .oauthButton:hover {
+  color: #fff;
+  border-color: #00d4ff;
+  transform: none;
+  box-shadow: 4px 4px var(--main-color);
+}
+
+.auth-page--signup .form > input {
+  height: 40px;
+  border-radius: 5px;
+  border: 2px solid var(--main-color);
+  background-color: var(--bg-color);
+  box-shadow: 4px 4px var(--main-color);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--font-color);
+  padding: 5px 10px;
+}
+
+.auth-page--signup .form > input:focus {
+  border-color: var(--input-focus);
+  box-shadow: 4px 4px var(--main-color), 0 0 0 3px rgba(0, 212, 255, 0.15);
+}
+
+.auth-page--signup .form > input::placeholder {
+  color: var(--font-color-sub);
+}
+
+.auth-page--signup .separator {
+  gap: 5px;
+  margin: 0;
+}
+
+.auth-page--signup .separator > div {
+  width: 100px;
+  flex: none;
+  height: 3px;
+  background: var(--font-color-sub);
+}
+
+.auth-page--signup .separator > span {
+  color: var(--font-color);
+  font-size: initial;
+  font-weight: 600;
+}
+
+.auth-page--signup .form-switch {
+  font-size: 13px;
+  color: var(--font-color-sub);
+}
+
+.auth-page--signup .form-switch-link {
+  font-size: 13px;
+  color: #00d4ff;
+}
+
+.auth-page--signup .auth-error,
+.auth-page--signup .auth-success {
+  border-radius: 5px;
+  font-size: 13px;
+}

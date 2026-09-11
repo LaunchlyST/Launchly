@@ -3,11 +3,7 @@ import { useAuthStore } from 'src/auth-store';
 import { supabase } from 'src/lib/supabase';
 
 const WORKER_URL = import.meta.env.VITE_WORKER_URL || 'http://localhost:8787';
-const OCEAN_ENTER_MS = 1200;
-const OCEAN_ACTIVE_MS = 5000;
-const OCEAN_RETURN_MS = 420;
-
-type OceanInteractionState = 'normal' | 'enteringOcean' | 'oceanActive' | 'returningNormal';
+const OCEAN_ACTIVE_MS = 3000;
 
 interface SignUpProps {
   onSwitchToLogin: () => void;
@@ -253,8 +249,8 @@ export function SignUp({ onSwitchToLogin }: SignUpProps) {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [oauthLoading, setOauthLoading] = useState(false);
-  const [oceanState, setOceanState] = useState<OceanInteractionState>('normal');
-  const oceanStateRef = useRef<OceanInteractionState>('normal');
+  const [underOcean, setUnderOcean] = useState(false);
+  const clickTimes = useRef<number[]>([]);
   const oceanTimer = useRef<ReturnType<typeof window.setTimeout> | null>(null);
   const signUp = useAuthStore((s) => s.signUp);
 
@@ -271,11 +267,6 @@ export function SignUp({ onSwitchToLogin }: SignUpProps) {
 
   const validateEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-  const setOceanInteractionState = (state: OceanInteractionState) => {
-    oceanStateRef.current = state;
-    setOceanState(state);
-  };
-
   const clearOceanTimer = () => {
     if (oceanTimer.current) {
       window.clearTimeout(oceanTimer.current);
@@ -283,37 +274,109 @@ export function SignUp({ onSwitchToLogin }: SignUpProps) {
     }
   };
 
-  const returnToNormal = (duration = OCEAN_RETURN_MS) => {
-    clearOceanTimer();
-    setOceanInteractionState('returningNormal');
-    oceanTimer.current = window.setTimeout(() => {
-      setOceanInteractionState('normal');
-      oceanTimer.current = null;
-    }, duration);
-  };
-
   const activateOcean = () => {
     clearOceanTimer();
-    setOceanInteractionState('enteringOcean');
+    setUnderOcean(true);
     oceanTimer.current = window.setTimeout(() => {
-      setOceanInteractionState('oceanActive');
-      oceanTimer.current = window.setTimeout(() => {
-        returnToNormal(OCEAN_ENTER_MS);
-      }, OCEAN_ACTIVE_MS);
-    }, OCEAN_ENTER_MS);
+      setUnderOcean(false);
+      oceanTimer.current = null;
+    }, OCEAN_ACTIVE_MS);
   };
 
   const handleBackgroundClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if ((e.target as HTMLElement).closest('.auth-container')) return;
 
-    const currentState = oceanStateRef.current;
-    if (currentState === 'normal') {
-      activateOcean();
-      return;
+    const colors = ['#5b5ef4', '#8b5cf6', '#00d4ff', '#f59e0b', '#10b981', '#e5484d', '#ec4899', '#a855f7', '#06b6d4'];
+    const sparkles = ['*', '+', 'x', '.', '*', '+', '.'];
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    const color2 = colors[Math.floor(Math.random() * colors.length)];
+    const x = e.clientX;
+    const y = e.clientY;
+
+    const flash = document.createElement('div');
+    flash.className = 'splash-flash';
+    flash.style.background = `radial-gradient(circle at ${x}px ${y}px, ${color}40, transparent 60%)`;
+    document.body.appendChild(flash);
+    flash.addEventListener('animationend', () => flash.remove());
+
+    const glow = document.createElement('div');
+    glow.className = 'splash-glow';
+    glow.style.left = `${x}px`;
+    glow.style.top = `${y}px`;
+    glow.style.background = `radial-gradient(circle, ${color}, ${color2}, transparent)`;
+    glow.style.boxShadow = `0 0 60px 20px ${color}80, 0 0 120px 40px ${color2}40`;
+    document.body.appendChild(glow);
+    glow.addEventListener('animationend', () => glow.remove());
+
+    for (let i = 0; i < 3; i++) {
+      const ring = document.createElement('div');
+      ring.className = 'splash-ring';
+      ring.style.left = `${x}px`;
+      ring.style.top = `${y}px`;
+      ring.style.borderColor = i % 2 === 0 ? color : color2;
+      ring.style.animationDelay = `${i * 0.08}s`;
+      document.body.appendChild(ring);
+      ring.addEventListener('animationend', () => ring.remove());
     }
 
-    if (currentState === 'enteringOcean' || currentState === 'oceanActive') {
-      returnToNormal(OCEAN_RETURN_MS);
+    for (let i = 0; i < 16; i++) {
+      const particle = document.createElement('div');
+      particle.className = 'splash-particle';
+      const angle = (i / 16) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
+      const dist = 80 + Math.random() * 140;
+      const size = 3 + Math.random() * 5;
+      const c = Math.random() > 0.5 ? color : color2;
+      const dur = 0.4 + Math.random() * 0.4;
+      particle.style.left = `${x}px`;
+      particle.style.top = `${y}px`;
+      particle.style.width = `${size}px`;
+      particle.style.height = `${size}px`;
+      particle.style.background = c;
+      particle.style.boxShadow = `0 0 ${size * 2}px ${c}`;
+      particle.style.setProperty('--px', `${Math.cos(angle) * dist}px`);
+      particle.style.setProperty('--py', `${Math.sin(angle) * dist}px`);
+      particle.style.setProperty('--dur', `${dur}s`);
+      document.body.appendChild(particle);
+      particle.addEventListener('animationend', () => particle.remove());
+    }
+
+    for (let i = 0; i < 8; i++) {
+      const trail = document.createElement('div');
+      trail.className = 'splash-trail';
+      const angle = (i / 8) * Math.PI * 2 + Math.random() * 0.5;
+      const dist = 40 + Math.random() * 60;
+      trail.style.left = `${x}px`;
+      trail.style.top = `${y}px`;
+      trail.style.background = color;
+      trail.style.boxShadow = `0 0 4px ${color}`;
+      trail.style.setProperty('--tx', `${Math.cos(angle) * dist}px`);
+      trail.style.setProperty('--ty', `${Math.sin(angle) * dist}px`);
+      document.body.appendChild(trail);
+      trail.addEventListener('animationend', () => trail.remove());
+    }
+
+    for (let i = 0; i < 5; i++) {
+      const sparkle = document.createElement('div');
+      sparkle.className = 'splash-sparkle';
+      sparkle.textContent = sparkles[Math.floor(Math.random() * sparkles.length)];
+      const sx = -40 + Math.random() * 80;
+      const sy = -60 - Math.random() * 40;
+      sparkle.style.left = `${x - 8}px`;
+      sparkle.style.top = `${y - 8}px`;
+      sparkle.style.color = Math.random() > 0.5 ? color : color2;
+      sparkle.style.textShadow = `0 0 8px ${color}`;
+      sparkle.style.setProperty('--sx', `${sx}px`);
+      sparkle.style.setProperty('--sy', `${sy}px`);
+      sparkle.style.animationDelay = `${i * 0.05}s`;
+      document.body.appendChild(sparkle);
+      sparkle.addEventListener('animationend', () => sparkle.remove());
+    }
+
+    const now = performance.now();
+    clickTimes.current = [...clickTimes.current.filter((ts) => now - ts < 900), now];
+    if (clickTimes.current.length >= 6) {
+      clickTimes.current = [];
+      activateOcean();
     }
   };
 
@@ -394,12 +457,12 @@ export function SignUp({ onSwitchToLogin }: SignUpProps) {
 
   return (
     <div
-      className="auth-page auth-page--signup"
-      data-ocean-state={oceanState}
+      className={`auth-page auth-page--signup${underOcean ? ' is-under-ocean' : ''}`}
       onClick={handleBackgroundClick}
     >
+      <div className="stars" />
       <OceanScene />
-      <div className="auth-container auth-container--signup" onClick={(e) => e.stopPropagation()}>
+      <div className="auth-container" onClick={(e) => e.stopPropagation()}>
         <form className="form" onSubmit={handleSubmit}>
           <p>
             {isReturningUser ? 'Welcome back,' : 'Welcome,'}
