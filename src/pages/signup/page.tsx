@@ -1,12 +1,249 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { memo, useEffect, useRef, useState } from 'react';
 import { useAuthStore } from 'src/auth-store';
 import { supabase } from 'src/lib/supabase';
 
 const WORKER_URL = import.meta.env.VITE_WORKER_URL || 'http://localhost:8787';
+const OCEAN_ENTER_MS = 1200;
+const OCEAN_ACTIVE_MS = 5000;
+const OCEAN_RETURN_MS = 420;
+
+type OceanInteractionState = 'normal' | 'enteringOcean' | 'oceanActive' | 'returningNormal';
 
 interface SignUpProps {
   onSwitchToLogin: () => void;
 }
+
+const OceanScene = memo(function OceanScene() {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d', { alpha: true });
+    if (!ctx) return;
+
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let frame = 0;
+    let width = 0;
+    let height = 0;
+    let dpr = 1;
+    let running = true;
+
+    const rand = (min: number, max: number) => min + Math.random() * (max - min);
+    const particles = Array.from({ length: reduceMotion ? 55 : 150 }, () => ({
+      x: Math.random(),
+      y: Math.random(),
+      r: rand(0.35, 1.8),
+      speed: rand(0.008, 0.04),
+      drift: rand(-0.012, 0.012),
+      alpha: rand(0.12, 0.55),
+    }));
+    const bubbles = Array.from({ length: reduceMotion ? 10 : 34 }, () => ({
+      x: Math.random(),
+      y: Math.random(),
+      r: rand(1.2, 5.2),
+      speed: rand(0.018, 0.07),
+      wobble: rand(0.4, 1.3),
+      alpha: rand(0.1, 0.42),
+    }));
+    const fish = Array.from({ length: reduceMotion ? 5 : 14 }, (_, index) => ({
+      x: Math.random(),
+      y: rand(0.16, 0.72),
+      size: rand(10, 34),
+      speed: rand(0.006, 0.026) * (index % 2 ? -1 : 1),
+      depth: rand(0.25, 1),
+      hue: rand(185, 216),
+      phase: rand(0, Math.PI * 2),
+    }));
+    const weeds = Array.from({ length: 30 }, (_, index) => ({
+      x: index / 29 + rand(-0.018, 0.018),
+      h: rand(54, 188),
+      w: rand(3, 9),
+      phase: rand(0, Math.PI * 2),
+      depth: rand(0.35, 1),
+    }));
+
+    const resize = () => {
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+
+    const drawFish = (time: number) => {
+      fish.forEach((f) => {
+        if (!reduceMotion) {
+          f.x += f.speed;
+          if (f.speed > 0 && f.x > 1.12) f.x = -0.12;
+          if (f.speed < 0 && f.x < -0.12) f.x = 1.12;
+        }
+
+        const x = f.x * width;
+        const y = f.y * height + Math.sin(time * 0.0012 + f.phase) * 9 * f.depth;
+        const s = f.size * f.depth;
+        const dir = f.speed >= 0 ? 1 : -1;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(dir, 1);
+        ctx.globalAlpha = 0.11 + f.depth * 0.16;
+        ctx.filter = f.depth < 0.55 ? 'blur(1.8px)' : 'blur(0.4px)';
+        const body = ctx.createRadialGradient(-s * 0.15, -s * 0.08, 1, 0, 0, s);
+        body.addColorStop(0, `hsla(${f.hue}, 42%, 78%, 0.72)`);
+        body.addColorStop(1, `hsla(${f.hue}, 48%, 30%, 0.35)`);
+        ctx.fillStyle = body;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, s * 0.95, s * 0.28, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(-s * 0.82, 0);
+        ctx.lineTo(-s * 1.28, -s * 0.24);
+        ctx.lineTo(-s * 1.18, s * 0.24);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      });
+    };
+
+    const draw = (time = 0) => {
+      ctx.clearRect(0, 0, width, height);
+
+      const water = ctx.createLinearGradient(0, 0, 0, height);
+      water.addColorStop(0, '#145f86');
+      water.addColorStop(0.24, '#073b5c');
+      water.addColorStop(0.58, '#03273d');
+      water.addColorStop(1, '#010b13');
+      ctx.fillStyle = water;
+      ctx.fillRect(0, 0, width, height);
+
+      const haze = ctx.createRadialGradient(width * 0.48, height * 0.08, 0, width * 0.5, height * 0.38, height * 0.95);
+      haze.addColorStop(0, 'rgba(112, 220, 255, 0.2)');
+      haze.addColorStop(0.45, 'rgba(18, 98, 137, 0.15)');
+      haze.addColorStop(1, 'rgba(0, 8, 15, 0.46)');
+      ctx.fillStyle = haze;
+      ctx.fillRect(0, 0, width, height);
+
+      for (let i = 0; i < 10; i += 1) {
+        const x = width * (0.06 + i * 0.105) + Math.sin(time * 0.00035 + i) * 28;
+        const rayWidth = width * (0.04 + (i % 3) * 0.018);
+        const ray = ctx.createLinearGradient(x, 0, x + rayWidth * 2, height * 0.82);
+        ray.addColorStop(0, 'rgba(180, 236, 255, 0.16)');
+        ray.addColorStop(0.48, 'rgba(104, 207, 240, 0.045)');
+        ray.addColorStop(1, 'rgba(8, 30, 48, 0)');
+        ctx.save();
+        ctx.globalCompositeOperation = 'screen';
+        ctx.fillStyle = ray;
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x + rayWidth, 0);
+        ctx.lineTo(x + rayWidth * 4.5, height);
+        ctx.lineTo(x - rayWidth * 2.2, height);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+
+      particles.forEach((p) => {
+        const drift = reduceMotion ? 0 : time * 0.00002;
+        const x = ((p.x + p.drift * drift + 1) % 1) * width;
+        const y = ((p.y + p.speed * drift + 1) % 1) * height;
+        ctx.fillStyle = `rgba(205, 244, 255, ${p.alpha})`;
+        ctx.beginPath();
+        ctx.arc(x, y, p.r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      bubbles.forEach((b) => {
+        const t = reduceMotion ? 0 : time * 0.00004 * b.speed;
+        const y = ((b.y - t + 1) % 1) * height;
+        const x = (b.x + Math.sin(time * 0.001 * b.wobble + b.y * 8) * 0.012) * width;
+        ctx.strokeStyle = `rgba(203, 244, 255, ${b.alpha})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(x, y, b.r, 0, Math.PI * 2);
+        ctx.stroke();
+      });
+
+      drawFish(time);
+
+      const floorY = height * 0.84;
+      const sand = ctx.createLinearGradient(0, floorY, 0, height);
+      sand.addColorStop(0, 'rgba(24, 48, 45, 0)');
+      sand.addColorStop(0.18, '#0d221e');
+      sand.addColorStop(1, '#050807');
+      ctx.fillStyle = sand;
+      ctx.beginPath();
+      ctx.moveTo(0, floorY);
+      for (let x = 0; x <= width; x += 36) {
+        ctx.lineTo(x, floorY + Math.sin(x * 0.012 + time * 0.00012) * 10 + Math.sin(x * 0.027) * 7);
+      }
+      ctx.lineTo(width, height);
+      ctx.lineTo(0, height);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = 'rgba(5, 8, 7, 0.55)';
+      for (let i = 0; i < 18; i += 1) {
+        const x = (i * 151) % width;
+        const y = floorY + 36 + ((i * 29) % Math.max(80, height * 0.12));
+        ctx.beginPath();
+        ctx.ellipse(x, y, 28 + (i % 5) * 9, 9 + (i % 4) * 4, i * 0.4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      weeds.forEach((w) => {
+        const baseX = w.x * width;
+        const baseY = height - 4;
+        const sway = reduceMotion ? Math.sin(w.phase) * 4 : Math.sin(time * 0.001 + w.phase) * (9 + w.depth * 8);
+        ctx.strokeStyle = `rgba(${18 + w.depth * 15}, ${82 + w.depth * 70}, ${67 + w.depth * 45}, ${0.32 + w.depth * 0.28})`;
+        ctx.lineWidth = w.w;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(baseX, baseY);
+        ctx.bezierCurveTo(baseX + sway * 0.3, baseY - w.h * 0.35, baseX + sway, baseY - w.h * 0.72, baseX + sway * 0.55, baseY - w.h);
+        ctx.stroke();
+      });
+
+      if (!reduceMotion) frame = window.requestAnimationFrame(draw);
+    };
+
+    const visibility = () => {
+      if (document.hidden) {
+        running = false;
+        cancelAnimationFrame(frame);
+      } else if (!running && !reduceMotion) {
+        running = true;
+        frame = requestAnimationFrame(draw);
+      }
+    };
+
+    resize();
+    draw(0);
+    if (!reduceMotion) frame = requestAnimationFrame(draw);
+    window.addEventListener('resize', resize);
+    document.addEventListener('visibilitychange', visibility);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener('resize', resize);
+      document.removeEventListener('visibilitychange', visibility);
+    };
+  }, []);
+
+  return (
+    <div className="ocean-world" aria-hidden="true">
+      <canvas ref={canvasRef} className="ocean-canvas" />
+      <div className="ocean-surface" />
+      <div className="ocean-caustics" />
+      <div className="ocean-refraction" />
+      <div className="ocean-vignette" />
+    </div>
+  );
+});
 
 export function SignUp({ onSwitchToLogin }: SignUpProps) {
   const [email, setEmail] = useState('');
@@ -16,6 +253,9 @@ export function SignUp({ onSwitchToLogin }: SignUpProps) {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [oauthLoading, setOauthLoading] = useState(false);
+  const [oceanState, setOceanState] = useState<OceanInteractionState>('normal');
+  const oceanStateRef = useRef<OceanInteractionState>('normal');
+  const oceanTimer = useRef<ReturnType<typeof window.setTimeout> | null>(null);
   const signUp = useAuthStore((s) => s.signUp);
 
   const pendingEmail = typeof window !== 'undefined' ? sessionStorage.getItem('pendingSignUpEmail') : '';
@@ -31,93 +271,53 @@ export function SignUp({ onSwitchToLogin }: SignUpProps) {
 
   const validateEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-  const colors = ['#5b5ef4', '#8b5cf6', '#00d4ff', '#f59e0b', '#10b981', '#e5484d', '#ec4899', '#a855f7', '#06b6d4'];
-  const sparkles = ['âœ¦', 'âœ§', 'âš¡', 'â˜…', 'â‹', 'âœ¦', 'â—†'];
-  const handleSplash = (e: React.MouseEvent) => {
-    const color = colors[Math.floor(Math.random() * colors.length)];
-    const color2 = colors[Math.floor(Math.random() * colors.length)];
-    const x = e.clientX;
-    const y = e.clientY;
+  const setOceanInteractionState = (state: OceanInteractionState) => {
+    oceanStateRef.current = state;
+    setOceanState(state);
+  };
 
-    const flash = document.createElement('div');
-    flash.className = 'splash-flash';
-    flash.style.background = `radial-gradient(circle at ${x}px ${y}px, ${color}40, transparent 60%)`;
-    document.body.appendChild(flash);
-    flash.addEventListener('animationend', () => flash.remove());
-
-    const glow = document.createElement('div');
-    glow.className = 'splash-glow';
-    glow.style.left = `${x}px`;
-    glow.style.top = `${y}px`;
-    glow.style.background = `radial-gradient(circle, ${color}, ${color2}, transparent)`;
-    glow.style.boxShadow = `0 0 60px 20px ${color}80, 0 0 120px 40px ${color2}40`;
-    document.body.appendChild(glow);
-    glow.addEventListener('animationend', () => glow.remove());
-
-    for (let i = 0; i < 3; i++) {
-      const ring = document.createElement('div');
-      ring.className = 'splash-ring';
-      ring.style.left = `${x}px`;
-      ring.style.top = `${y}px`;
-      ring.style.borderColor = i % 2 === 0 ? color : color2;
-      ring.style.animationDelay = `${i * 0.08}s`;
-      document.body.appendChild(ring);
-      ring.addEventListener('animationend', () => ring.remove());
-    }
-
-    for (let i = 0; i < 16; i++) {
-      const particle = document.createElement('div');
-      particle.className = 'splash-particle';
-      const angle = (i / 16) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
-      const dist = 80 + Math.random() * 140;
-      const size = 3 + Math.random() * 5;
-      const c = Math.random() > 0.5 ? color : color2;
-      const dur = 0.4 + Math.random() * 0.4;
-      particle.style.left = `${x}px`;
-      particle.style.top = `${y}px`;
-      particle.style.width = `${size}px`;
-      particle.style.height = `${size}px`;
-      particle.style.background = c;
-      particle.style.boxShadow = `0 0 ${size * 2}px ${c}`;
-      particle.style.setProperty('--px', `${Math.cos(angle) * dist}px`);
-      particle.style.setProperty('--py', `${Math.sin(angle) * dist}px`);
-      particle.style.setProperty('--dur', `${dur}s`);
-      document.body.appendChild(particle);
-      particle.addEventListener('animationend', () => particle.remove());
-    }
-
-    for (let i = 0; i < 8; i++) {
-      const trail = document.createElement('div');
-      trail.className = 'splash-trail';
-      const angle = (i / 8) * Math.PI * 2 + Math.random() * 0.5;
-      const dist = 40 + Math.random() * 60;
-      trail.style.left = `${x}px`;
-      trail.style.top = `${y}px`;
-      trail.style.background = color;
-      trail.style.boxShadow = `0 0 4px ${color}`;
-      trail.style.setProperty('--tx', `${Math.cos(angle) * dist}px`);
-      trail.style.setProperty('--ty', `${Math.sin(angle) * dist}px`);
-      document.body.appendChild(trail);
-      trail.addEventListener('animationend', () => trail.remove());
-    }
-
-    for (let i = 0; i < 5; i++) {
-      const sparkle = document.createElement('div');
-      sparkle.className = 'splash-sparkle';
-      sparkle.textContent = sparkles[Math.floor(Math.random() * sparkles.length)];
-      const sx = -40 + Math.random() * 80;
-      const sy = -60 - Math.random() * 40;
-      sparkle.style.left = `${x - 8}px`;
-      sparkle.style.top = `${y - 8}px`;
-      sparkle.style.color = Math.random() > 0.5 ? color : color2;
-      sparkle.style.textShadow = `0 0 8px ${color}`;
-      sparkle.style.setProperty('--sx', `${sx}px`);
-      sparkle.style.setProperty('--sy', `${sy}px`);
-      sparkle.style.animationDelay = `${i * 0.05}s`;
-      document.body.appendChild(sparkle);
-      sparkle.addEventListener('animationend', () => sparkle.remove());
+  const clearOceanTimer = () => {
+    if (oceanTimer.current) {
+      window.clearTimeout(oceanTimer.current);
+      oceanTimer.current = null;
     }
   };
+
+  const returnToNormal = (duration = OCEAN_RETURN_MS) => {
+    clearOceanTimer();
+    setOceanInteractionState('returningNormal');
+    oceanTimer.current = window.setTimeout(() => {
+      setOceanInteractionState('normal');
+      oceanTimer.current = null;
+    }, duration);
+  };
+
+  const activateOcean = () => {
+    clearOceanTimer();
+    setOceanInteractionState('enteringOcean');
+    oceanTimer.current = window.setTimeout(() => {
+      setOceanInteractionState('oceanActive');
+      oceanTimer.current = window.setTimeout(() => {
+        returnToNormal(OCEAN_ENTER_MS);
+      }, OCEAN_ACTIVE_MS);
+    }, OCEAN_ENTER_MS);
+  };
+
+  const handleBackgroundClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if ((e.target as HTMLElement).closest('.auth-container')) return;
+
+    const currentState = oceanStateRef.current;
+    if (currentState === 'normal') {
+      activateOcean();
+      return;
+    }
+
+    if (currentState === 'enteringOcean' || currentState === 'oceanActive') {
+      returnToNormal(OCEAN_RETURN_MS);
+    }
+  };
+
+  useEffect(() => () => clearOceanTimer(), []);
 
   const handleGitHub = async () => {
     setError('');
@@ -193,9 +393,13 @@ export function SignUp({ onSwitchToLogin }: SignUpProps) {
   };
 
   return (
-    <div className="auth-page" onClick={handleSplash}>
-      <div className="stars" />
-      <div className="auth-container" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="auth-page auth-page--signup"
+      data-ocean-state={oceanState}
+      onClick={handleBackgroundClick}
+    >
+      <OceanScene />
+      <div className="auth-container auth-container--signup" onClick={(e) => e.stopPropagation()}>
         <form className="form" onSubmit={handleSubmit}>
           <p>
             {isReturningUser ? 'Welcome back,' : 'Welcome,'}

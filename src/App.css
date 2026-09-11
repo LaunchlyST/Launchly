@@ -776,3 +776,400 @@ body,
 .dashboard-scene .sub-gate {
   display: none !important;
 }
+
+
+/* ============ Cinematic Signup Ocean ============ */
+.auth-route-transition {
+  position: fixed;
+  inset: 0;
+  z-index: 9997;
+  pointer-events: all;
+  background:
+    radial-gradient(ellipse at 48% 0%, rgba(106, 213, 247, 0.2), rgba(7, 49, 76, 0.55) 34%, rgba(0, 9, 17, 0.95) 100%),
+    linear-gradient(180deg, #0b496d 0%, #041f34 58%, #01070d 100%);
+  animation: auth-route-dive 1.28s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes auth-route-dive {
+  0% {
+    opacity: 0;
+    filter: blur(8px);
+    transform: scale(1.04) translateY(-16px);
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    filter: blur(0);
+    transform: scale(1) translateY(0);
+  }
+}
+
+.auth-page--signup {
+  background:
+    radial-gradient(ellipse at 50% 18%, rgba(18, 41, 67, 0.72), transparent 58%),
+    radial-gradient(ellipse at 16% 82%, rgba(8, 38, 55, 0.44), transparent 45%),
+    linear-gradient(180deg, #09111d 0%, #050914 55%, #02040a 100%);
+  isolation: isolate;
+}
+
+.auth-page--signup::before {
+  content: "";
+  position: absolute;
+  inset: -8%;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 44% -8%, rgba(132, 229, 255, 0.24), transparent 38%),
+    radial-gradient(ellipse at 18% 26%, rgba(20, 122, 156, 0.18), transparent 34%),
+    radial-gradient(ellipse at 82% 44%, rgba(10, 82, 116, 0.22), transparent 42%);
+  filter: saturate(1.18);
+  opacity: 0;
+  animation: signup-ocean-drift 18s ease-in-out infinite alternate;
+  transition: opacity 1.15s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.auth-page--signup .stars {
+  display: none;
+}
+
+.auth-page--signup .ocean-world {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(1.035) translateY(18px);
+  transition:
+    opacity 1.2s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 1.2s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+  filter: blur(8px);
+}
+
+.auth-page--signup[data-ocean-state="enteringOcean"]::before,
+.auth-page--signup[data-ocean-state="oceanActive"]::before {
+  opacity: 1;
+}
+
+.auth-page--signup[data-ocean-state="enteringOcean"] .ocean-world,
+.auth-page--signup[data-ocean-state="oceanActive"] .ocean-world {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  filter: blur(0);
+}
+
+.auth-page--signup[data-ocean-state="returningNormal"]::before {
+  opacity: 0;
+  transition-duration: 420ms;
+}
+
+.auth-page--signup[data-ocean-state="returningNormal"] .ocean-world {
+  opacity: 0;
+  transform: scale(1.015) translateY(10px);
+  filter: blur(4px);
+  transition-duration: 420ms;
+}
+
+.ocean-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.auth-page--signup .ocean-surface {
+  position: absolute;
+  left: -8%;
+  right: -8%;
+  top: -9%;
+  height: 31%;
+  background:
+    radial-gradient(ellipse at 50% 4%, rgba(215, 250, 255, 0.52), rgba(97, 203, 232, 0.15) 34%, transparent 66%),
+    repeating-linear-gradient(172deg, rgba(225, 255, 255, 0.1) 0 1px, transparent 1px 18px);
+  filter: blur(0.8px);
+  mix-blend-mode: screen;
+  opacity: 0.88;
+  animation: ocean-surface-drift 13s ease-in-out infinite alternate;
+}
+
+.auth-page--signup .ocean-caustics {
+  position: absolute;
+  inset: -20%;
+  background:
+    repeating-radial-gradient(ellipse at 28% 21%, transparent 0 18px, rgba(178, 239, 255, 0.055) 19px 22px, transparent 23px 44px),
+    repeating-radial-gradient(ellipse at 72% 62%, transparent 0 28px, rgba(133, 222, 245, 0.04) 30px 34px, transparent 35px 68px);
+  background-size: 680px 460px, 820px 520px;
+  filter: blur(0.7px) contrast(1.45);
+  mix-blend-mode: screen;
+  opacity: 0.62;
+  animation: ocean-caustic-real 15s ease-in-out infinite alternate;
+}
+
+.auth-page--signup .ocean-refraction {
+  position: absolute;
+  inset: -6%;
+  background:
+    linear-gradient(104deg, transparent 0 26%, rgba(156, 231, 255, 0.035) 28%, transparent 34% 100%),
+    linear-gradient(82deg, transparent 0 54%, rgba(105, 203, 236, 0.03) 57%, transparent 65% 100%);
+  mix-blend-mode: screen;
+  filter: blur(10px);
+  animation: ocean-refraction-drift 22s ease-in-out infinite alternate;
+}
+
+.auth-page--signup .ocean-vignette {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 42%, transparent 0, transparent 42%, rgba(0, 6, 12, 0.48) 82%),
+    linear-gradient(180deg, rgba(2, 20, 32, 0) 0%, rgba(0, 4, 7, 0.6) 100%);
+}
+
+.auth-page--signup .auth-container {
+  z-index: 2;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 24px;
+  animation: signup-card-reveal 1.12s cubic-bezier(0.2, 0.9, 0.2, 1) 0.18s both;
+}
+
+.auth-page--signup .form {
+  --font-color: #f3fbff;
+  --font-color-sub: #a9c3d4;
+  --input-focus: #66d9f0;
+  --bg-color: rgba(4, 28, 45, 0.68);
+  --main-color: rgba(140, 226, 255, 0.32);
+  width: min(100%, 392px);
+  max-width: none;
+  gap: 14px;
+  padding: 28px;
+  border: 1px solid rgba(153, 226, 255, 0.24);
+  border-radius: 8px;
+  background:
+    linear-gradient(145deg, rgba(5, 24, 39, 0.88), rgba(4, 18, 30, 0.72)),
+    radial-gradient(ellipse at 50% 0%, rgba(102, 217, 240, 0.13), transparent 58%);
+  box-shadow:
+    0 24px 70px rgba(0, 0, 0, 0.48),
+    0 0 0 1px rgba(178, 238, 255, 0.08) inset,
+    0 0 34px rgba(60, 190, 224, 0.14);
+  backdrop-filter: blur(20px) saturate(1.25);
+  -webkit-backdrop-filter: blur(20px) saturate(1.25);
+  animation: signup-glass-breathe 7s ease-in-out infinite alternate;
+}
+
+.auth-page--signup .form::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 22% 0%, rgba(255, 255, 255, 0.12), transparent 36%),
+    repeating-radial-gradient(ellipse at 50% 50%, transparent 0 22px, rgba(174, 237, 255, 0.035) 23px 25px, transparent 26px 54px);
+  mix-blend-mode: screen;
+  opacity: 0.72;
+  animation: card-caustics 13s ease-in-out infinite alternate;
+}
+
+.auth-page--signup .form > p {
+  width: 100%;
+  gap: 5px;
+  margin-bottom: 7px;
+  font-size: 25px;
+  line-height: 1.08;
+  letter-spacing: 0;
+}
+
+.auth-page--signup .form > p > span {
+  font-size: 14px;
+  line-height: 1.45;
+  font-weight: 500;
+  color: rgba(206, 231, 241, 0.76);
+}
+
+.auth-page--signup .oauthButton,
+.auth-page--signup .form > input {
+  height: 46px;
+  border-radius: 8px;
+  border: 1px solid rgba(150, 222, 246, 0.2);
+  background: rgba(7, 32, 51, 0.68);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 9px 20px rgba(0, 5, 10, 0.22);
+  color: #edfaff;
+}
+
+.auth-page--signup .oauthButton {
+  gap: 9px;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.auth-page--signup .oauthButton::before {
+  background: linear-gradient(135deg, rgba(24, 121, 158, 0.9), rgba(70, 204, 226, 0.84));
+  box-shadow: none;
+}
+
+.auth-page--signup .oauthButton:hover {
+  border-color: rgba(132, 230, 255, 0.55);
+  transform: translateY(-1px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 14px 28px rgba(0, 7, 14, 0.34), 0 0 22px rgba(64, 197, 227, 0.16);
+}
+
+.auth-page--signup .oauthButton:focus-visible,
+.auth-page--signup .form > input:focus {
+  outline: none;
+  border-color: rgba(111, 226, 255, 0.72);
+  box-shadow: 0 0 0 3px rgba(83, 211, 238, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.auth-page--signup .form > input {
+  padding: 0 14px;
+  font-size: 14px;
+  font-weight: 550;
+}
+
+.auth-page--signup .form > input::placeholder {
+  color: rgba(178, 207, 220, 0.58);
+}
+
+.auth-page--signup .separator {
+  gap: 12px;
+  margin: 1px 0;
+}
+
+.auth-page--signup .separator > div {
+  flex: 1;
+  width: auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(158, 222, 242, 0.34), transparent);
+}
+
+.auth-page--signup .separator > span {
+  color: rgba(200, 225, 236, 0.62);
+  font-size: 11px;
+  letter-spacing: 0;
+}
+
+.auth-page--signup .form-switch,
+.auth-page--signup .form-switch-link {
+  font-size: 13px;
+}
+
+.auth-page--signup .form-switch {
+  color: rgba(204, 228, 238, 0.65);
+}
+
+.auth-page--signup .form-switch-link {
+  color: #78dff4;
+}
+
+.auth-page--signup .auth-error,
+.auth-page--signup .auth-success {
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+@keyframes signup-card-reveal {
+  from {
+    opacity: 0;
+    filter: blur(14px);
+    transform: translateY(26px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes signup-ocean-drift {
+  from { transform: translate3d(-1.5%, -0.8%, 0) scale(1.03); }
+  to { transform: translate3d(1.2%, 1%, 0) scale(1.06); }
+}
+
+@keyframes ocean-surface-drift {
+  from { transform: translateX(-2%) skewX(-3deg); }
+  to { transform: translateX(2%) skewX(2deg); }
+}
+
+@keyframes ocean-caustic-real {
+  from {
+    opacity: 0.38;
+    transform: translate3d(-2%, -1%, 0) rotate(-1deg) scale(1.02);
+  }
+  to {
+    opacity: 0.72;
+    transform: translate3d(2%, 2%, 0) rotate(1deg) scale(1.05);
+  }
+}
+
+@keyframes ocean-refraction-drift {
+  from { transform: translate3d(-2%, 0, 0) scale(1.02); }
+  to { transform: translate3d(2%, 1%, 0) scale(1.05); }
+}
+
+@keyframes signup-glass-breathe {
+  from { box-shadow: 0 24px 70px rgba(0, 0, 0, 0.48), 0 0 0 1px rgba(178, 238, 255, 0.08) inset, 0 0 28px rgba(60, 190, 224, 0.1); }
+  to { box-shadow: 0 28px 76px rgba(0, 0, 0, 0.52), 0 0 0 1px rgba(178, 238, 255, 0.11) inset, 0 0 42px rgba(60, 190, 224, 0.18); }
+}
+
+@keyframes card-caustics {
+  from { transform: translate3d(-4%, -2%, 0); opacity: 0.42; }
+  to { transform: translate3d(4%, 3%, 0); opacity: 0.72; }
+}
+
+@media (max-width: 560px) {
+  .auth-page--signup .auth-container {
+    padding: 18px;
+    align-items: center;
+  }
+
+  .auth-page--signup .form {
+    width: min(100%, 360px);
+    padding: 22px;
+    gap: 12px;
+  }
+
+  .auth-page--signup .form > p {
+    font-size: 22px;
+  }
+
+  .auth-page--signup .oauthButton,
+  .auth-page--signup .form > input {
+    height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-route-transition,
+  .auth-page--signup::before,
+  .auth-page--signup .ocean-world,
+  .auth-page--signup .ocean-surface,
+  .auth-page--signup .ocean-caustics,
+  .auth-page--signup .ocean-refraction,
+  .auth-page--signup .auth-container,
+  .auth-page--signup .form,
+  .auth-page--signup .form::before {
+    animation: none;
+  }
+
+  .auth-page--signup .auth-container {
+    transform: none;
+  }
+
+  .auth-page--signup::before,
+  .auth-page--signup .ocean-world {
+    transition-duration: 120ms;
+  }
+
+  .auth-page--signup[data-ocean-state="enteringOcean"]::before,
+  .auth-page--signup[data-ocean-state="oceanActive"]::before,
+  .auth-page--signup[data-ocean-state="enteringOcean"] .ocean-world,
+  .auth-page--signup[data-ocean-state="oceanActive"] .ocean-world {
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+}

@@ -52,6 +52,8 @@ export function App() {
   const [loggingOut, setLoggingOut] = useState(false);
 
   const [route, setRoute] = useState(getRoutePath);
+  const [authTransitioning, setAuthTransitioning] = useState(false);
+  const transitionTimer = React.useRef<ReturnType<typeof window.setTimeout> | null>(null);
 
   // Subscription check for route protection
   const { isActive, loading: subLoading } = useSubscription();
@@ -62,13 +64,35 @@ export function App() {
 
   useEffect(() => {
     window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      if (transitionTimer.current) window.clearTimeout(transitionTimer.current);
+    };
   }, [handlePopState]);
 
   const navigate = useCallback((path: string) => {
     window.history.pushState({}, '', path);
     setRoute(getRoutePath());
   }, []);
+
+  const navigateToSignUp = useCallback(() => {
+    if (authTransitioning) return;
+
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion) {
+      navigate('/signup');
+      return;
+    }
+
+    setAuthTransitioning(true);
+    transitionTimer.current = window.setTimeout(() => {
+      navigate('/signup');
+      transitionTimer.current = window.setTimeout(() => {
+        setAuthTransitioning(false);
+        transitionTimer.current = null;
+      }, 1180);
+    }, 120);
+  }, [authTransitioning, navigate]);
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -96,7 +120,8 @@ export function App() {
     return (
       <div className="app app--auth">
         <main className="app__main">
-          <Login onSwitchToSignUp={() => navigate('/signup')} />
+          <Login onSwitchToSignUp={navigateToSignUp} />
+          {authTransitioning && <div className="auth-route-transition" aria-hidden="true" />}
         </main>
       </div>
     );
@@ -167,7 +192,7 @@ export function App() {
       return (
         <div className="app app--auth">
           <main className="app__main">
-            <Login onSwitchToSignUp={() => navigate('/signup')} />
+            <Login onSwitchToSignUp={navigateToSignUp} />
           </main>
         </div>
       );
@@ -231,7 +256,7 @@ export function App() {
   if (!user) {
     if (route === '/') {
       return (
-        <div className="app app--auth">
+        <div className="app app--inside">
           <main className="app__main">
             <FrontPage />
           </main>
@@ -241,7 +266,7 @@ export function App() {
     return (
       <div className="app app--auth">
         <main className="app__main">
-          <Login onSwitchToSignUp={() => navigate('/signup')} />
+          <Login onSwitchToSignUp={navigateToSignUp} />
         </main>
       </div>
     );
