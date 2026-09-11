@@ -373,8 +373,8 @@ export function SignUp({ onSwitchToLogin }: SignUpProps) {
     }
 
     const now = performance.now();
-    clickTimes.current = [...clickTimes.current.filter((ts) => now - ts < 900), now];
-    if (clickTimes.current.length >= 6) {
+    clickTimes.current = [...clickTimes.current.filter((ts) => now - ts < 1200), now];
+    if (clickTimes.current.length >= 3) {
       clickTimes.current = [];
       activateOcean();
     }
