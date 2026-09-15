@@ -1157,6 +1157,37 @@ export function FrontPage() {
             </p>
           </section>
 
+          <section className="lz-showcase" aria-label="Launchly product preview">
+            <div className="lz-showcase-copy">
+              <p className="lz-kicker">PRODUCT SYSTEM</p>
+              <h2>From one product idea to a complete posting pack.</h2>
+              <p>
+                Build the angle, preview the creative, and leave with captions, image ads, and video scripts that feel ready for TikTok Shop.
+              </p>
+            </div>
+            <div className="lz-studio-board" aria-hidden="true">
+              <div className="lz-board-panel lz-board-panel-main">
+                <span>Campaign desk</span>
+                <strong>Thermal bottle launch</strong>
+                <div className="lz-board-bars">
+                  <i />
+                  <i />
+                  <i />
+                </div>
+              </div>
+              <div className="lz-board-panel lz-board-script">
+                <span>Script</span>
+                <b>Hook</b>
+                <p>Show the problem first, then reveal the product in motion.</p>
+              </div>
+              <div className="lz-board-panel lz-board-export">
+                <span>Exports</span>
+                <b>4 files</b>
+                <p>Caption, image ad, video outline, product notes.</p>
+              </div>
+            </div>
+          </section>
+
           <section className="lz-work" id="work">
             <div className="lz-work-head">
               <p className="lz-kicker">
@@ -1403,6 +1434,24 @@ html:has(.lz.is-intro),body:has(.lz.is-intro),#root:has(.lz.is-intro){height:100
 .lz-floating-a{right:2%;top:18%;animation:lz-float 6s ease-in-out infinite}
 .lz-floating-b{left:5%;bottom:19%;animation:lz-float 7s ease-in-out infinite reverse}
 .lz-hero>.lz-statement,.lz-hero>.lz-statement-sub{display:none}
+.lz-showcase{position:relative;display:grid;grid-template-columns:minmax(280px,.78fr) minmax(420px,1.22fr);gap:clamp(28px,6vw,82px);align-items:center;padding:clamp(70px,10vw,134px) clamp(22px,6vw,92px);overflow:hidden}
+.lz-showcase:before{content:"";position:absolute;inset:8% 4%;border-radius:32px;background:linear-gradient(140deg,rgba(255,255,255,.26),rgba(214,231,235,.12));border:1px solid rgba(255,255,255,.48);box-shadow:inset 0 1px 0 rgba(255,255,255,.72);backdrop-filter:blur(7px);pointer-events:none}
+.lz-showcase-copy{position:relative;z-index:2;max-width:520px}
+.lz-showcase-copy h2{margin:12px 0 0;font-family:"Instrument Serif",Fraunces,Georgia,serif;font-weight:400;font-size:clamp(42px,5.5vw,82px);line-height:.97;letter-spacing:-.032em;color:#1b2422}
+.lz-showcase-copy p:not(.lz-kicker){margin:22px 0 0;font-size:clamp(16px,1.35vw,19px);line-height:1.58;color:rgba(27,36,34,.62)}
+.lz-studio-board{position:relative;z-index:2;min-height:520px;border-radius:30px;background:linear-gradient(135deg,rgba(255,255,255,.62),rgba(238,247,249,.24));border:1px solid rgba(255,255,255,.72);box-shadow:0 36px 110px rgba(47,66,71,.14),inset 0 1px 0 rgba(255,255,255,.86);backdrop-filter:blur(22px);overflow:hidden}
+.lz-studio-board:before{content:"";position:absolute;inset:-20% -10% auto;height:60%;background:radial-gradient(ellipse at 50% 0%,rgba(255,255,255,.82),transparent 62%);opacity:.82}
+.lz-board-panel{position:absolute;border-radius:20px;background:rgba(255,255,255,.52);border:1px solid rgba(255,255,255,.68);box-shadow:0 22px 54px rgba(55,73,77,.12);backdrop-filter:blur(18px);padding:20px;color:#1b2422}
+.lz-board-panel span{display:block;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:rgba(28,36,34,.42);margin-bottom:12px}
+.lz-board-panel strong,.lz-board-panel b{display:block;font-family:"Instrument Serif",Fraunces,Georgia,serif;font-weight:400;font-size:clamp(26px,3vw,44px);line-height:1;letter-spacing:-.03em}
+.lz-board-panel p{margin:12px 0 0;color:rgba(28,36,34,.58);font-size:14px;line-height:1.45}
+.lz-board-panel-main{left:7%;top:10%;right:18%;min-height:260px;background:linear-gradient(155deg,rgba(255,255,255,.72),rgba(222,239,242,.35))}
+.lz-board-script{left:12%;bottom:10%;width:38%}
+.lz-board-export{right:7%;bottom:16%;width:36%;transform:translateY(-12px)}
+.lz-board-bars{position:absolute;left:20px;right:20px;bottom:24px;display:grid;gap:10px}
+.lz-board-bars i{display:block;height:12px;border-radius:999px;background:linear-gradient(90deg,rgba(215,162,67,.62),rgba(180,210,214,.24))}
+.lz-board-bars i:nth-child(2){width:72%}
+.lz-board-bars i:nth-child(3){width:48%}
 .lz-work{padding:clamp(70px,10vw,140px) clamp(18px,5vw,72px) clamp(60px,8vw,110px)}
 .lz-work-head{max-width:1180px;margin:0 auto 28px;display:grid;grid-template-columns:minmax(260px,.9fr) minmax(320px,1.1fr);gap:clamp(18px,4vw,54px);align-items:end}
 .lz-work-head h2{margin:8px 0 0;font-family:"Instrument Serif",Fraunces,Georgia,serif;font-weight:400;font-size:clamp(40px,5.8vw,76px);line-height:.98;letter-spacing:-.03em;color:#1b2422}
@@ -1435,6 +1484,13 @@ html:has(.lz.is-intro),body:has(.lz.is-intro),#root:has(.lz.is-intro){height:100
   .lz-product-grid-preview{grid-template-columns:1fr}
   .lz-preview-list{grid-template-columns:1fr}
   .lz-floating-panel{display:none}
+  .lz-showcase{grid-template-columns:1fr;padding:70px 18px}
+  .lz-showcase:before{inset:3% 10px;border-radius:22px}
+  .lz-studio-board{min-height:560px;border-radius:24px}
+  .lz-board-panel-main{left:16px;right:16px;top:18px}
+  .lz-board-script,.lz-board-export{left:16px;right:16px;width:auto}
+  .lz-board-script{bottom:160px}
+  .lz-board-export{bottom:22px;transform:none}
   .lz-work-head{grid-template-columns:1fr;text-align:left}
   .lz-grid,.lz-steps ol{grid-template-columns:1fr}
   .lz-card:nth-child(n){grid-column:auto;min-height:210px}
