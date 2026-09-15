@@ -295,36 +295,46 @@ export function FrontPage() {
   const introLock = useRef(false);
   const introBeatRef = useRef(0);
   const introAdvanceRef = useRef<(force?: boolean) => void>(() => {});
+  const introReverseRef = useRef<(force?: boolean) => void>(() => {});
   const entryStepRef = useRef(ENTRY_GATE_STEP);
   const gateReturnTimer = useRef(0);
+  const gatePeelTimer = useRef(0);
 
-  const closeToGate = useCallback((delay = 560) => {
+  const closeToGate = useCallback((delay = 1180) => {
     if (gateReturnTimer.current) return;
+    if (gatePeelTimer.current) {
+      window.clearTimeout(gatePeelTimer.current);
+      gatePeelTimer.current = 0;
+    }
     introLock.current = true;
     setIntroEnter(false);
+    drawing.current = false;
+    holdActive.current = false;
+    unlocked.current = false;
+    unlockDragging.current = false;
+    entryStepRef.current = ENTRY_GATE_STEP;
+    introBeatRef.current = 0;
+    points.current = [];
+    sparks.current = [];
+    dust.current = [];
+    frost.current = { t: 0, x: 0.5, y: 0.45, on: false };
+    setUnlocking(false);
+    setDrawProgress(0);
+    setHold(0);
+    setIntroBeat(0);
+    setIntroDone(false);
+    setGateGone(false);
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => setGateOpen(false));
+    });
     gateReturnTimer.current = window.setTimeout(() => {
       if (holdRaf.current) {
         cancelAnimationFrame(holdRaf.current);
         holdRaf.current = 0;
       }
-      drawing.current = false;
-      holdActive.current = false;
-      unlocked.current = false;
-      unlockDragging.current = false;
       introLock.current = false;
-      entryStepRef.current = ENTRY_GATE_STEP;
-      introBeatRef.current = 0;
-      points.current = [];
-      sparks.current = [];
-      dust.current = [];
-      frost.current = { t: 0, x: 0.5, y: 0.45, on: false };
       setGateOpen(false);
       setGateGone(false);
-      setUnlocking(false);
-      setDrawProgress(0);
-      setHold(0);
-      setIntroDone(false);
-      setIntroBeat(0);
       setIntroEnter(false);
       setSlideT(1);
       setSlideGreen(false);
@@ -338,6 +348,7 @@ export function FrontPage() {
   useEffect(() => {
     return () => {
       if (gateReturnTimer.current) window.clearTimeout(gateReturnTimer.current);
+      if (gatePeelTimer.current) window.clearTimeout(gatePeelTimer.current);
     };
   }, []);
 
@@ -368,8 +379,16 @@ export function FrontPage() {
 
   useEffect(() => {
     if (!gateOpen) return;
-    const t = window.setTimeout(() => setGateGone(true), 1280);
-    return () => window.clearTimeout(t);
+    gatePeelTimer.current = window.setTimeout(() => {
+      setGateGone(true);
+      gatePeelTimer.current = 0;
+    }, 1280);
+    return () => {
+      if (gatePeelTimer.current) {
+        window.clearTimeout(gatePeelTimer.current);
+        gatePeelTimer.current = 0;
+      }
+    };
   }, [gateOpen]);
 
   useEffect(() => {
@@ -423,6 +442,7 @@ export function FrontPage() {
     };
 
     introAdvanceRef.current = advance;
+    introReverseRef.current = reverse;
 
     const onWheel = (e: WheelEvent) => {
       if (Math.abs(e.deltaY) < 8) return;
@@ -1022,6 +1042,12 @@ export function FrontPage() {
           className={`lz-intro${introEnter ? ' is-in' : ''}`}
           aria-label="Launchly introduction"
           aria-live="polite"
+          onWheel={(e) => {
+            if (Math.abs(e.deltaY) < 8) return;
+            e.preventDefault();
+            if (e.deltaY > 0) introAdvanceRef.current(true);
+            else introReverseRef.current(true);
+          }}
         >
           <div className="lz-intro-wash" aria-hidden="true" />
           <div className="lz-intro-frame">
@@ -1200,8 +1226,8 @@ html:has(.lz.is-intro),body:has(.lz.is-intro),#root:has(.lz.is-intro){height:100
 .lz-wash{position:absolute;inset:0;background:linear-gradient(180deg,#f7f3ea 0%,#efe8db 42%,#e7ece8 100%)}
 .lz-grain{position:absolute;inset:0;width:100%;height:100%;mix-blend-mode:multiply;opacity:.55}
 .lz-film{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 30%,transparent 0 46%,rgba(40,50,45,.06) 100%)}
-.lz-gate{position:fixed;inset:0;z-index:80;display:grid;place-items:center;cursor:crosshair;touch-action:none;user-select:none;background:radial-gradient(ellipse at 50% 42%,#8ea89a 0%,#6d8a7d 46%,#4f6d61 100%);transition:opacity 1.1s ease,filter 1.1s ease,visibility 1.1s}
-.lz-gate.is-peel{opacity:0;filter:blur(10px);visibility:hidden;pointer-events:none}
+.lz-gate{position:fixed;inset:0;z-index:80;display:grid;place-items:center;cursor:crosshair;touch-action:none;user-select:none;background:radial-gradient(ellipse at 50% 42%,#8ea89a 0%,#6d8a7d 46%,#4f6d61 100%);opacity:1;filter:blur(0);transform:scale(1);transform-origin:center;transition:opacity 1.1s ease,filter 1.1s ease,transform 1.1s cubic-bezier(.16,1,.3,1),visibility 1.1s}
+.lz-gate.is-peel{opacity:0;filter:blur(10px);transform:scale(1.055);visibility:hidden;pointer-events:none}
 .lz-gate-mist{position:absolute;inset:-8%;background:radial-gradient(ellipse at 72% 18%,rgba(255,255,245,.34),transparent 42%),radial-gradient(ellipse at 22% 78%,rgba(180,220,230,.18),transparent 46%),repeating-linear-gradient(118deg,transparent 0 22px,rgba(255,255,255,.03) 22px 24px);animation:lz-drift 16s ease-in-out infinite alternate}
 .lz-gate-draw{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2}
 .lz-gate-center{position:relative;z-index:3;display:flex;flex-direction:column;align-items:center;gap:16px;pointer-events:none}
