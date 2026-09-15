@@ -1107,23 +1107,14 @@ export function FrontPage() {
             });
           }}>
             <div className="lz-hero-copy">
-              <p className="lz-kicker">TIKTOK SHOP AFFILIATE STUDIO</p>
-              <h1>Create ads that look ready to post.</h1>
+              <p className="lz-kicker">AFFILIATE CONTENT STUDIO</p>
+              <h1>Create, download, and post without the messy middle.</h1>
               <p className="lz-hero-lead">
-                Launchly turns product ideas into affiliate-ready scripts, image ads, captions, and posting packs in one polished studio.
+                A quiet workspace for turning TikTok Shop products into usable scripts, captions, image ads, and posting packs.
               </p>
               <div className="lz-hero-actions">
                 <a className="lz-primary" href="/get-in">Get access</a>
-                <a className="lz-secondary" href="#work">View studio</a>
-              </div>
-              <div className="lz-hero-ribbon" aria-label="Launchly output timeline">
-                <span>Idea</span>
-                <i />
-                <span>Angle</span>
-                <i />
-                <span>Creative</span>
-                <i />
-                <span>Post</span>
+                <a className="lz-secondary" href="#work">See workflow</a>
               </div>
             </div>
             <div className="lz-glass" aria-hidden="true">
@@ -1136,25 +1127,22 @@ export function FrontPage() {
               <div className="lz-product-window">
                 <div className="lz-window-bar">
                   <span>Launchly Studio</span>
-                  <b>Ready</b>
+                  <b>Draft 04</b>
                 </div>
                 <div className="lz-product-grid-preview">
                   <div className="lz-preview-main">
-                    <small>Product angle</small>
-                    <strong>Demo the result in the first three seconds.</strong>
-                    <p>Hook, proof, objection, and CTA are shaped together.</p>
+                    <small>Current angle</small>
+                    <strong>Show the product solving one clear daily problem.</strong>
+                    <p>Hook, proof, objection, caption, and CTA stay connected.</p>
                   </div>
-                  <div className="lz-preview-shot"><span>9:16</span></div>
+                  <div className="lz-preview-shot"><span>Preview</span></div>
                   <div className="lz-preview-list">
-                    <span>Caption drafted</span>
-                    <span>Image ad composed</span>
-                    <span>Video script ready</span>
+                    <span>Script</span>
+                    <span>Caption</span>
+                    <span>Image ad</span>
                   </div>
                 </div>
               </div>
-              <div className="lz-floating-panel lz-floating-a">3 angles generated</div>
-              <div className="lz-floating-panel lz-floating-b">Export pack</div>
-              <div className="lz-floating-panel lz-floating-c">GBP 5/mo access</div>
             </div>
             <p className="lz-statement">
               <ScrambleText
@@ -1165,13 +1153,6 @@ export function FrontPage() {
             <p className="lz-statement-sub">
               Access is GBP 5/month. AI usage is billed separately.
             </p>
-            <div className="lz-hero-proof" aria-label="Launchly workflow highlights">
-              <span>Angles</span>
-              <b>Scripts</b>
-              <span>Captions</span>
-              <b>Image ads</b>
-              <span>Exports</span>
-            </div>
           </section>
 
           <section className="lz-showcase" aria-label="Launchly product preview">
@@ -1535,33 +1516,35 @@ html:has(.lz.is-intro),body:has(.lz.is-intro),#root:has(.lz.is-intro){height:100
 }
 
 /* 2026 front page art direction: force the open page away from the old centered card stack. */
-.lz.is-open{background:#edf3f2}
+.lz.is-open{background:#f6f7f3}
 .lz.is-open .lz-wash{background:
-  linear-gradient(118deg,rgba(255,255,255,.92) 0 18%,rgba(180,211,219,.28) 18.4% 19.2%,transparent 19.4% 100%),
-  radial-gradient(ellipse at 78% 20%,rgba(197,226,235,.95),transparent 38%),
-  radial-gradient(ellipse at 18% 10%,rgba(255,248,236,.92),transparent 35%),
-  radial-gradient(ellipse at 50% 85%,rgba(218,229,226,.75),transparent 44%),
-  linear-gradient(135deg,#fbfaf5 0%,#edf5f5 48%,#f6efe4 100%)}
+  linear-gradient(112deg,transparent 0 22%,rgba(255,255,255,.52) 22.1% 22.55%,transparent 22.8% 100%),
+  linear-gradient(72deg,transparent 0 71%,rgba(175,201,207,.2) 71.2% 71.7%,transparent 72% 100%),
+  radial-gradient(ellipse at 76% 18%,rgba(205,224,228,.72),transparent 42%),
+  radial-gradient(ellipse at 16% 14%,rgba(255,247,232,.82),transparent 38%),
+  radial-gradient(ellipse at 54% 86%,rgba(220,229,225,.66),transparent 46%),
+  linear-gradient(135deg,#fbfaf6 0%,#f0f5f4 52%,#f7f1e8 100%)}
 .lz.is-open .lz-film{background:
-  linear-gradient(90deg,rgba(255,255,255,.42),transparent 18% 82%,rgba(255,255,255,.28)),
-  radial-gradient(ellipse at 50% 44%,transparent 0 58%,rgba(45,65,70,.14) 100%)}
+  linear-gradient(90deg,rgba(255,255,255,.34),transparent 24% 76%,rgba(255,255,255,.22)),
+  radial-gradient(ellipse at 50% 44%,transparent 0 64%,rgba(45,65,70,.1) 100%)}
 .lz.is-open .lz-doc{overflow:hidden}
-.lz.is-open .lz-chrome{background:rgba(247,249,246,.72);border-bottom:1px solid rgba(255,255,255,.72);box-shadow:0 18px 50px rgba(53,70,75,.08)}
-.lz.is-open .lz-hero{grid-template-columns:minmax(320px,.86fr) minmax(520px,1.14fr);min-height:calc(100svh - 48px);padding:clamp(82px,9vh,120px) clamp(28px,7vw,112px) clamp(62px,8vh,96px);background:linear-gradient(180deg,rgba(255,255,255,.2),rgba(255,255,255,0));border-bottom:1px solid rgba(255,255,255,.54)}
-.lz.is-open .lz-hero:after{content:"";position:absolute;inset:9% clamp(18px,4vw,52px);border-radius:36px;background:linear-gradient(125deg,rgba(255,255,255,.24),rgba(180,206,213,.08));border:1px solid rgba(255,255,255,.58);box-shadow:inset 0 1px 0 rgba(255,255,255,.86);backdrop-filter:blur(6px);pointer-events:none;z-index:0}
+.lz.is-open .lz-chrome{background:rgba(250,250,246,.76);border-bottom:1px solid rgba(255,255,255,.76);box-shadow:0 18px 50px rgba(53,70,75,.06)}
+.lz.is-open .lz-hero{grid-template-columns:minmax(340px,.82fr) minmax(560px,1.18fr);min-height:calc(100svh - 48px);padding:clamp(90px,10vh,132px) clamp(34px,7vw,120px) clamp(66px,8vh,104px);background:linear-gradient(180deg,rgba(255,255,255,.26),rgba(255,255,255,0));border-bottom:1px solid rgba(255,255,255,.58)}
+.lz.is-open .lz-hero:after{content:"";position:absolute;inset:8% clamp(18px,4vw,56px);border-radius:28px;background:linear-gradient(125deg,rgba(255,255,255,.18),rgba(180,206,213,.07));border:1px solid rgba(255,255,255,.54);box-shadow:inset 0 1px 0 rgba(255,255,255,.82);backdrop-filter:blur(5px);pointer-events:none;z-index:0}
 .lz.is-open .lz-hero-copy{z-index:2}
-.lz.is-open .lz-hero-copy:before{content:"LAUNCHLY STUDIO OS";display:inline-flex;margin-bottom:16px;padding:8px 12px;border-radius:999px;background:rgba(27,36,34,.08);font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:10px;letter-spacing:.18em;color:rgba(27,36,34,.58)}
-.lz.is-open .lz-hero h1{font-size:clamp(72px,9.6vw,150px);line-height:.84;max-width:7.4em}
-.lz.is-open .lz-hero-lead{font-size:clamp(18px,1.55vw,23px);max-width:30em}
-.lz.is-open .lz-glass{z-index:2;width:min(760px,92vw);height:clamp(560px,58vw,760px)}
-.lz.is-open .lz-product-window{width:min(680px,90vw);transform:rotateY(-12deg) rotateX(6deg) translateZ(0);border-radius:30px;background:linear-gradient(145deg,rgba(255,255,255,.86),rgba(227,241,244,.36));box-shadow:0 45px 130px rgba(45,64,70,.24),inset 0 1px 0 rgba(255,255,255,.98)}
-.lz.is-open .lz-product-window:before{content:"";position:absolute;inset:64px 18px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(27,36,34,.18),transparent)}
-.lz.is-open .lz-product-window:after{content:"Live generation queue";position:absolute;right:18px;top:62px;padding:7px 10px;border-radius:999px;background:rgba(18,183,106,.12);font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#246a52}
-.lz.is-open .lz-preview-main{min-height:300px}
-.lz.is-open .lz-preview-main strong{font-size:clamp(36px,4.2vw,58px);max-width:9em}
-.lz.is-open .lz-preview-shot{min-height:300px;background:
-  linear-gradient(180deg,rgba(28,39,38,.92),rgba(93,129,128,.56)),
-  radial-gradient(ellipse at 50% 18%,rgba(255,255,255,.52),transparent 35%)}
+.lz.is-open .lz-hero h1{font-size:clamp(68px,8.8vw,138px);line-height:.88;max-width:8.5em;letter-spacing:-.025em}
+.lz.is-open .lz-hero-lead{font-size:clamp(18px,1.5vw,22px);max-width:31em}
+.lz.is-open .lz-hero-ribbon,.lz.is-open .lz-hero-proof,.lz.is-open .lz-floating-panel{display:none!important}
+.lz.is-open .lz-glass{z-index:2;width:min(780px,92vw);height:clamp(540px,56vw,720px)}
+.lz.is-open .lz-glass:before{inset:4% 0 2% 10%;border-radius:26px;transform:rotateY(-8deg) rotateX(4deg);background:rgba(255,255,255,.2)}
+.lz.is-open .lz-glass-plate{display:none}
+.lz.is-open .lz-product-window{width:min(700px,90vw);transform:rotateY(-9deg) rotateX(5deg) translateZ(0);border-radius:28px;background:linear-gradient(145deg,rgba(255,255,255,.88),rgba(231,241,243,.38));box-shadow:0 42px 118px rgba(45,64,70,.2),inset 0 1px 0 rgba(255,255,255,.98)}
+.lz.is-open .lz-product-window:before{content:"";position:absolute;inset:62px 18px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(27,36,34,.16),transparent)}
+.lz.is-open .lz-preview-main{min-height:310px}
+.lz.is-open .lz-preview-main strong{font-size:clamp(34px,3.7vw,54px);max-width:10em}
+.lz.is-open .lz-preview-shot{min-height:310px;background:
+  linear-gradient(180deg,rgba(28,39,38,.9),rgba(93,129,128,.54)),
+  radial-gradient(ellipse at 50% 18%,rgba(255,255,255,.48),transparent 35%)}
 .lz.is-open .lz-showcase{min-height:86svh}
 .lz.is-open .lz-work{background:linear-gradient(180deg,rgba(255,255,255,.18),rgba(255,255,255,.42))}
 .lz.is-open .lz-grid{gap:18px}
