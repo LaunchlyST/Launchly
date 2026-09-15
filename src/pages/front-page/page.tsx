@@ -300,6 +300,22 @@ export function FrontPage() {
   const gateReturnTimer = useRef(0);
   const gatePeelTimer = useRef(0);
 
+  const clearGateAttempt = useCallback(() => {
+    drawing.current = false;
+    holdActive.current = false;
+    points.current = [];
+    sparks.current = [];
+    dust.current = [];
+    frost.current = { t: 0, x: 0.5, y: 0.45, on: false };
+    setDrawProgress(0);
+    setHold(0);
+    const canvas = trailRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (canvas && ctx) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  }, []);
+
   const closeToGate = useCallback((delay = 1180) => {
     if (gateReturnTimer.current) return;
     if (gatePeelTimer.current) {
@@ -308,19 +324,12 @@ export function FrontPage() {
     }
     introLock.current = true;
     setIntroEnter(false);
-    drawing.current = false;
-    holdActive.current = false;
+    clearGateAttempt();
     unlocked.current = false;
     unlockDragging.current = false;
     entryStepRef.current = ENTRY_GATE_STEP;
     introBeatRef.current = 0;
-    points.current = [];
-    sparks.current = [];
-    dust.current = [];
-    frost.current = { t: 0, x: 0.5, y: 0.45, on: false };
     setUnlocking(false);
-    setDrawProgress(0);
-    setHold(0);
     setIntroBeat(0);
     setIntroDone(false);
     setGateGone(false);
@@ -343,7 +352,7 @@ export function FrontPage() {
       gateReturnTimer.current = 0;
       window.scrollTo({ top: 0, behavior: 'auto' });
     }, delay);
-  }, []);
+  }, [clearGateAttempt]);
 
   useEffect(() => {
     return () => {
@@ -889,8 +898,9 @@ export function FrontPage() {
       cx /= Math.max(1, pts.length);
       cy /= Math.max(1, pts.length);
       finishUnlock(cx / rect.width, cy / rect.height);
+    } else {
+      clearGateAttempt();
     }
-    // Keep stroke + progress if not unlocked; only clear on next pointerdown
   };
 
   const startHold = () => {
