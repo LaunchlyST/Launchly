@@ -1107,14 +1107,14 @@ export function FrontPage() {
             });
           }}>
             <div className="lz-hero-copy">
-              <p className="lz-kicker">AFFILIATE CONTENT STUDIO</p>
-              <h1>Create, download, and post without the messy middle.</h1>
+              <p className="lz-kicker">01 / LAUNCHLY</p>
+              <h1>The studio is open.</h1>
               <p className="lz-hero-lead">
-                A quiet workspace for turning TikTok Shop products into usable scripts, captions, image ads, and posting packs.
+                Create affiliate work with the same calm focus as the intro: product in, finished posting pack out.
               </p>
               <div className="lz-hero-actions">
                 <a className="lz-primary" href="/get-in">Get access</a>
-                <a className="lz-secondary" href="#work">See workflow</a>
+                <a className="lz-secondary" href="#work">Scroll</a>
               </div>
             </div>
             <div className="lz-glass" aria-hidden="true">
@@ -1126,16 +1126,16 @@ export function FrontPage() {
               </div>
               <div className="lz-product-window">
                 <div className="lz-window-bar">
-                  <span>Launchly Studio</span>
-                  <b>Draft 04</b>
+                  <span>Launchly desk</span>
+                  <b>01</b>
                 </div>
                 <div className="lz-product-grid-preview">
                   <div className="lz-preview-main">
-                    <small>Current angle</small>
-                    <strong>Show the product solving one clear daily problem.</strong>
-                    <p>Hook, proof, objection, caption, and CTA stay connected.</p>
+                    <small>FOCUS</small>
+                    <strong>One product. One clear angle. One ready post.</strong>
+                    <p>Scripts, captions, and image ads stay arranged like a calm desk.</p>
                   </div>
-                  <div className="lz-preview-shot"><span>Preview</span></div>
+                  <div className="lz-preview-shot"><span>OUTPUT</span></div>
                   <div className="lz-preview-list">
                     <span>Script</span>
                     <span>Caption</span>
@@ -1556,5 +1556,56 @@ html:has(.lz.is-intro),body:has(.lz.is-intro),#root:has(.lz.is-intro){height:100
   .lz.is-open .lz-hero:after{inset:5% 10px;border-radius:24px}
   .lz.is-open .lz-hero h1{margin-left:auto;margin-right:auto;font-size:clamp(54px,16vw,88px)}
   .lz.is-open .lz-product-window{transform:none}
+}
+
+/* Match the intro style: cinematic, quiet, spacious, and editorial. */
+.lz.is-open{background:#f4efe6;color:#1c2422}
+.lz.is-open .lz-wash{background:
+  radial-gradient(ellipse at 28% 32%,rgba(196,214,190,.48),transparent 52%),
+  radial-gradient(ellipse at 78% 24%,rgba(255,236,210,.38),transparent 48%),
+  radial-gradient(ellipse at 55% 78%,rgba(210,228,220,.34),transparent 50%),
+  linear-gradient(180deg,#f6f1e8 0%,#ebe6db 100%)!important}
+.lz.is-open .lz-wash:before{content:"";position:absolute;inset:-8%;background:repeating-linear-gradient(118deg,transparent 0 22px,rgba(255,255,255,.034) 22px 24px);opacity:.88}
+.lz.is-open .lz-film{background:radial-gradient(ellipse at 50% 35%,transparent 0 48%,rgba(40,50,45,.055) 100%)!important}
+.lz.is-open .lz-doc{overflow:visible}
+.lz.is-open .lz-doc:before,.lz.is-open .lz-doc:after{display:none!important}
+.lz.is-open .lz-chrome{position:fixed;inset:0 0 auto;z-index:30;background:transparent!important;border:0!important;box-shadow:none!important;padding:18px clamp(20px,3vw,42px);color:rgba(28,36,34,.46)}
+.lz.is-open .lz-hero{min-height:100svh;display:grid;grid-template-columns:1fr;place-items:center;text-align:center;padding:clamp(70px,10vh,112px) clamp(18px,6vw,72px) clamp(54px,8vh,86px);border:0!important;background:transparent!important}
+.lz.is-open .lz-hero:before,.lz.is-open .lz-hero:after{display:none!important}
+.lz.is-open .lz-hero-copy{max-width:820px;margin:0 auto;z-index:3}
+.lz.is-open .lz-hero h1{margin:20px auto 0;font-family:"Instrument Serif",Fraunces,Georgia,serif;font-style:italic;font-weight:400;font-size:clamp(58px,10vw,122px);line-height:.98;letter-spacing:-.035em;color:#1c2422;max-width:8.2em}
+.lz.is-open .lz-hero-lead{margin:18px auto 0;max-width:34em;font-size:clamp(16px,2vw,20px);line-height:1.5;color:rgba(28,36,34,.58)}
+.lz.is-open .lz-hero-actions{justify-content:center;margin-top:30px}
+.lz.is-open .lz-primary,.lz.is-open .lz-secondary{min-height:42px;border-radius:999px;padding:0 20px;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase}
+.lz.is-open .lz-primary{background:#d7a243;color:#1a1200;box-shadow:0 10px 30px rgba(180,130,40,.18)}
+.lz.is-open .lz-secondary{background:rgba(255,255,255,.18);border:1px solid rgba(28,36,34,.16);color:rgba(28,36,34,.56)}
+.lz.is-open .lz-glass{width:min(580px,88vw);height:auto;margin:44px auto 0;perspective:none}
+.lz.is-open .lz-glass:before,.lz.is-open .lz-glass-light,.lz.is-open .lz-glass-plate,.lz.is-open .lz-floating-panel,.lz.is-open .lz-hero-proof,.lz.is-open .lz-hero-ribbon,.lz.is-open .lz-statement,.lz.is-open .lz-statement-sub{display:none!important}
+.lz.is-open .lz-product-window{width:min(560px,90vw);transform:none!important;border-radius:26px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.46);box-shadow:0 22px 70px rgba(40,50,45,.07),inset 0 1px 0 rgba(255,255,255,.58);backdrop-filter:blur(18px)}
+.lz.is-open .lz-product-window:before,.lz.is-open .lz-product-window:after{display:none!important}
+.lz.is-open .lz-window-bar{height:42px;color:rgba(28,36,34,.42)}
+.lz.is-open .lz-product-grid-preview{grid-template-columns:1fr 150px;gap:10px;padding:14px}
+.lz.is-open .lz-preview-main{min-height:178px;text-align:left;background:rgba(255,255,255,.22);border-color:rgba(255,255,255,.36)}
+.lz.is-open .lz-preview-main strong{margin-top:24px;font-size:clamp(28px,4.4vw,44px);line-height:1}
+.lz.is-open .lz-preview-shot{min-height:178px;background:linear-gradient(180deg,rgba(28,36,34,.72),rgba(108,132,124,.38));color:rgba(255,255,255,.78)}
+.lz.is-open .lz-preview-list span{background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.34)}
+.lz.is-open .lz-showcase,.lz.is-open .lz-work,.lz.is-open .lz-steps{padding:clamp(72px,12vw,150px) clamp(18px,6vw,72px);background:transparent!important}
+.lz.is-open .lz-showcase{grid-template-columns:1fr;min-height:auto;text-align:center}
+.lz.is-open .lz-showcase:before{inset:12% 8%;border-radius:24px;background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.32);box-shadow:none}
+.lz.is-open .lz-showcase-copy{max-width:760px;margin:0 auto}
+.lz.is-open .lz-showcase-copy h2,.lz.is-open .lz-work-head h2{font-family:"Instrument Serif",Fraunces,Georgia,serif;font-style:italic;font-weight:400;font-size:clamp(46px,8vw,94px);line-height:1;letter-spacing:-.035em}
+.lz.is-open .lz-studio-board{margin:42px auto 0;width:min(840px,100%);min-height:360px;border-radius:24px;background:rgba(255,255,255,.16);box-shadow:0 20px 80px rgba(40,50,45,.06),inset 0 1px 0 rgba(255,255,255,.48)}
+.lz.is-open .lz-board-panel{background:rgba(255,255,255,.24);border-color:rgba(255,255,255,.38);box-shadow:none}
+.lz.is-open .lz-work-head{grid-template-columns:1fr;max-width:900px;text-align:center;justify-items:center;margin-bottom:38px}
+.lz.is-open .lz-grid{grid-template-columns:repeat(3,minmax(0,1fr));max-width:1040px;gap:14px}
+.lz.is-open .lz-card:nth-child(n){grid-column:auto;min-height:230px}
+.lz.is-open .lz-card{border-radius:8px;background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.42);box-shadow:none}
+.lz.is-open .lz-steps{max-width:1040px;text-align:center}
+.lz.is-open .lz-steps ol{grid-template-columns:repeat(4,minmax(0,1fr))}
+.lz.is-open .lz-steps li{border-radius:0;border:0;border-top:1px solid rgba(28,36,34,.12);background:transparent;box-shadow:none;backdrop-filter:none}
+.lz.is-open .lz-access{background:transparent!important;border-top:1px solid rgba(255,255,255,.32)}
+@media(max-width:900px){
+  .lz.is-open .lz-product-grid-preview{grid-template-columns:1fr}
+  .lz.is-open .lz-grid,.lz.is-open .lz-steps ol{grid-template-columns:1fr}
 }
 `;
