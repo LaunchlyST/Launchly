@@ -1155,6 +1155,13 @@ export function FrontPage() {
             <p className="lz-statement-sub">
               Access is GBP 5/month. AI usage is billed separately.
             </p>
+            <div className="lz-hero-proof" aria-label="Launchly workflow highlights">
+              <span>Angles</span>
+              <b>Scripts</b>
+              <span>Captions</span>
+              <b>Image ads</b>
+              <span>Exports</span>
+            </div>
           </section>
 
           <section className="lz-showcase" aria-label="Launchly product preview">
@@ -1399,6 +1406,11 @@ html:has(.lz.is-intro),body:has(.lz.is-intro),#root:has(.lz.is-intro){height:100
 .lz-doc:before,.lz-doc:after{content:"";position:fixed;pointer-events:none;z-index:-1}
 .lz-doc:before{inset:9vh 7vw 11vh;border:1px solid rgba(255,255,255,.42);border-radius:24px;background:linear-gradient(118deg,rgba(255,255,255,.16),rgba(255,255,255,.05) 46%,rgba(155,185,195,.1));box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 34px 120px rgba(64,82,86,.08);backdrop-filter:blur(3px)}
 .lz-doc:after{inset:0;background:linear-gradient(105deg,transparent 0 37%,rgba(255,255,255,.32) 37.3% 38.1%,transparent 38.5% 100%);opacity:.36;transform:translateX(var(--mx,0))}
+.lz-doc .lz-hero:before,.lz-doc .lz-showcase:after,.lz-doc .lz-work:before{content:"";position:absolute;pointer-events:none;border-radius:999px;background:radial-gradient(circle,rgba(255,255,255,.62),rgba(188,213,219,.16) 46%,transparent 68%);filter:blur(18px);opacity:.72}
+.lz-doc .lz-hero:before{width:42vw;height:42vw;right:-10vw;top:4vh}
+.lz-doc .lz-showcase:after{width:34vw;height:34vw;left:-9vw;bottom:-6vw}
+.lz-doc .lz-work{position:relative}
+.lz-doc .lz-work:before{width:30vw;height:30vw;right:2vw;top:-10vw}
 .lz-chrome{backdrop-filter:blur(18px);background:linear-gradient(180deg,rgba(250,249,244,.84),rgba(250,249,244,.2));border-bottom:1px solid rgba(255,255,255,.54)}
 .lz-hero{position:relative;min-height:100svh;display:grid;grid-template-columns:minmax(0,.92fr) minmax(360px,1.08fr);gap:clamp(28px,6vw,86px);align-items:center;justify-content:center;padding:clamp(96px,11vh,148px) clamp(22px,6vw,92px) clamp(72px,9vh,118px);text-align:left;overflow:hidden}
 .lz-hero-copy{position:relative;z-index:3;max-width:620px}
@@ -1433,7 +1445,11 @@ html:has(.lz.is-intro),body:has(.lz.is-intro),#root:has(.lz.is-intro){height:100
 .lz-floating-panel{position:absolute;z-index:4;padding:12px 14px;border-radius:16px;background:rgba(255,255,255,.56);border:1px solid rgba(255,255,255,.72);box-shadow:0 18px 40px rgba(50,66,68,.12);backdrop-filter:blur(16px);font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11px;letter-spacing:.12em;color:rgba(28,36,34,.62)}
 .lz-floating-a{right:2%;top:18%;animation:lz-float 6s ease-in-out infinite}
 .lz-floating-b{left:5%;bottom:19%;animation:lz-float 7s ease-in-out infinite reverse}
-.lz-hero>.lz-statement,.lz-hero>.lz-statement-sub{display:none}
+.lz-hero>.lz-statement{grid-column:1/-1;max-width:900px;margin:-20px auto 0;text-align:center;font-size:clamp(18px,2vw,28px);color:rgba(27,36,34,.72)}
+.lz-hero>.lz-statement-sub{grid-column:1/-1;margin:0 auto;text-align:center;color:rgba(27,36,34,.46)}
+.lz-hero-proof{grid-column:1/-1;display:flex;justify-content:center;gap:10px;flex-wrap:wrap;width:min(820px,100%);margin:4px auto 0;padding:10px;border-radius:999px;background:rgba(255,255,255,.34);border:1px solid rgba(255,255,255,.64);box-shadow:inset 0 1px 0 rgba(255,255,255,.72),0 18px 50px rgba(52,70,73,.08);backdrop-filter:blur(16px)}
+.lz-hero-proof span,.lz-hero-proof b{display:inline-flex;align-items:center;justify-content:center;min-height:32px;padding:0 14px;border-radius:999px;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:rgba(28,36,34,.55);background:rgba(255,255,255,.32)}
+.lz-hero-proof b{color:#1b2422;background:rgba(215,162,67,.28)}
 .lz-showcase{position:relative;display:grid;grid-template-columns:minmax(280px,.78fr) minmax(420px,1.22fr);gap:clamp(28px,6vw,82px);align-items:center;padding:clamp(70px,10vw,134px) clamp(22px,6vw,92px);overflow:hidden}
 .lz-showcase:before{content:"";position:absolute;inset:8% 4%;border-radius:32px;background:linear-gradient(140deg,rgba(255,255,255,.26),rgba(214,231,235,.12));border:1px solid rgba(255,255,255,.48);box-shadow:inset 0 1px 0 rgba(255,255,255,.72);backdrop-filter:blur(7px);pointer-events:none}
 .lz-showcase-copy{position:relative;z-index:2;max-width:520px}
