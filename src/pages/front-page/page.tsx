@@ -1116,6 +1116,15 @@ export function FrontPage() {
                 <a className="lz-primary" href="/get-in">Get access</a>
                 <a className="lz-secondary" href="#work">View studio</a>
               </div>
+              <div className="lz-hero-ribbon" aria-label="Launchly output timeline">
+                <span>Idea</span>
+                <i />
+                <span>Angle</span>
+                <i />
+                <span>Creative</span>
+                <i />
+                <span>Post</span>
+              </div>
             </div>
             <div className="lz-glass" aria-hidden="true">
               <i className="lz-glass-light lz-glass-light-a" />
@@ -1145,6 +1154,7 @@ export function FrontPage() {
               </div>
               <div className="lz-floating-panel lz-floating-a">3 angles generated</div>
               <div className="lz-floating-panel lz-floating-b">Export pack</div>
+              <div className="lz-floating-panel lz-floating-c">GBP 5/mo access</div>
             </div>
             <p className="lz-statement">
               <ScrambleText
@@ -1422,6 +1432,9 @@ html:has(.lz.is-intro),body:has(.lz.is-intro),#root:has(.lz.is-intro){height:100
 .lz-primary{background:#d7a243;color:#191000;box-shadow:0 16px 34px rgba(183,129,36,.22),inset 0 1px 0 rgba(255,255,255,.42)}
 .lz-secondary{color:#24302c;background:rgba(255,255,255,.42);border:1px solid rgba(255,255,255,.66);backdrop-filter:blur(14px)}
 .lz-primary:hover,.lz-secondary:hover{transform:translateY(-2px)}
+.lz-hero-ribbon{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:26px;width:max-content;max-width:100%;padding:9px 12px;border-radius:999px;background:rgba(255,255,255,.48);border:1px solid rgba(255,255,255,.74);box-shadow:inset 0 1px 0 rgba(255,255,255,.8),0 18px 42px rgba(57,72,74,.08);backdrop-filter:blur(16px)}
+.lz-hero-ribbon span{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:rgba(27,36,34,.58)}
+.lz-hero-ribbon i{display:block;width:26px;height:1px;background:linear-gradient(90deg,rgba(215,162,67,.82),rgba(128,165,171,.2))}
 .lz-glass{position:relative;width:min(720px,94vw);height:clamp(420px,58vw,660px);display:grid;place-items:center;margin:0;perspective:1200px}
 .lz-glass:before{content:"";position:absolute;inset:8% 2% 4% 12%;border-radius:30px;background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.5);box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 38px 90px rgba(60,76,78,.13);transform:rotateY(-11deg) rotateX(5deg);backdrop-filter:blur(18px)}
 .lz-glass-light{filter:blur(56px);opacity:.62}
@@ -1445,6 +1458,7 @@ html:has(.lz.is-intro),body:has(.lz.is-intro),#root:has(.lz.is-intro){height:100
 .lz-floating-panel{position:absolute;z-index:4;padding:12px 14px;border-radius:16px;background:rgba(255,255,255,.56);border:1px solid rgba(255,255,255,.72);box-shadow:0 18px 40px rgba(50,66,68,.12);backdrop-filter:blur(16px);font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11px;letter-spacing:.12em;color:rgba(28,36,34,.62)}
 .lz-floating-a{right:2%;top:18%;animation:lz-float 6s ease-in-out infinite}
 .lz-floating-b{left:5%;bottom:19%;animation:lz-float 7s ease-in-out infinite reverse}
+.lz-floating-c{right:8%;bottom:7%;animation:lz-float 8s ease-in-out infinite}
 .lz-hero>.lz-statement{grid-column:1/-1;max-width:900px;margin:-20px auto 0;text-align:center;font-size:clamp(18px,2vw,28px);color:rgba(27,36,34,.72)}
 .lz-hero>.lz-statement-sub{grid-column:1/-1;margin:0 auto;text-align:center;color:rgba(27,36,34,.46)}
 .lz-hero>.lz-statement,.lz-hero>.lz-statement-sub{display:none!important}
@@ -1536,10 +1550,13 @@ html:has(.lz.is-intro),body:has(.lz.is-intro),#root:has(.lz.is-intro){height:100
 .lz.is-open .lz-hero{grid-template-columns:minmax(320px,.86fr) minmax(520px,1.14fr);min-height:calc(100svh - 48px);padding:clamp(82px,9vh,120px) clamp(28px,7vw,112px) clamp(62px,8vh,96px);background:linear-gradient(180deg,rgba(255,255,255,.2),rgba(255,255,255,0));border-bottom:1px solid rgba(255,255,255,.54)}
 .lz.is-open .lz-hero:after{content:"";position:absolute;inset:9% clamp(18px,4vw,52px);border-radius:36px;background:linear-gradient(125deg,rgba(255,255,255,.24),rgba(180,206,213,.08));border:1px solid rgba(255,255,255,.58);box-shadow:inset 0 1px 0 rgba(255,255,255,.86);backdrop-filter:blur(6px);pointer-events:none;z-index:0}
 .lz.is-open .lz-hero-copy{z-index:2}
+.lz.is-open .lz-hero-copy:before{content:"LAUNCHLY STUDIO OS";display:inline-flex;margin-bottom:16px;padding:8px 12px;border-radius:999px;background:rgba(27,36,34,.08);font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:10px;letter-spacing:.18em;color:rgba(27,36,34,.58)}
 .lz.is-open .lz-hero h1{font-size:clamp(72px,9.6vw,150px);line-height:.84;max-width:7.4em}
 .lz.is-open .lz-hero-lead{font-size:clamp(18px,1.55vw,23px);max-width:30em}
 .lz.is-open .lz-glass{z-index:2;width:min(760px,92vw);height:clamp(560px,58vw,760px)}
 .lz.is-open .lz-product-window{width:min(680px,90vw);transform:rotateY(-12deg) rotateX(6deg) translateZ(0);border-radius:30px;background:linear-gradient(145deg,rgba(255,255,255,.86),rgba(227,241,244,.36));box-shadow:0 45px 130px rgba(45,64,70,.24),inset 0 1px 0 rgba(255,255,255,.98)}
+.lz.is-open .lz-product-window:before{content:"";position:absolute;inset:64px 18px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(27,36,34,.18),transparent)}
+.lz.is-open .lz-product-window:after{content:"Live generation queue";position:absolute;right:18px;top:62px;padding:7px 10px;border-radius:999px;background:rgba(18,183,106,.12);font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#246a52}
 .lz.is-open .lz-preview-main{min-height:300px}
 .lz.is-open .lz-preview-main strong{font-size:clamp(36px,4.2vw,58px);max-width:9em}
 .lz.is-open .lz-preview-shot{min-height:300px;background:
