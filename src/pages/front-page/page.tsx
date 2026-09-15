@@ -295,7 +295,6 @@ export function FrontPage() {
   const introLock = useRef(false);
   const introBeatRef = useRef(0);
   const introAdvanceRef = useRef<(force?: boolean) => void>(() => {});
-  const introReverseRef = useRef<(force?: boolean) => void>(() => {});
   const entryStepRef = useRef(ENTRY_GATE_STEP);
   const gateReturnTimer = useRef(0);
   const gatePeelTimer = useRef(0);
@@ -451,11 +450,11 @@ export function FrontPage() {
     };
 
     introAdvanceRef.current = advance;
-    introReverseRef.current = reverse;
 
     const onWheel = (e: WheelEvent) => {
       if (Math.abs(e.deltaY) < 8) return;
       e.preventDefault();
+      e.stopPropagation();
       if (e.deltaY > 0) advance();
       else reverse();
     };
@@ -508,6 +507,7 @@ export function FrontPage() {
       const y = window.scrollY || document.documentElement.scrollTop || 0;
       if (y > 24 || e.deltaY >= -8 || introLock.current) return;
       e.preventDefault();
+      e.stopPropagation();
       introLock.current = true;
       entryStepRef.current = INTRO.length;
       introBeatRef.current = INTRO.length - 1;
@@ -532,6 +532,7 @@ export function FrontPage() {
     const onWheel = (e: WheelEvent) => {
       if (e.deltaY <= 8 || unlocked.current) return;
       e.preventDefault();
+      e.stopPropagation();
       finishUnlock(0.5, 0.45);
     };
 
@@ -1052,12 +1053,6 @@ export function FrontPage() {
           className={`lz-intro${introEnter ? ' is-in' : ''}`}
           aria-label="Launchly introduction"
           aria-live="polite"
-          onWheel={(e) => {
-            if (Math.abs(e.deltaY) < 8) return;
-            e.preventDefault();
-            if (e.deltaY > 0) introAdvanceRef.current(true);
-            else introReverseRef.current(true);
-          }}
         >
           <div className="lz-intro-wash" aria-hidden="true" />
           <div className="lz-intro-frame">
