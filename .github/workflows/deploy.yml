@@ -30,7 +30,9 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # 22, not 20: Wrangler 4 refuses to start on anything older, and
+          # @supabase/supabase-js also declares engines.node >=22.0.0.
+          node-version: 22
           cache: npm
 
       - run: npm ci
