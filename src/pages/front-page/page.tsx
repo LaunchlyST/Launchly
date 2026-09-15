@@ -520,9 +520,17 @@ export function FrontPage() {
     let lastScale = 1;
     let hidden = document.hidden;
     const minScale = 1;
-    const maxScale = 1.65;
     const writeScale = (scale: number) => {
-      const clamped = Math.max(minScale, Math.min(maxScale, scale));
+      const viewportW = Math.max(1, window.innerWidth);
+      const viewportH = Math.max(1, window.innerHeight);
+      const copy = accessCopyRef.current;
+      const baseW = copy?.offsetWidth || 620;
+      const baseH = copy?.offsetHeight || 360;
+      const safeMax = Math.max(
+        1.25,
+        Math.min(1.55, (viewportW - 36) / baseW, (viewportH - 56) / baseH),
+      );
+      const clamped = Math.max(minScale, Math.min(safeMax, scale));
       accessRef.current?.style.setProperty('--access-zoom', clamped.toFixed(4));
       accessCopyRef.current?.style.setProperty('--access-zoom', clamped.toFixed(4));
       if (Math.abs(clamped - lastScale) > 0.002) {
@@ -537,11 +545,11 @@ export function FrontPage() {
       }
       const section = accessRef.current;
       if (section) {
-        const rect = section.getBoundingClientRect();
-        const viewportH = Math.max(1, window.innerHeight);
-        const zoomDistance = Math.max(1, rect.height - viewportH);
-        const progress = Math.max(0, Math.min(1, -rect.top / zoomDistance));
-        writeScale(minScale + progress * (maxScale - minScale));
+        const sectionTop = section.offsetTop;
+        const maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+        const zoomStart = Math.max(0, Math.min(sectionTop, maxScroll - window.innerHeight * 0.82));
+        const progress = Math.max(0, Math.min(1, (window.scrollY - zoomStart) / Math.max(1, maxScroll - zoomStart)));
+        writeScale(minScale + progress * 0.55);
       }
       raf = window.requestAnimationFrame(updateAccessZoom);
     };
@@ -1260,8 +1268,8 @@ html:has(.lz.is-intro),body:has(.lz.is-intro),#root:has(.lz.is-intro){height:100
 .lz-steps span{display:block;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:10px;letter-spacing:.2em;color:rgba(28,36,34,.4);margin-bottom:10px}
 .lz-steps em{display:block;font-family:"Instrument Serif",Fraunces,Georgia,serif;font-style:italic;font-size:clamp(28px,4vw,42px);letter-spacing:-.03em}
 .lz-steps b{display:block;margin-top:8px;font-weight:500;font-size:14px;color:rgba(28,36,34,.56)}
-.lz-access{position:relative;height:200vh;display:grid;place-items:start center;padding:0 clamp(18px,4vw,48px);text-align:center;overflow:clip}
-.lz-access-copy{position:sticky;top:0;z-index:2;width:min(620px,100%);height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 0 120px;transform:scale(var(--access-zoom,1));transform-origin:center;transition:transform .08s linear;will-change:transform}
+.lz-access{position:relative;min-height:100svh;display:grid;place-items:center;padding:64px clamp(18px,4vw,48px) 76px;text-align:center;overflow:clip}
+.lz-access-copy{position:relative;z-index:2;width:min(620px,100%);transform:scale(var(--access-zoom,1));transform-origin:center;transition:transform .08s linear;will-change:transform}
 .lz-kicker-gold{color:#b8862d}
 .lz-access h2{margin:12px 0 0;font-family:"Instrument Serif",Fraunces,Georgia,serif;font-weight:400;font-size:clamp(40px,7vw,72px);letter-spacing:-.035em;line-height:1.02}
 .lz-access-sub{margin:16px 0 0;font-size:16px;color:rgba(28,36,34,.62)}
