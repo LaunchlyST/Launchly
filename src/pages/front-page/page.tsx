@@ -91,6 +91,9 @@ const INTRO = [
   },
 ];
 
+const ENTRY_GATE_STEP = 0;
+const ENTRY_MAIN_STEP = INTRO.length + 1;
+
 function circleMetrics(points: { x: number; y: number }[]) {
   if (points.length < 12) return { score: 0, wound: 0, mean: 0, coverage: 0 };
   let cx = 0;
@@ -261,6 +264,7 @@ export function FrontPage() {
   const trailRef = useRef<HTMLCanvasElement>(null);
   const unlockRef = useRef<HTMLDivElement>(null);
   const accessRef = useRef<HTMLElement>(null);
+  const accessCopyRef = useRef<HTMLDivElement>(null);
   const drawing = useRef(false);
   const points = useRef<Pt[]>([]);
   const sparks = useRef<Spark[]>([]);
@@ -291,9 +295,10 @@ export function FrontPage() {
   const introLock = useRef(false);
   const introBeatRef = useRef(0);
   const introAdvanceRef = useRef<(force?: boolean) => void>(() => {});
+  const entryStepRef = useRef(ENTRY_GATE_STEP);
   const gateReturnTimer = useRef(0);
 
-  const closeToGate = useCallback(() => {
+  const closeToGate = useCallback((delay = 560) => {
     if (gateReturnTimer.current) return;
     introLock.current = true;
     setIntroEnter(false);
@@ -307,6 +312,7 @@ export function FrontPage() {
       unlocked.current = false;
       unlockDragging.current = false;
       introLock.current = false;
+      entryStepRef.current = ENTRY_GATE_STEP;
       introBeatRef.current = 0;
       points.current = [];
       sparks.current = [];
@@ -326,7 +332,7 @@ export function FrontPage() {
       setHoverCard(null);
       gateReturnTimer.current = 0;
       window.scrollTo({ top: 0, behavior: 'auto' });
-    }, 560);
+    }, delay);
   }, []);
 
   useEffect(() => {
@@ -377,8 +383,9 @@ export function FrontPage() {
 
     const finishIntro = () => {
       introLock.current = false;
+      entryStepRef.current = ENTRY_MAIN_STEP;
       setIntroDone(true);
-      window.scrollTo({ top: 0, behavior: 'auto' });
+      window.requestAnimationFrame(() => window.scrollTo({ top: 12, behavior: 'auto' }));
     };
 
     const advance = (force = false) => {
@@ -390,6 +397,7 @@ export function FrontPage() {
         return;
       }
       const next = b + 1;
+      entryStepRef.current = next + 1;
       introBeatRef.current = next;
       setIntroBeat(next);
       window.setTimeout(() => {
@@ -406,6 +414,7 @@ export function FrontPage() {
         return;
       }
       const next = b - 1;
+      entryStepRef.current = next + 1;
       introBeatRef.current = next;
       setIntroBeat(next);
       window.setTimeout(() => {
@@ -468,9 +477,10 @@ export function FrontPage() {
 
     const onWheel = (e: WheelEvent) => {
       const y = window.scrollY || document.documentElement.scrollTop || 0;
-      if (y > 2 || e.deltaY >= -8 || introLock.current) return;
+      if (y > 24 || e.deltaY >= -8 || introLock.current) return;
       e.preventDefault();
       introLock.current = true;
+      entryStepRef.current = INTRO.length;
       introBeatRef.current = INTRO.length - 1;
       setIntroBeat(INTRO.length - 1);
       setIntroDone(false);
@@ -510,7 +520,16 @@ export function FrontPage() {
     let lastScale = 1;
     let hidden = document.hidden;
     const minScale = 1;
-    const maxScale = 1.18;
+    const maxScale = 1.65;
+    const writeScale = (scale: number) => {
+      const clamped = Math.max(minScale, Math.min(maxScale, scale));
+      accessRef.current?.style.setProperty('--access-zoom', clamped.toFixed(4));
+      accessCopyRef.current?.style.setProperty('--access-zoom', clamped.toFixed(4));
+      if (Math.abs(clamped - lastScale) > 0.002) {
+        lastScale = clamped;
+        setAccessZoom(clamped);
+      }
+    };
     const updateAccessZoom = () => {
       if (hidden) {
         raf = window.requestAnimationFrame(updateAccessZoom);
@@ -520,14 +539,9 @@ export function FrontPage() {
       if (section) {
         const rect = section.getBoundingClientRect();
         const viewportH = Math.max(1, window.innerHeight);
-        const start = viewportH;
-        const end = viewportH * 0.18;
-        const progress = Math.max(0, Math.min(1, (start - rect.top) / (start - end)));
-        const nextScale = minScale + (maxScale - minScale) * progress;
-        if (Math.abs(nextScale - lastScale) > 0.002) {
-          lastScale = nextScale;
-          setAccessZoom(nextScale);
-        }
+        const zoomDistance = Math.max(1, rect.height - viewportH);
+        const progress = Math.max(0, Math.min(1, -rect.top / zoomDistance));
+        writeScale(minScale + progress * (maxScale - minScale));
       }
       raf = window.requestAnimationFrame(updateAccessZoom);
     };
@@ -535,6 +549,7 @@ export function FrontPage() {
       hidden = document.hidden;
     };
 
+    writeScale(1);
     raf = window.requestAnimationFrame(updateAccessZoom);
     document.addEventListener('visibilitychange', onVisibilityChange);
     return () => {
@@ -782,6 +797,9 @@ export function FrontPage() {
     frost.current = { t: 0, x: seedX, y: seedY, on: true };
     setUnlocking(true);
     setDrawProgress(1);
+    entryStepRef.current = 1;
+    introBeatRef.current = 0;
+    setIntroBeat(0);
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     window.setTimeout(() => setGateOpen(true), reduced ? 120 : 520);
     window.setTimeout(() => setUnlocking(false), reduced ? 260 : 1320);
@@ -1118,7 +1136,7 @@ export function FrontPage() {
             aria-label="Get access"
             style={{ ['--access-zoom' as string]: accessZoom }}
           >
-            <div className="lz-access-copy">
+            <div ref={accessCopyRef} className="lz-access-copy">
             <p className="lz-kicker lz-kicker-gold">LAUNCHLY ACCESS</p>
             <h2>
               Create. Download.
@@ -1242,8 +1260,8 @@ html:has(.lz.is-intro),body:has(.lz.is-intro),#root:has(.lz.is-intro){height:100
 .lz-steps span{display:block;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:10px;letter-spacing:.2em;color:rgba(28,36,34,.4);margin-bottom:10px}
 .lz-steps em{display:block;font-family:"Instrument Serif",Fraunces,Georgia,serif;font-style:italic;font-size:clamp(28px,4vw,42px);letter-spacing:-.03em}
 .lz-steps b{display:block;margin-top:8px;font-weight:500;font-size:14px;color:rgba(28,36,34,.56)}
-.lz-access{position:relative;min-height:clamp(560px,78vh,820px);display:grid;place-items:center;padding:80px clamp(18px,4vw,48px) 120px;text-align:center;overflow:hidden}
-.lz-access-copy{position:relative;z-index:2;width:min(620px,100%);transform:scale(var(--access-zoom,1));transform-origin:center;transition:transform .16s ease-out;will-change:transform}
+.lz-access{position:relative;height:200vh;display:grid;place-items:start center;padding:0 clamp(18px,4vw,48px);text-align:center;overflow:clip}
+.lz-access-copy{position:sticky;top:0;z-index:2;width:min(620px,100%);height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 0 120px;transform:scale(var(--access-zoom,1));transform-origin:center;transition:transform .08s linear;will-change:transform}
 .lz-kicker-gold{color:#b8862d}
 .lz-access h2{margin:12px 0 0;font-family:"Instrument Serif",Fraunces,Georgia,serif;font-weight:400;font-size:clamp(40px,7vw,72px);letter-spacing:-.035em;line-height:1.02}
 .lz-access-sub{margin:16px 0 0;font-size:16px;color:rgba(28,36,34,.62)}
