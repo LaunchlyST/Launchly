@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Sparkles, Settings, LogOut } from 'lucide-react';
+import { Sparkles, Settings, LogOut, Bot } from 'lucide-react';
 import { SettingsPanel } from './pages/inside/SettingsPanel';
 import { GeneratorPage } from './pages/inside/GeneratorPage';
+import { BotsPage } from './pages/bots/BotsPage';
 import { SubscriptionGate } from './subscription/SubscriptionGate';
 import { PaywallPage } from './pages/paywall/PaywallPage';
 import { AmbientScene } from './pages/inside/AmbientScene';
@@ -22,6 +23,7 @@ const PAGES = {
   getIn: '/get-in',
   paywall: '/paywall',
   inside: '/inside',
+  bots: '/bots',
 } as const;
 
 const TITLES: Record<string, string> = {
@@ -29,6 +31,7 @@ const TITLES: Record<string, string> = {
   '/signup': 'Get in — Launchly',
   [PAGES.paywall]: 'Paywall — Launchly',
   [PAGES.inside]: 'Inside — Launchly',
+  [PAGES.bots]: 'Bots — Launchly',
   '/': 'Launchly',
 };
 
@@ -42,6 +45,7 @@ function getRoutePath() {
   /* '/pricing' and '/dashboard' are the old names, kept as aliases. */
   if (path === PAGES.paywall || path === '/pricing') return PAGES.paywall;
   if (path === PAGES.inside || path === '/dashboard') return PAGES.inside;
+  if (path === PAGES.bots) return PAGES.bots;
   return '/';
 }
 
@@ -195,6 +199,15 @@ export function App() {
               <Sparkles size={20} />
             </button>
           </Tooltip>
+          <Tooltip text="Bots">
+            <button
+              className="app__rail-btn"
+              onClick={() => navigate(PAGES.bots)}
+              aria-label="Bots"
+            >
+              <Bot size={20} />
+            </button>
+          </Tooltip>
           <div className="app__rail-spacer" />
           <Tooltip text="Sign out">
             <button
@@ -214,6 +227,81 @@ export function App() {
           />
         </main>
       </div>
+    );
+  }
+
+  /* Bots: behind the same sign-in and subscription gate as the editor, and
+     wearing the same shell, so it reads as one more room in the app. */
+  if (route === PAGES.bots) {
+    if (!user) {
+      return (
+        <div className="app app--auth">
+          <main className="app__main">
+            {authView === 'login' ? (
+              <Login onSwitchToSignUp={() => setAuthView('signup')} />
+            ) : (
+              <SignUp onSwitchToLogin={() => setAuthView('login')} />
+            )}
+          </main>
+        </div>
+      );
+    }
+
+    return (
+      <SubscriptionGate>
+        <div className="app">
+          <aside className="app__rail">
+            <div className="app__brand" title="Launchly">
+              <Sparkles size={22} strokeWidth={2.2} />
+            </div>
+            <div className="app__rail-divider" />
+            <Tooltip text="Create">
+              <button
+                className="app__rail-btn"
+                onClick={() => navigate(PAGES.inside)}
+                aria-label="Create"
+              >
+                <Sparkles size={20} />
+              </button>
+            </Tooltip>
+            <Tooltip text="Bots">
+              <button className="app__rail-btn is-active" aria-label="Bots">
+                <Bot size={20} />
+              </button>
+            </Tooltip>
+            <div className="app__rail-spacer" />
+            <Tooltip text="Settings — manage API keys">
+              <button
+                className="app__rail-btn"
+                onClick={() => setSettingsOpen(true)}
+                aria-label="Settings"
+              >
+                <Settings size={20} />
+              </button>
+            </Tooltip>
+            <div className="app__rail-status">
+              <span
+                className={`app__rail-dot ${hasAnyKey ? 'is-active' : ''}`}
+                title={hasAnyKey ? 'Models connected' : 'No API keys connected'}
+              />
+            </div>
+            <Tooltip text="Sign out">
+              <button
+                className="app__rail-btn"
+                onClick={handleLogout}
+                disabled={loggingOut}
+                aria-label="Sign Out"
+              >
+                <LogOut size={20} />
+              </button>
+            </Tooltip>
+          </aside>
+          <main className="app__main">
+            <BotsPage />
+          </main>
+          <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+        </div>
+      </SubscriptionGate>
     );
   }
 
@@ -252,6 +340,15 @@ export function App() {
                 aria-label="Create"
               >
                 <Sparkles size={20} />
+              </button>
+            </Tooltip>
+            <Tooltip text="Bots">
+              <button
+                className="app__rail-btn"
+                onClick={() => navigate(PAGES.bots)}
+                aria-label="Bots"
+              >
+                <Bot size={20} />
               </button>
             </Tooltip>
             <div className="app__rail-spacer" />
