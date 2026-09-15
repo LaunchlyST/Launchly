@@ -1447,6 +1447,7 @@ html:has(.lz.is-intro),body:has(.lz.is-intro),#root:has(.lz.is-intro){height:100
 .lz-floating-b{left:5%;bottom:19%;animation:lz-float 7s ease-in-out infinite reverse}
 .lz-hero>.lz-statement{grid-column:1/-1;max-width:900px;margin:-20px auto 0;text-align:center;font-size:clamp(18px,2vw,28px);color:rgba(27,36,34,.72)}
 .lz-hero>.lz-statement-sub{grid-column:1/-1;margin:0 auto;text-align:center;color:rgba(27,36,34,.46)}
+.lz-hero>.lz-statement,.lz-hero>.lz-statement-sub{display:none!important}
 .lz-hero-proof{grid-column:1/-1;display:flex;justify-content:center;gap:10px;flex-wrap:wrap;width:min(820px,100%);margin:4px auto 0;padding:10px;border-radius:999px;background:rgba(255,255,255,.34);border:1px solid rgba(255,255,255,.64);box-shadow:inset 0 1px 0 rgba(255,255,255,.72),0 18px 50px rgba(52,70,73,.08);backdrop-filter:blur(16px)}
 .lz-hero-proof span,.lz-hero-proof b{display:inline-flex;align-items:center;justify-content:center;min-height:32px;padding:0 14px;border-radius:999px;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:rgba(28,36,34,.55);background:rgba(255,255,255,.32)}
 .lz-hero-proof b{color:#1b2422;background:rgba(215,162,67,.28)}
