@@ -93,7 +93,7 @@ const INTRO = [
 
 const ENTRY_GATE_STEP = 0;
 const ENTRY_MAIN_STEP = INTRO.length + 1;
-const HERO_LINES = ['A SPACE TO', 'EXPLORE', 'IDEAS'];
+const HERO_LINES = ['CREATE ADS', 'DOWNLOAD', 'POST'];
 const HERO_WORD = HERO_LINES.join('');
 
 function circleMetrics(points: { x: number; y: number }[]) {
@@ -1193,6 +1193,7 @@ export function FrontPage() {
               y: (e.clientY - r.top) / r.height,
             });
           }}>
+            <span className="lz-custom-cursor" aria-hidden="true" />
             <div className="lz-hero-copy">
               <p className="lz-kicker">01 / LAUNCHLY</p>
               <h1>The studio is open.</h1>
@@ -1212,7 +1213,6 @@ export function FrontPage() {
               onPointerLeave={resetHeroLetters}
               onPointerCancel={resetHeroLetters}
             >
-              <span className="lz-hero-burst" aria-hidden="true" />
               {HERO_LINES.map((line, lineIndex) => {
                 const offset = HERO_LINES.slice(0, lineIndex).join('').length;
                 return (
@@ -1780,30 +1780,27 @@ html:has(.lz.is-intro),body:has(.lz.is-intro),#root:has(.lz.is-intro){height:100
 .lz-top-tools{justify-self:end;display:flex;align-items:center;overflow:hidden;border:1px solid rgba(0,0,0,.42);border-radius:13px;background:rgba(255,255,255,.9);box-shadow:0 3px 0 rgba(0,0,0,.2),0 14px 28px rgba(0,150,255,.14);pointer-events:auto}
 .lz-top-tools a{display:grid;place-items:center;height:34px;padding:0 14px;border-right:1px solid rgba(0,0,0,.2);background:transparent;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#050505;text-decoration:none;cursor:pointer}
 .lz-top-tools a:last-child{border-right:0}
-.lz.is-open .lz-hero{position:relative;min-height:100svh;align-items:flex-start!important;justify-content:flex-start!important;padding:clamp(122px,17vh,152px) clamp(32px,10vw,142px) 80px!important;text-align:left!important;overflow:hidden!important}
+.lz.is-open .lz-hero{position:relative;min-height:100svh;align-items:flex-start!important;justify-content:flex-start!important;padding:clamp(132px,18vh,164px) clamp(32px,9vw,112px) 80px!important;text-align:left!important;overflow:hidden!important;cursor:none}
 .lz.is-open .lz-hero-copy{order:2;margin:18px 0 0!important;max-width:760px!important;text-align:left!important}
 .lz.is-open .lz-kicker{color:#050505!important}
 .lz.is-open .lz-hero h1{font-family:Inter,ui-sans-serif,system-ui,sans-serif!important;font-style:normal!important;font-weight:500!important;font-size:clamp(24px,3.6vw,48px)!important;line-height:1!important;letter-spacing:-.04em!important;margin:18px 0 0!important;max-width:16em!important;color:#050505!important}
 .lz.is-open .lz-hero-lead{margin:12px 0 0!important;max-width:30em!important;color:rgba(0,0,0,.62)!important}
 .lz.is-open .lz-hero-actions{justify-content:flex-start!important}
 .lz.is-open .lz-primary,.lz.is-open .lz-secondary{background:#fff!important;color:#050505!important;border:1px solid rgba(0,0,0,.28)!important;box-shadow:0 3px 0 rgba(0,0,0,.12)!important}
-.lz-reactive-word{order:1!important;position:relative;z-index:3;display:grid!important;justify-content:flex-start!important;align-content:flex-start!important;width:min(930px,82vw)!important;min-height:auto!important;margin:0!important;gap:.01em!important;cursor:grab!important}
-.lz-reactive-word:active{cursor:grabbing!important}
-.lz-reactive-line{display:flex;align-items:flex-start;justify-content:flex-start;height:.9em}
-.lz-reactive-word:before{content:"COLLIDER";position:absolute;left:-58px;top:-58px;z-index:4;padding:10px 20px 8px;border:3px solid #050505;border-radius:10px;background:#ffef5a;box-shadow:5px 5px 0 #050505;font-family:Georgia,serif;font-size:clamp(18px,2.8vw,34px);font-weight:700;line-height:1;transform:rotate(-6deg)}
-.lz-reactive-word:after{content:"";position:absolute;right:-242px;top:36px;width:230px;height:260px;background:
-  radial-gradient(circle at 42% 36%,#222 0 5px,transparent 6px),
-  radial-gradient(circle at 58% 36%,#222 0 5px,transparent 6px),
-  radial-gradient(ellipse at 50% 55%,transparent 0 28px,#222 29px 31px,transparent 32px),
-  linear-gradient(135deg,#f7f2e7 0 62%,transparent 62%);
-  clip-path:polygon(5% 0,100% 50%,63% 58%,82% 100%,52% 100%,36% 62%,0 78%);
-  filter:drop-shadow(5px 7px 0 rgba(0,0,0,.75)) drop-shadow(0 0 1px #111);
-  transform:rotate(-13deg);
-  pointer-events:none}
-.lz-hero-burst{position:absolute;right:-245px;top:108px;width:126px;height:126px;z-index:2;background:#fff56a;clip-path:polygon(50% 0,58% 30%,86% 14%,70% 42%,100% 50%,70% 58%,86% 86%,58% 70%,50% 100%,42% 70%,14% 86%,30% 58%,0 50%,30% 42%,14% 14%,42% 30%);filter:drop-shadow(0 0 0 #050505) drop-shadow(5px 5px 0 #050505)}
-.lz-hero-burst:before{content:"";position:absolute;inset:19px;background:#ff5138;clip-path:inherit}
-.lz-hero-burst:after{content:"";position:absolute;inset:40px;background:#fff56a;clip-path:inherit}
-.lz-reactive-letter{font-family:Inter,ui-sans-serif,system-ui,sans-serif!important;font-style:normal!important;font-weight:500!important;font-size:clamp(66px,9.7vw,148px)!important;line-height:.84!important;letter-spacing:-.12em!important;color:#050505!important;text-shadow:none!important;will-change:transform;transition:transform .46s cubic-bezier(.22,1,.36,1),text-shadow .25s ease!important;transform:translate3d(var(--tx,0px),var(--ty,0px),0) rotate(calc(var(--tx,0px) * .035deg))!important}
+.lz-reactive-word{order:1!important;position:relative;z-index:3;display:grid!important;justify-content:flex-start!important;align-content:flex-start!important;width:min(760px,82vw)!important;min-height:auto!important;margin:0!important;gap:.05em!important;cursor:none!important}
+.lz-reactive-line{display:flex;align-items:flex-start;justify-content:flex-start;height:.88em;white-space:nowrap}
+.lz-reactive-word:before{content:"LAUNCHLY";position:absolute;left:-48px;top:-58px;z-index:4;padding:10px 20px 8px;border:3px solid #050505;border-radius:10px;background:#ffef5a;box-shadow:5px 5px 0 #050505;font-family:Georgia,serif;font-size:clamp(18px,2.7vw,32px);font-weight:700;line-height:1;transform:rotate(-6deg)}
+.lz-reactive-word:after{display:none!important}
+.lz-hero-burst{display:none!important}
+.lz-custom-cursor{position:absolute;left:calc(var(--mx) * 100%);top:calc(var(--my) * 100%);z-index:12;width:128px;height:142px;pointer-events:none;opacity:0;transform:translate(-18px,-18px) rotate(-12deg);transition:opacity .16s ease;background:
+  radial-gradient(circle at 42% 35%,#202020 0 4px,transparent 5px),
+  radial-gradient(circle at 58% 35%,#202020 0 4px,transparent 5px),
+  radial-gradient(ellipse at 50% 56%,transparent 0 21px,#202020 22px 24px,transparent 25px),
+  linear-gradient(135deg,#f4efe4 0 62%,transparent 62%);
+  clip-path:polygon(4% 0,100% 47%,64% 57%,82% 100%,54% 100%,37% 63%,0 79%);
+  filter:drop-shadow(4px 6px 0 rgba(0,0,0,.74)) drop-shadow(0 0 1px #111)}
+.lz.is-open .lz-hero:hover .lz-custom-cursor{opacity:1}
+.lz-reactive-letter{font-family:Inter,ui-sans-serif,system-ui,sans-serif!important;font-style:normal!important;font-weight:600!important;font-size:clamp(50px,7.2vw,104px)!important;line-height:.86!important;letter-spacing:-.055em!important;color:#050505!important;text-shadow:none!important;will-change:transform;transition:transform .46s cubic-bezier(.22,1,.36,1),text-shadow .25s ease!important;transform:translate3d(var(--tx,0px),var(--ty,0px),0) rotate(calc(var(--tx,0px) * .035deg))!important}
 .lz-reactive-letter.is-active{color:#050505!important;text-shadow:0 10px 0 rgba(255,255,255,.2)!important}
 .lz.is-open .lz-hero .lz-glass{display:none!important}
 .lz-export-controls{position:absolute;left:50%;bottom:24px;z-index:5;display:flex;align-items:center;gap:10px;transform:translateX(-50%);padding:9px 14px;border:1px solid rgba(0,0,0,.16);border-radius:10px;background:rgba(255,255,255,.88);box-shadow:0 10px 26px rgba(0,0,0,.1);font-family:Inter,ui-sans-serif,system-ui,sans-serif;color:#050505}
@@ -1814,7 +1811,7 @@ html:has(.lz.is-intro),body:has(.lz.is-intro),#root:has(.lz.is-intro){height:100
   .lz.is-open .lz-hero{padding:118px 24px 70px!important}
   .lz-reactive-word{width:92vw!important}
   .lz-reactive-word:before{left:0;top:-52px}
-  .lz-reactive-word:after,.lz-hero-burst{display:none}
+  .lz-reactive-word:after,.lz-hero-burst,.lz-custom-cursor{display:none}
   .lz-top-tools a{height:30px;padding:0 8px;font-size:8px}
   .lz-export-controls{display:none}
 }
