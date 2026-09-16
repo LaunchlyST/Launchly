@@ -1182,7 +1182,7 @@ export function FrontPage() {
             <div className="lz-top-tools" aria-label="Page tools">
               <a href="#work">Update</a>
               <a href="/get-in">Bugs</a>
-              <button type="button" aria-label="Minimize">_</button>
+              <a href="#process">Information</a>
             </div>
           </header>
 
@@ -1274,6 +1274,9 @@ export function FrontPage() {
             <p className="lz-statement-sub">
               Access is GBP 5/month. AI usage is billed separately.
             </p>
+            <div className="lz-export-controls" aria-hidden="true">
+              <span>W</span><b>1200 px</b><span>H</span><b>800 px</b><em>Custom</em>
+            </div>
           </section>
 
           <section className="lz-showcase" aria-label="Launchly product preview">
@@ -1764,27 +1767,28 @@ html:has(.lz.is-intro),body:has(.lz.is-intro),#root:has(.lz.is-intro){height:100
   background-size:5px 5px,160px 100%,100% 120px,100% 100%;
   opacity:1}
 .lz.is-open .lz-doc{position:relative}
-.lz.is-open .lz-doc:before{display:block!important;content:"";position:fixed;left:12vw;right:10vw;top:18vh;height:48vh;z-index:0;pointer-events:none;background:
+.lz.is-open .lz-doc:before{display:block!important;content:"";position:fixed;left:12vw;right:10vw;top:15vh;height:56vh;z-index:0;pointer-events:none;background:
   linear-gradient(90deg,rgba(255,255,255,.96) 0 2px,transparent 2px),
   linear-gradient(180deg,rgba(255,255,255,.96) 0 2px,transparent 2px);
-  background-size:150px 100%,100% 105px;
-  transform:perspective(700px) rotateX(18deg);
+  background-size:155px 100%,100% 104px;
+  transform:perspective(760px) rotateX(19deg);
   transform-origin:center top;
   border-left:2px solid rgba(255,255,255,.9);
   border-right:2px solid rgba(255,255,255,.9)}
 .lz.is-open .lz-chrome{grid-template-columns:1fr auto 1fr!important;align-items:start;padding:26px 36px;color:#050505}
 .lz-top-logo{color:#050505!important;opacity:.78}
-.lz-top-tools{justify-self:end;display:flex;align-items:center;overflow:hidden;border:1px solid rgba(0,0,0,.34);border-radius:999px;background:rgba(255,255,255,.86);box-shadow:0 3px 0 rgba(0,0,0,.16),0 12px 30px rgba(0,150,255,.16);pointer-events:auto}
-.lz-top-tools a,.lz-top-tools button{height:34px;padding:0 14px;border:0;border-right:1px solid rgba(0,0,0,.18);background:transparent;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:10px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;color:#050505;text-decoration:none;cursor:pointer}
-.lz-top-tools button{width:38px;padding:0;border-right:0;font-size:14px;line-height:1;font-weight:900}
-.lz.is-open .lz-hero{min-height:100svh;align-items:flex-start!important;justify-content:flex-start!important;padding:clamp(126px,17vh,156px) clamp(32px,10vw,142px) 80px!important;text-align:left!important}
+.lz-top-tools{justify-self:end;display:flex;align-items:center;overflow:hidden;border:1px solid rgba(0,0,0,.42);border-radius:13px;background:rgba(255,255,255,.9);box-shadow:0 3px 0 rgba(0,0,0,.2),0 14px 28px rgba(0,150,255,.14);pointer-events:auto}
+.lz-top-tools a{display:grid;place-items:center;height:34px;padding:0 14px;border-right:1px solid rgba(0,0,0,.2);background:transparent;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#050505;text-decoration:none;cursor:pointer}
+.lz-top-tools a:last-child{border-right:0}
+.lz.is-open .lz-hero{position:relative;min-height:100svh;align-items:flex-start!important;justify-content:flex-start!important;padding:clamp(122px,17vh,152px) clamp(32px,10vw,142px) 80px!important;text-align:left!important;overflow:hidden!important}
 .lz.is-open .lz-hero-copy{order:2;margin:18px 0 0!important;max-width:760px!important;text-align:left!important}
 .lz.is-open .lz-kicker{color:#050505!important}
 .lz.is-open .lz-hero h1{font-family:Inter,ui-sans-serif,system-ui,sans-serif!important;font-style:normal!important;font-weight:500!important;font-size:clamp(24px,3.6vw,48px)!important;line-height:1!important;letter-spacing:-.04em!important;margin:18px 0 0!important;max-width:16em!important;color:#050505!important}
 .lz.is-open .lz-hero-lead{margin:12px 0 0!important;max-width:30em!important;color:rgba(0,0,0,.62)!important}
 .lz.is-open .lz-hero-actions{justify-content:flex-start!important}
 .lz.is-open .lz-primary,.lz.is-open .lz-secondary{background:#fff!important;color:#050505!important;border:1px solid rgba(0,0,0,.28)!important;box-shadow:0 3px 0 rgba(0,0,0,.12)!important}
-.lz-reactive-word{order:1!important;position:relative;z-index:3;display:grid!important;justify-content:flex-start!important;align-content:flex-start!important;width:min(920px,82vw)!important;min-height:auto!important;margin:0!important;gap:.02em!important}
+.lz-reactive-word{order:1!important;position:relative;z-index:3;display:grid!important;justify-content:flex-start!important;align-content:flex-start!important;width:min(930px,82vw)!important;min-height:auto!important;margin:0!important;gap:.01em!important;cursor:grab!important}
+.lz-reactive-word:active{cursor:grabbing!important}
 .lz-reactive-line{display:flex;align-items:flex-start;justify-content:flex-start;height:.9em}
 .lz-reactive-word:before{content:"COLLIDER";position:absolute;left:-58px;top:-58px;z-index:4;padding:10px 20px 8px;border:3px solid #050505;border-radius:10px;background:#ffef5a;box-shadow:5px 5px 0 #050505;font-family:Georgia,serif;font-size:clamp(18px,2.8vw,34px);font-weight:700;line-height:1;transform:rotate(-6deg)}
 .lz-reactive-word:after{content:"";position:absolute;right:-242px;top:36px;width:230px;height:260px;background:
@@ -1799,15 +1803,19 @@ html:has(.lz.is-intro),body:has(.lz.is-intro),#root:has(.lz.is-intro){height:100
 .lz-hero-burst{position:absolute;right:-245px;top:108px;width:126px;height:126px;z-index:2;background:#fff56a;clip-path:polygon(50% 0,58% 30%,86% 14%,70% 42%,100% 50%,70% 58%,86% 86%,58% 70%,50% 100%,42% 70%,14% 86%,30% 58%,0 50%,30% 42%,14% 14%,42% 30%);filter:drop-shadow(0 0 0 #050505) drop-shadow(5px 5px 0 #050505)}
 .lz-hero-burst:before{content:"";position:absolute;inset:19px;background:#ff5138;clip-path:inherit}
 .lz-hero-burst:after{content:"";position:absolute;inset:40px;background:#fff56a;clip-path:inherit}
-.lz-reactive-letter{font-family:Inter,ui-sans-serif,system-ui,sans-serif!important;font-style:normal!important;font-weight:500!important;font-size:clamp(62px,9.35vw,136px)!important;line-height:.86!important;letter-spacing:-.11em!important;color:#050505!important;text-shadow:none!important;transform:translate3d(var(--tx,0px),var(--ty,0px),0) rotate(calc(var(--tx,0px) * .03deg))!important}
+.lz-reactive-letter{font-family:Inter,ui-sans-serif,system-ui,sans-serif!important;font-style:normal!important;font-weight:500!important;font-size:clamp(66px,9.7vw,148px)!important;line-height:.84!important;letter-spacing:-.12em!important;color:#050505!important;text-shadow:none!important;will-change:transform;transition:transform .46s cubic-bezier(.22,1,.36,1),text-shadow .25s ease!important;transform:translate3d(var(--tx,0px),var(--ty,0px),0) rotate(calc(var(--tx,0px) * .035deg))!important}
 .lz-reactive-letter.is-active{color:#050505!important;text-shadow:0 10px 0 rgba(255,255,255,.2)!important}
 .lz.is-open .lz-hero .lz-glass{display:none!important}
+.lz-export-controls{position:absolute;left:50%;bottom:24px;z-index:5;display:flex;align-items:center;gap:10px;transform:translateX(-50%);padding:9px 14px;border:1px solid rgba(0,0,0,.16);border-radius:10px;background:rgba(255,255,255,.88);box-shadow:0 10px 26px rgba(0,0,0,.1);font-family:Inter,ui-sans-serif,system-ui,sans-serif;color:#050505}
+.lz-export-controls span{font-size:12px;font-weight:800}
+.lz-export-controls b,.lz-export-controls em{height:30px;display:grid;place-items:center;padding:0 18px;border:1px solid rgba(0,0,0,.12);border-radius:6px;background:#fff;font-size:12px;font-style:normal;font-weight:600}
+.lz-export-controls em{min-width:90px;color:#333;background:#f1f1f1}
 @media(max-width:800px){
   .lz.is-open .lz-hero{padding:118px 24px 70px!important}
   .lz-reactive-word{width:92vw!important}
   .lz-reactive-word:before{left:0;top:-52px}
   .lz-reactive-word:after,.lz-hero-burst{display:none}
-  .lz-top-tools a,.lz-top-tools button{height:30px;padding:0 10px;font-size:9px}
-  .lz-top-tools button{width:32px;padding:0}
+  .lz-top-tools a{height:30px;padding:0 8px;font-size:8px}
+  .lz-export-controls{display:none}
 }
 `;
