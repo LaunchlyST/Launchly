@@ -93,7 +93,8 @@ const INTRO = [
 
 const ENTRY_GATE_STEP = 0;
 const ENTRY_MAIN_STEP = INTRO.length + 1;
-const HERO_WORD = 'LAUNCHLY';
+const HERO_LINES = ['A SPACE TO', 'EXPLORE', 'IDEAS'];
+const HERO_WORD = HERO_LINES.join('');
 
 function circleMetrics(points: { x: number; y: number }[]) {
   if (points.length < 12) return { score: 0, wound: 0, mean: 0, coverage: 0 };
@@ -1178,7 +1179,11 @@ export function FrontPage() {
             <span className="lz-chrome-xy">
               {xy.x.toFixed(3)} / {xy.y.toFixed(3)}
             </span>
-            <a className="lz-top-access" href="/get-in">Get access</a>
+            <div className="lz-top-tools" aria-label="Page tools">
+              <a href="#work">Update</a>
+              <a href="/get-in">Feedback</a>
+              <button type="button" aria-label="Minimize">_</button>
+            </div>
           </header>
 
           <section className="lz-hero" onPointerMove={(e) => {
@@ -1207,20 +1212,30 @@ export function FrontPage() {
               onPointerLeave={resetHeroLetters}
               onPointerCancel={resetHeroLetters}
             >
-              {Array.from(HERO_WORD).map((letter, index) => (
-                <span
-                  key={`${letter}-${index}`}
-                  className={`lz-reactive-letter${heroLetters[index]?.active ? ' is-active' : ''}`}
-                  style={{
-                    ['--tx' as string]: `${heroLetters[index]?.x ?? 0}px`,
-                    ['--ty' as string]: `${heroLetters[index]?.y ?? 0}px`,
-                  }}
-                  onPointerDown={(event) => onHeroLetterDown(event, index)}
-                  onPointerUp={onHeroLetterUp}
-                >
-                  {letter}
-                </span>
-              ))}
+              {HERO_LINES.map((line, lineIndex) => {
+                const offset = HERO_LINES.slice(0, lineIndex).join('').length;
+                return (
+                  <span className="lz-reactive-line" key={line}>
+                    {Array.from(line).map((letter, letterIndex) => {
+                      const index = offset + letterIndex;
+                      return (
+                        <span
+                          key={`${letter}-${index}`}
+                          className={`lz-reactive-letter${heroLetters[index]?.active ? ' is-active' : ''}`}
+                          style={{
+                            ['--tx' as string]: `${heroLetters[index]?.x ?? 0}px`,
+                            ['--ty' as string]: `${heroLetters[index]?.y ?? 0}px`,
+                          }}
+                          onPointerDown={(event) => onHeroLetterDown(event, index)}
+                          onPointerUp={onHeroLetterUp}
+                        >
+                          {letter === ' ' ? '\u00a0' : letter}
+                        </span>
+                      );
+                    })}
+                  </span>
+                );
+              })}
             </div>
             <div className="lz-glass" aria-hidden="true">
               <i className="lz-glass-light lz-glass-light-a" />
@@ -1734,5 +1749,60 @@ html:has(.lz.is-intro),body:has(.lz.is-intro),#root:has(.lz.is-intro){height:100
   .lz-top-logo{justify-self:start;font-size:34px}
   .lz-chrome-brand{display:none}
   .lz-reactive-word{min-height:110px}
+}
+
+/* Brik-style top page: blue collider room with draggable type. */
+.lz.is-open .lz-wash{background:
+  radial-gradient(ellipse at 50% 86%,rgba(255,255,255,.92),rgba(255,255,255,0) 24%),
+  linear-gradient(180deg,#21baff 0%,#26bfff 58%,#eafcff 100%)!important}
+.lz.is-open .lz-film{background:
+  radial-gradient(circle at 50% 50%,rgba(0,0,0,.05) 0 1px,transparent 1.4px),
+  linear-gradient(90deg,rgba(255,255,255,.92) 0 2px,transparent 2px),
+  linear-gradient(180deg,rgba(255,255,255,.92) 0 2px,transparent 2px),
+  linear-gradient(180deg,transparent 0 70%,rgba(255,255,255,.86) 100%)!important;
+  background-size:5px 5px,160px 100%,100% 120px,100% 100%;
+  opacity:1}
+.lz.is-open .lz-doc{position:relative}
+.lz.is-open .lz-doc:before{display:block!important;content:"";position:fixed;left:12vw;right:10vw;top:18vh;height:48vh;z-index:0;pointer-events:none;background:
+  linear-gradient(90deg,rgba(255,255,255,.96) 0 2px,transparent 2px),
+  linear-gradient(180deg,rgba(255,255,255,.96) 0 2px,transparent 2px);
+  background-size:150px 100%,100% 105px;
+  transform:perspective(700px) rotateX(18deg);
+  transform-origin:center top;
+  border-left:2px solid rgba(255,255,255,.9);
+  border-right:2px solid rgba(255,255,255,.9)}
+.lz.is-open .lz-chrome{grid-template-columns:1fr auto 1fr!important;align-items:start;padding:26px 36px;color:#050505}
+.lz-top-logo{color:#050505!important;opacity:.78}
+.lz-top-tools{justify-self:end;display:flex;gap:8px;align-items:center;pointer-events:auto}
+.lz-top-tools a,.lz-top-tools button{height:30px;padding:0 12px;border:1px solid rgba(0,0,0,.28);border-radius:999px;background:rgba(255,255,255,.78);box-shadow:0 2px 0 rgba(0,0,0,.12);font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#050505;text-decoration:none;cursor:pointer}
+.lz-top-tools button{width:34px;padding:0;font-weight:900}
+.lz.is-open .lz-hero{min-height:100svh;align-items:flex-start!important;justify-content:flex-start!important;padding:clamp(120px,18vh,170px) clamp(32px,10vw,150px) 80px!important;text-align:left!important}
+.lz.is-open .lz-hero-copy{order:2;margin:18px 0 0!important;max-width:760px!important;text-align:left!important}
+.lz.is-open .lz-kicker{color:#050505!important}
+.lz.is-open .lz-hero h1{font-family:Inter,ui-sans-serif,system-ui,sans-serif!important;font-style:normal!important;font-weight:500!important;font-size:clamp(24px,3.6vw,48px)!important;line-height:1!important;letter-spacing:-.04em!important;margin:18px 0 0!important;max-width:16em!important;color:#050505!important}
+.lz.is-open .lz-hero-lead{margin:12px 0 0!important;max-width:30em!important;color:rgba(0,0,0,.62)!important}
+.lz.is-open .lz-hero-actions{justify-content:flex-start!important}
+.lz.is-open .lz-primary,.lz.is-open .lz-secondary{background:#fff!important;color:#050505!important;border:1px solid rgba(0,0,0,.28)!important;box-shadow:0 3px 0 rgba(0,0,0,.12)!important}
+.lz-reactive-word{order:1!important;position:relative;z-index:3;display:grid!important;justify-content:flex-start!important;align-content:flex-start!important;width:min(900px,80vw)!important;min-height:auto!important;margin:0!important;gap:.06em!important}
+.lz-reactive-line{display:flex;align-items:flex-start;justify-content:flex-start;height:.9em}
+.lz-reactive-word:before{content:"COLLIDER";position:absolute;left:-58px;top:-58px;z-index:4;padding:10px 20px 8px;border:3px solid #050505;border-radius:10px;background:#ffef5a;box-shadow:5px 5px 0 #050505;font-family:Georgia,serif;font-size:clamp(18px,2.8vw,34px);font-weight:700;line-height:1;transform:rotate(-6deg)}
+.lz-reactive-word:after{content:"";position:absolute;right:-250px;top:24px;width:230px;height:260px;background:
+  radial-gradient(circle at 42% 36%,#222 0 5px,transparent 6px),
+  radial-gradient(circle at 58% 36%,#222 0 5px,transparent 6px),
+  radial-gradient(ellipse at 50% 55%,transparent 0 28px,#222 29px 31px,transparent 32px),
+  linear-gradient(135deg,#f7f2e7 0 62%,transparent 62%);
+  clip-path:polygon(5% 0,100% 50%,63% 58%,82% 100%,52% 100%,36% 62%,0 78%);
+  filter:drop-shadow(5px 7px 0 rgba(0,0,0,.75)) drop-shadow(0 0 1px #111);
+  transform:rotate(-13deg);
+  pointer-events:none}
+.lz-reactive-letter{font-family:Inter,ui-sans-serif,system-ui,sans-serif!important;font-style:normal!important;font-weight:500!important;font-size:clamp(54px,8.6vw,128px)!important;line-height:.9!important;letter-spacing:-.09em!important;color:#050505!important;text-shadow:none!important;transform:translate3d(var(--tx,0px),var(--ty,0px),0) rotate(calc(var(--tx,0px) * .03deg))!important}
+.lz-reactive-letter.is-active{color:#050505!important;text-shadow:0 10px 0 rgba(255,255,255,.2)!important}
+.lz.is-open .lz-hero .lz-glass{display:none!important}
+@media(max-width:800px){
+  .lz.is-open .lz-hero{padding:118px 24px 70px!important}
+  .lz-reactive-word{width:92vw!important}
+  .lz-reactive-word:before{left:0;top:-52px}
+  .lz-reactive-word:after{display:none}
+  .lz-top-tools a{display:none}
 }
 `;
