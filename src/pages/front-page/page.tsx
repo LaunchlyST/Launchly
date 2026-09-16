@@ -93,6 +93,7 @@ const INTRO = [
 
 const ENTRY_GATE_STEP = 0;
 const ENTRY_MAIN_STEP = INTRO.length + 1;
+const HERO_WORD = 'LAUNCHLY';
 
 function circleMetrics(points: { x: number; y: number }[]) {
   if (points.length < 12) return { score: 0, wound: 0, mean: 0, coverage: 0 };
@@ -275,6 +276,8 @@ export function FrontPage() {
   const unlocked = useRef(false);
   const unlockDragging = useRef(false);
   const pointer = useRef({ x: 0.5, y: 0.45 });
+  const heroWordRef = useRef<HTMLDivElement>(null);
+  const heroDragRef = useRef<{ index: number; startX: number; startY: number; originX: number; originY: number } | null>(null);
 
   const [gateOpen, setGateOpen] = useState(false);
   const [gateGone, setGateGone] = useState(false);
@@ -292,6 +295,9 @@ export function FrontPage() {
   const [introDone, setIntroDone] = useState(false);
   const [introBeat, setIntroBeat] = useState(0);
   const [introEnter, setIntroEnter] = useState(false);
+  const [heroLetters, setHeroLetters] = useState(() =>
+    Array.from(HERO_WORD, () => ({ x: 0, y: 0, active: false }))
+  );
   const introLock = useRef(false);
   const introBeatRef = useRef(0);
   const introAdvanceRef = useRef<(force?: boolean) => void>(() => {});
@@ -991,6 +997,80 @@ export function FrontPage() {
     }
   };
 
+  const resetHeroLetters = useCallback(() => {
+    heroDragRef.current = null;
+    setHeroLetters((letters) => letters.map(() => ({ x: 0, y: 0, active: false })));
+  }, []);
+
+  const onHeroWordMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const box = heroWordRef.current?.getBoundingClientRect();
+    if (!box) return;
+    const draggingLetter = heroDragRef.current;
+    if (draggingLetter) {
+      const dx = event.clientX - draggingLetter.startX;
+      const dy = event.clientY - draggingLetter.startY;
+      setHeroLetters((letters) =>
+        letters.map((letter, index) =>
+          index === draggingLetter.index
+            ? {
+                x: Math.max(-110, Math.min(110, draggingLetter.originX + dx)),
+                y: Math.max(-90, Math.min(90, draggingLetter.originY + dy)),
+                active: true,
+              }
+            : letter
+        )
+      );
+      return;
+    }
+
+    const spans = Array.from(event.currentTarget.querySelectorAll<HTMLSpanElement>('.lz-reactive-letter'));
+    setHeroLetters((letters) =>
+      letters.map((letter, index) => {
+        const span = spans[index];
+        if (!span) return letter;
+        const rect = span.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const dx = event.clientX - cx;
+        const dy = event.clientY - cy;
+        const dist = Math.max(1, Math.hypot(dx, dy));
+        const force = Math.max(0, 1 - dist / Math.max(120, box.width * 0.18));
+        return {
+          x: (-dx / dist) * force * 22,
+          y: (-dy / dist) * force * 16,
+          active: force > 0.08,
+        };
+      })
+    );
+  };
+
+  const onHeroLetterDown = (event: ReactPointerEvent<HTMLSpanElement>, index: number) => {
+    event.preventDefault();
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    const letter = heroLetters[index] ?? { x: 0, y: 0 };
+    heroDragRef.current = {
+      index,
+      startX: event.clientX,
+      startY: event.clientY,
+      originX: letter.x,
+      originY: letter.y,
+    };
+    setHeroLetters((letters) =>
+      letters.map((item, itemIndex) => (itemIndex === index ? { ...item, active: true } : item))
+    );
+  };
+
+  const onHeroLetterUp = (event: ReactPointerEvent<HTMLSpanElement>) => {
+    event.stopPropagation();
+    try {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    } catch {
+      /* ignore */
+    }
+    resetHeroLetters();
+  };
+
   const ring = Math.max(drawProgress, hold);
   const prompt = drawProgress > 0.08 || hold > 0.05 ? 'KEEP GOING' : 'DRAW A CIRCLE';
 
@@ -1093,10 +1173,12 @@ export function FrontPage() {
             <span className="lz-chrome-brand">
               <ScrambleText text="LAUNCHLY©2026" play />
             </span>
+            <a className="lz-top-logo" href="/front-page" aria-label="Launchly front page">launchly</a>
             <span className="lz-chrome-clock">{clock}</span>
             <span className="lz-chrome-xy">
               {xy.x.toFixed(3)} / {xy.y.toFixed(3)}
             </span>
+            <a className="lz-top-access" href="/get-in">Get access</a>
           </header>
 
           <section className="lz-hero" onPointerMove={(e) => {
@@ -1116,6 +1198,29 @@ export function FrontPage() {
                 <a className="lz-primary" href="/get-in">Get access</a>
                 <a className="lz-secondary" href="#work">Scroll</a>
               </div>
+            </div>
+            <div
+              ref={heroWordRef}
+              className="lz-reactive-word"
+              aria-label="Launchly"
+              onPointerMove={onHeroWordMove}
+              onPointerLeave={resetHeroLetters}
+              onPointerCancel={resetHeroLetters}
+            >
+              {Array.from(HERO_WORD).map((letter, index) => (
+                <span
+                  key={`${letter}-${index}`}
+                  className={`lz-reactive-letter${heroLetters[index]?.active ? ' is-active' : ''}`}
+                  style={{
+                    ['--tx' as string]: `${heroLetters[index]?.x ?? 0}px`,
+                    ['--ty' as string]: `${heroLetters[index]?.y ?? 0}px`,
+                  }}
+                  onPointerDown={(event) => onHeroLetterDown(event, index)}
+                  onPointerUp={onHeroLetterUp}
+                >
+                  {letter}
+                </span>
+              ))}
             </div>
             <div className="lz-glass" aria-hidden="true">
               <i className="lz-glass-light lz-glass-light-a" />
@@ -1607,5 +1712,27 @@ html:has(.lz.is-intro),body:has(.lz.is-intro),#root:has(.lz.is-intro){height:100
 @media(max-width:900px){
   .lz.is-open .lz-product-grid-preview{grid-template-columns:1fr}
   .lz.is-open .lz-grid,.lz.is-open .lz-steps ol{grid-template-columns:1fr}
+}
+
+/* Top-page interactive typography requested from the Brik reference. */
+.lz.is-open .lz-chrome{grid-template-columns:1fr auto 1fr!important;align-items:start}
+.lz.is-open .lz-chrome-clock,.lz.is-open .lz-chrome-xy{display:none!important}
+.lz-top-logo{justify-self:center;margin-top:0;font-family:Fraunces,"Instrument Serif",Georgia,serif;font-size:clamp(30px,4.4vw,56px);font-weight:500;font-style:italic;color:rgba(28,36,34,.54);letter-spacing:-.04em;text-decoration:none;line-height:.8;pointer-events:auto;-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='80'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='discrete' tableValues='0 0 0 1 1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='80'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='discrete' tableValues='0 0 0 1 1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");-webkit-mask-size:cover;mask-size:cover}
+.lz-top-access{justify-self:end;display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:0 14px;border-radius:999px;border:1px solid rgba(28,36,34,.18);background:rgba(255,255,255,.16);font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:rgba(28,36,34,.62);text-decoration:none;backdrop-filter:blur(10px);pointer-events:auto}
+.lz.is-open .lz-hero{display:flex!important;flex-direction:column;justify-content:center;gap:0}
+.lz.is-open .lz-hero-copy{order:2;max-width:720px}
+.lz.is-open .lz-hero h1{font-size:clamp(34px,5.5vw,68px);margin-top:24px}
+.lz.is-open .lz-hero-lead{font-size:clamp(14px,1.8vw,18px);max-width:32em}
+.lz.is-open .lz-hero-actions{margin-top:22px}
+.lz.is-open .lz-hero .lz-glass{display:none!important}
+.lz-reactive-word{order:1;display:flex;align-items:center;justify-content:center;gap:clamp(1px,.7vw,10px);width:min(1120px,94vw);min-height:clamp(120px,20vw,240px);margin:0 auto 8px;touch-action:none;user-select:none;perspective:900px}
+.lz-reactive-letter{display:inline-block;font-family:"Instrument Serif",Fraunces,Georgia,serif;font-style:italic;font-weight:400;font-size:clamp(58px,15vw,210px);line-height:.78;letter-spacing:-.075em;color:rgba(28,36,34,.78);transform:translate3d(var(--tx,0px),var(--ty,0px),0) rotate(calc(var(--tx,0px) * .025deg));transition:transform .7s cubic-bezier(.16,1,.3,1),color .35s ease,text-shadow .35s ease;cursor:grab;text-shadow:0 18px 52px rgba(40,50,45,.08)}
+.lz-reactive-letter.is-active{color:#1c2422;transition:transform .06s linear,color .2s ease;text-shadow:0 22px 64px rgba(40,50,45,.16);cursor:grabbing}
+.lz-reactive-word:hover .lz-reactive-letter:not(.is-active){color:rgba(28,36,34,.64)}
+@media(max-width:720px){
+  .lz.is-open .lz-chrome{grid-template-columns:1fr auto!important}
+  .lz-top-logo{justify-self:start;font-size:34px}
+  .lz-chrome-brand{display:none}
+  .lz-reactive-word{min-height:110px}
 }
 `;
