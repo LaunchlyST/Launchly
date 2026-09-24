@@ -9,7 +9,7 @@
  *    product described in subscription-backend/README.md. That is the only
  *    thing that can be bought, so it is the only card with a checkout action.
  *  - Generation runs on the user's own OpenAI / xAI keys, held in the browser
- *    (src/store.ts, src/settings/SettingsPanel.tsx). Launchly does not include
+ *    (src/store.ts, src/pages/settings/). Launchly does not include
  *    generation credits, so no card claims any.
  *  - There is no price, product or entitlement configured for an affiliate
  *    tier anywhere in the repo. Its card therefore states that plainly and

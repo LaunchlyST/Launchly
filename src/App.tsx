@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Sparkles, Settings, LogOut, Bot } from 'lucide-react';
-import { SettingsPanel } from './pages/inside/SettingsPanel';
+import { SettingsPage } from './pages/settings/SettingsPage';
 import { GeneratorPage } from './pages/inside/GeneratorPage';
 import { BotsPage } from './pages/bots/BotsPage';
 import { MonitorControlPage } from './pages/monitor/MonitorControlPage';
@@ -27,6 +27,7 @@ const PAGES = {
   inside: '/inside',
   bots: '/bots',
   monitorControl: '/monitor-control',
+  settings: '/settings',
 } as const;
 
 const TITLES: Record<string, string> = {
@@ -36,6 +37,7 @@ const TITLES: Record<string, string> = {
   [PAGES.inside]: 'Inside — Launchly',
   [PAGES.bots]: 'Bots — Launchly',
   [PAGES.monitorControl]: 'Monitor Control — Launchly',
+  [PAGES.settings]: 'Settings — Launchly',
   '/': 'Launchly',
 };
 
@@ -51,11 +53,11 @@ function getRoutePath() {
   if (path === PAGES.inside || path === '/dashboard') return PAGES.inside;
   if (path === PAGES.bots) return PAGES.bots;
   if (path === PAGES.monitorControl) return PAGES.monitorControl;
+  if (path === PAGES.settings) return PAGES.settings;
   return '/';
 }
 
 export function App() {
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [authView, setAuthView] = useState<'login' | 'signup'>('login');
   const openaiKey = useStore((s) => s.openaiKey);
   const grokKey = useStore((s) => s.grokKey);
@@ -286,7 +288,7 @@ export function App() {
             <Tooltip text="Settings — manage API keys">
               <button
                 className="app__rail-btn"
-                onClick={() => setSettingsOpen(true)}
+                onClick={() => navigate(PAGES.settings)}
                 aria-label="Settings"
               >
                 <Settings size={20} />
@@ -312,7 +314,6 @@ export function App() {
           <main className="app__main">
             <MonitorControlPage />
           </main>
-          <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
         </div>
       </SubscriptionGate>
     );
@@ -370,7 +371,7 @@ export function App() {
             <Tooltip text="Settings — manage API keys">
               <button
                 className="app__rail-btn"
-                onClick={() => setSettingsOpen(true)}
+                onClick={() => navigate(PAGES.settings)}
                 aria-label="Settings"
               >
                 <Settings size={20} />
@@ -396,7 +397,6 @@ export function App() {
           <main className="app__main">
             <BotsPage />
           </main>
-          <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
         </div>
       </SubscriptionGate>
     );
@@ -433,7 +433,7 @@ export function App() {
             <div className="app__rail-divider" />
             <Tooltip text="Create">
               <button
-                className={`app__rail-btn ${!settingsOpen ? 'is-active' : ''}`}
+                className="app__rail-btn is-active"
                 aria-label="Create"
               >
                 <Sparkles size={20} />
@@ -461,7 +461,7 @@ export function App() {
             <Tooltip text="Settings — manage API keys">
               <button
                 className="app__rail-btn"
-                onClick={() => setSettingsOpen(true)}
+                onClick={() => navigate(PAGES.settings)}
                 aria-label="Settings"
               >
                 <Settings size={20} />
@@ -488,7 +488,88 @@ export function App() {
             <AmbientScene />
             <GeneratorPage />
           </main>
-          <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+        </div>
+      </SubscriptionGate>
+    );
+  }
+
+  /* Settings: same shell and gate as the rest of the paid app. */
+  if (route === PAGES.settings) {
+    if (!user) {
+      return (
+        <div className="app app--auth">
+          <main className="app__main">
+            {authView === 'login' ? (
+              <Login onSwitchToSignUp={() => setAuthView('signup')} />
+            ) : (
+              <SignUp onSwitchToLogin={() => setAuthView('login')} />
+            )}
+          </main>
+        </div>
+      );
+    }
+
+    return (
+      <SubscriptionGate>
+        <div className="app">
+          <aside className="app__rail">
+            <div className="app__brand" title="Launchly">
+              <Sparkles size={22} strokeWidth={2.2} />
+            </div>
+            <div className="app__rail-divider" />
+            <Tooltip text="Create">
+              <button
+                className="app__rail-btn"
+                onClick={() => navigate(PAGES.inside)}
+                aria-label="Create"
+              >
+                <Sparkles size={20} />
+              </button>
+            </Tooltip>
+            <Tooltip text="Bots">
+              <button
+                className="app__rail-btn"
+                onClick={() => navigate(PAGES.bots)}
+                aria-label="Bots"
+              >
+                <Bot size={20} />
+              </button>
+            </Tooltip>
+            <Tooltip text="Monitor Control">
+              <button
+                className="app__rail-btn"
+                onClick={() => navigate(PAGES.monitorControl)}
+                aria-label="Monitor Control"
+              >
+                <MonitorControlIcon size={20} />
+              </button>
+            </Tooltip>
+            <div className="app__rail-spacer" />
+            <Tooltip text="Settings — manage API keys">
+              <button className="app__rail-btn is-active" aria-label="Settings">
+                <Settings size={20} />
+              </button>
+            </Tooltip>
+            <div className="app__rail-status">
+              <span
+                className={`app__rail-dot ${hasAnyKey ? 'is-active' : ''}`}
+                title={hasAnyKey ? 'Models connected' : 'No API keys connected'}
+              />
+            </div>
+            <Tooltip text="Sign out">
+              <button
+                className="app__rail-btn"
+                onClick={handleLogout}
+                disabled={loggingOut}
+                aria-label="Sign Out"
+              >
+                <LogOut size={20} />
+              </button>
+            </Tooltip>
+          </aside>
+          <main className="app__main">
+            <SettingsPage onSignOut={handleLogout} />
+          </main>
         </div>
       </SubscriptionGate>
     );

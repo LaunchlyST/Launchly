@@ -16,6 +16,7 @@ import type {
   MonitorConnectionState,
   MonitorControlState,
 } from './types';
+import { useSettingsStore } from '../settings/settingsStore';
 import './monitor.css';
 
 type Tab = 'monitor' | 'chat';
@@ -38,7 +39,13 @@ export function MonitorControlPage() {
   const [agentState, setAgentState] = useState<MonitorConnectionState>('agent-not-installed');
   const [checkingAgent, setCheckingAgent] = useState(false);
 
-  const [provider, setProvider] = useState<AIProvider>('openai');
+  const defaultMonitorProvider = useSettingsStore((s) => s.settings.defaultMonitorProvider);
+  /* Preselect from Settings > Monitor Control. Only affects a *new* session —
+     once connected, nothing here re-reads the setting, so an active session
+     is never switched underneath the user. */
+  const [provider, setProvider] = useState<AIProvider>(
+    defaultMonitorProvider === 'anthropic' ? 'claude' : 'openai'
+  );
   const [apiKey, setApiKey] = useState('');
   const [testState, setTestState] = useState<ProviderTestState>('idle');
   const [testError, setTestError] = useState<string | null>(null);

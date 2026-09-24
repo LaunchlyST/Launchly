@@ -16,8 +16,10 @@ export interface GenerationResult {
 interface AppStore {
   openaiKey: string;
   grokKey: string;
+  claudeKey: string;
   setOpenaiKey: (key: string) => void;
   setGrokKey: (key: string) => void;
+  setClaudeKey: (key: string) => void;
   clearKeys: () => void;
 
   /** Ambient landscape behind the editor, from the unlock sequence. */
@@ -50,9 +52,11 @@ export const useStore = create<AppStore>()(
     (set) => ({
       openaiKey: '',
       grokKey: '',
+      claudeKey: '',
       setOpenaiKey: (key) => set({ openaiKey: key }),
       setGrokKey: (key) => set({ grokKey: key }),
-      clearKeys: () => set({ openaiKey: '', grokKey: '' }),
+      setClaudeKey: (key) => set({ claudeKey: key }),
+      clearKeys: () => set({ openaiKey: '', grokKey: '', claudeKey: '' }),
 
       ambientScene: true,
       setAmbientScene: (v) => set({ ambientScene: v }),
