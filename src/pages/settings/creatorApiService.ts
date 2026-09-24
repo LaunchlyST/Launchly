@@ -111,6 +111,32 @@ export async function revokeApiKey(accessToken: string, id: string): Promise<voi
   await authedFetch(`/api/developer/api-keys/${id}/revoke`, accessToken, { method: 'POST' });
 }
 
+export interface CreatorSearchResult {
+  id: string;
+  username: string;
+  displayName: string | null;
+  avatar: string | null;
+  region: string | null;
+  followers: number | null;
+  likes: number | null;
+  videoCount: number | null;
+  gmv: number | null;
+  itemsSold: number | null;
+  productCount: number | null;
+}
+
+/** In-app search (session-authenticated) — for trying the product inside Settings itself. */
+export async function searchCreatorsInApp(
+  accessToken: string,
+  q: string,
+  region?: string
+): Promise<CreatorSearchResult[]> {
+  const params = new URLSearchParams({ q });
+  if (region) params.set('region', region);
+  const res = await authedFetch(`/api/creator-api/search?${params.toString()}`, accessToken);
+  return res.data.creators;
+}
+
 export interface ApiUsageSummary {
   requestsToday: number;
   requestsThisMonth: number;

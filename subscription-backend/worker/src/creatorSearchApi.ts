@@ -3,6 +3,7 @@ import type { Env } from './types';
 import { apiError, json } from './types';
 import { hashApiKey, looksLikeApiKey } from './apiKeyCrypto';
 import { CreatorSearchUnavailableError, searchCreators } from './creatorSearchService';
+import { hasCreatorApiAccess } from './creatorApiSubscription';
 
 const SCOPE = 'search_creator_api';
 const RATE_LIMIT_PER_MINUTE = 60;
@@ -51,14 +52,7 @@ async function authorizeRequest(
     return { ok: false, response: apiError('INVALID_API_KEY', 'Invalid API key.', 401) };
   }
 
-  const { data: sub } = await supabase
-    .from('api_subscriptions')
-    .select('status')
-    .eq('user_id', keyRow.user_id)
-    .eq('product', SCOPE)
-    .maybeSingle();
-
-  if (sub?.status !== 'active') {
+  if (!(await hasCreatorApiAccess(env, keyRow.user_id))) {
     return {
       ok: false,
       response: apiError(
@@ -143,7 +137,7 @@ export async function handleCreatorSearchApi(request: Request, env: Env): Promis
   }
 
   try {
-    const creators = await searchCreators({ q, region: region || undefined });
+    const creators = await searchCreators(env, { q, region: region || undefined });
     await logUsage(env, key, 200);
     return json({ success: true, data: { creators } });
   } catch (err) {

@@ -15,6 +15,24 @@ function getStripe(env: Env) {
 }
 
 /**
+ * The one reusable access check: true only for a subscription Stripe
+ * currently reports as `active` (webhook-synced, never client-trusted).
+ * `cancel_at_period_end` does not affect this — Stripe keeps `status`
+ * "active" for the whole paid period, so access is naturally preserved
+ * until the period actually ends and the webhook flips status away.
+ */
+export async function hasCreatorApiAccess(env: Env, userId: string): Promise<boolean> {
+  const supabase = getSupabase(env);
+  const { data } = await supabase
+    .from('api_subscriptions')
+    .select('status')
+    .eq('user_id', userId)
+    .eq('product', PRODUCT)
+    .maybeSingle();
+  return data?.status === 'active';
+}
+
+/**
  * POST /api/creator-api-subscription/checkout
  *
  * Starts a Stripe Checkout session for the Search Creator API product,
@@ -28,8 +46,8 @@ export async function handleCreatorApiCheckout(request: Request, env: Env): Prom
 
   if (!env.CREATOR_API_PRICE_ID) {
     return apiError(
-      'NOT_CONFIGURED',
-      'The Search Creator API price has not been configured yet.',
+      'CREATOR_API_BILLING_NOT_CONFIGURED',
+      'Creator API billing is not configured.',
       500
     );
   }

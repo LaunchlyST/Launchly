@@ -3,22 +3,12 @@ import type { Env } from './types';
 import { apiError, json } from './types';
 import { getAuthenticatedUserId } from './auth';
 import { generateApiKey, hashApiKey, keyPrefix } from './apiKeyCrypto';
+import { hasCreatorApiAccess } from './creatorApiSubscription';
 
 const SCOPE = 'search_creator_api';
 
 function getSupabase(env: Env) {
   return createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
-}
-
-async function hasActiveSubscription(env: Env, userId: string): Promise<boolean> {
-  const supabase = getSupabase(env);
-  const { data } = await supabase
-    .from('api_subscriptions')
-    .select('status')
-    .eq('user_id', userId)
-    .eq('product', SCOPE)
-    .maybeSingle();
-  return data?.status === 'active';
 }
 
 /**
@@ -31,7 +21,7 @@ export async function handleCreateApiKey(request: Request, env: Env): Promise<Re
   const userId = await getAuthenticatedUserId(request, env);
   if (!userId) return apiError('UNAUTHENTICATED', 'Sign in required.', 401);
 
-  if (!(await hasActiveSubscription(env, userId))) {
+  if (!(await hasCreatorApiAccess(env, userId))) {
     return apiError(
       'API_SUBSCRIPTION_REQUIRED',
       'An active Search Creator API subscription is required.',

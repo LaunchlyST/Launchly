@@ -12,6 +12,7 @@ import {
 } from "./creatorApiSubscription";
 import { handleApiUsage, handleCreateApiKey, handleListApiKeys, handleRevokeApiKey } from "./apiKeys";
 import { handleCreatorSearchApi } from "./creatorSearchApi";
+import { handleCreatorApiSearch } from "./creatorApiSearch";
 
 export type { Env };
 
@@ -75,6 +76,11 @@ export default {
       // ---- Search Creator API: the public, paid, Bearer-authenticated endpoint ----
       if (url.pathname === "/api/v1/creators/search" && request.method === "GET") {
         return await handleCreatorSearchApi(request, env);
+      }
+
+      // ---- In-app search (session-authenticated, not a Bearer API key) ----
+      if (url.pathname === "/api/creator-api/search" && request.method === "GET") {
+        return await handleCreatorApiSearch(request, env);
       }
 
       return new Response("Not Found", { status: 404, headers: corsHeaders });

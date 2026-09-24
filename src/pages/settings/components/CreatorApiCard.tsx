@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Lock, ShieldCheck, AlertTriangle, ExternalLink, Plus } from 'lucide-react';
+import { Lock, ShieldCheck, AlertTriangle, ExternalLink, Plus, Search } from 'lucide-react';
 import { useAuthStore } from '../../../auth-store';
 import { WORKER_URL } from '../../../useSubscription';
 import {
@@ -10,10 +10,12 @@ import {
   listApiKeys,
   openCreatorApiPortal,
   revokeApiKey,
+  searchCreatorsInApp,
   startCreatorApiCheckout,
   type ApiKeySummary,
   type ApiUsageSummary,
   type CreatorApiSubscription,
+  type CreatorSearchResult,
 } from '../creatorApiService';
 import { ConfirmationModal } from './ConfirmationModal';
 import { ApiKeyCreatedModal } from './ApiKeyCreatedModal';
@@ -54,6 +56,11 @@ export function CreatorApiCard() {
 
   const [usage, setUsage] = useState<ApiUsageSummary | null>(null);
   const [usageError, setUsageError] = useState(false);
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<CreatorSearchResult[] | null>(null);
+  const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
   const refreshStatus = useCallback(async () => {
     if (!accessToken) return;
@@ -156,6 +163,22 @@ export function CreatorApiCard() {
       );
     } finally {
       setCreatingKey(false);
+    }
+  };
+
+  const handleSearch = async () => {
+    if (!accessToken) return;
+    const q = searchQuery.trim().replace(/^https?:\/\/(www\.)?tiktok\.com\//i, '').replace(/^@/, '');
+    if (!q) return;
+    setSearching(true);
+    setSearchError(null);
+    try {
+      setSearchResults(await searchCreatorsInApp(accessToken, q));
+    } catch (err) {
+      setSearchResults(null);
+      setSearchError(err instanceof Error ? err.message : 'Search failed.');
+    } finally {
+      setSearching(false);
     }
   };
 
@@ -303,6 +326,57 @@ export function CreatorApiCard() {
               <button type="button" className="stg-btn stg-btn--ghost" onClick={handleCreateKey} disabled={creatingKey}>
                 <Plus size={14} /> Create New Key
               </button>
+            )}
+          </div>
+
+          <div className="stg-divider" />
+          <div className="stg-creator-api__search">
+            <h3 className="stg-card__title">Search Creator</h3>
+            <div className="stg-key-row">
+              <div className="stg-key-input-wrap" style={{ flex: 1 }}>
+                <Search size={15} className="stg-key-input__icon" />
+                <input
+                  className="stg-key-input"
+                  style={{ paddingRight: 12 }}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                  placeholder="Search username or @creator"
+                  aria-label="Search username or @creator"
+                />
+              </div>
+              <button type="button" className="stg-btn stg-btn--primary" onClick={handleSearch} disabled={searching || !searchQuery.trim()}>
+                {searching ? 'Searching…' : 'Search Creator'}
+              </button>
+            </div>
+
+            {searchError && (
+              <p className="stg-inline-error" style={{ marginTop: 8 }}>
+                <AlertTriangle size={13} /> {searchError}
+              </p>
+            )}
+
+            {searchResults && (
+              <ul className="stg-key-list" style={{ marginTop: 12 }}>
+                {searchResults.length === 0 && <p className="stg-muted">No creators found.</p>}
+                {searchResults.map((c) => (
+                  <li key={c.id} className="stg-creator-result">
+                    <div>
+                      <p className="stg-key-list__name">{c.displayName ?? c.username ?? '—'}</p>
+                      <p className="stg-key-list__prefix">@{c.username || '—'}</p>
+                    </div>
+                    <div className="stg-creator-result__stats">
+                      <span>Followers: {c.followers ?? '—'}</span>
+                      <span>Likes: {c.likes ?? '—'}</span>
+                      <span>Videos: {c.videoCount ?? '—'}</span>
+                      <span>GMV: {c.gmv ?? '—'}</span>
+                      <span>Items sold: {c.itemsSold ?? '—'}</span>
+                      <span>Products: {c.productCount ?? '—'}</span>
+                      <span>Region: {c.region ?? '—'}</span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
 

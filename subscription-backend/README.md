@@ -93,13 +93,14 @@ Developer → API Access & Billing manages it.
 
 ### 1. Supabase
 
-Run the second migration in the Supabase SQL editor:
+Run the migrations in the Supabase SQL editor, in order:
 
 ```sql
 -- Paste contents of supabase/migrations/002_create_creator_api_tables.sql
+-- Paste contents of supabase/migrations/003_create_creator_api_cache.sql
 ```
 
-Adds `api_subscriptions`, `api_keys`, `api_usage_events`.
+Adds `api_subscriptions`, `api_keys`, `api_usage_events`, `creator_api_cache`.
 
 ### 2. Stripe — manual step required
 
@@ -110,13 +111,19 @@ Create a **second** product (do not reuse `STRIPE_PRICE_ID`):
 
 Copy the resulting **Price ID** (`price_...`).
 
-### 3. Cloudflare Worker
+### 3. Kalodata (upstream creator data) — manual step required
+
+Create/locate a Kalodata API key with access to creator search.
+
+### 4. Cloudflare Worker
 
 ```bash
 wrangler var put CREATOR_API_PRICE_ID=price_xxx
+wrangler secret put KALODATA_API_KEY
+# paste the real key at the prompt — never in a file, chat, or commit
 ```
 
-No new secrets are needed — this reuses `STRIPE_SECRET_KEY`,
+No other new secrets are needed — this reuses `STRIPE_SECRET_KEY`,
 `STRIPE_WEBHOOK_SECRET`, `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`.
 
 Optional, for real per-key rate limiting on `GET /api/v1/creators/search`
@@ -127,16 +134,27 @@ wrangler kv:namespace create API_RATE_LIMIT
 # then add the printed [[kv_namespaces]] block to wrangler.toml
 ```
 
-### External API
+### APIs
 
 ```
 GET /api/v1/creators/search?q=<username>&region=<GB>
 Authorization: Bearer lch_live_...
 ```
-
+The external, Bearer-API-key gateway — for a subscriber's own backend.
 Keys are created from Settings → Developer, and only work while the
-Search Creator API subscription is active. See `worker/src/creatorSearchService.ts`
-for the one piece this repo does not yet have: a real upstream creator-data
-source. Everything around it (auth, subscription check, rate limiting,
-usage logging, response shape) is fully wired — that function currently
-returns an honest "not connected" error instead of inventing creator data.
+Search Creator API subscription is active.
+
+```
+GET /api/creator-api/search?q=<username>&region=<GB>
+Authorization: Bearer <Supabase access token>
+```
+The in-app search used from Settings → Developer's own search box —
+session-authenticated instead of an API key. Both routes call the same
+`worker/src/creatorSearchService.ts` → `worker/src/kalodataClient.ts`, so
+there is exactly one search implementation and one cache
+(`creator_api_cache`, 6h TTL) in front of the real Kalodata upstream.
+
+`hasCreatorApiAccess(env, userId)` in `creatorApiSubscription.ts` is the one
+place that decides whether a user's Search Creator API subscription is
+currently valid — every route above calls it rather than re-implementing
+the check.

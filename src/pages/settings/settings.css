@@ -772,6 +772,26 @@
   margin-left: auto;
 }
 
+.stg-creator-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-subtle);
+  flex-wrap: wrap;
+}
+
+.stg-creator-result__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+
 .stg-usage-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

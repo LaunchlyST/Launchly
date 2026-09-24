@@ -10,6 +10,14 @@ FRONTEND_URL = "https://launchly.pazeruga.workers.dev"
 # STRIPE_WEBHOOK_SECRET
 # SUPABASE_URL
 # SUPABASE_SERVICE_ROLE_KEY
+# KALODATA_API_KEY  — server-side only. Real upstream creator-data provider
+#   for the Search Creator API. Set with: wrangler secret put KALODATA_API_KEY
+#   Never put this in a [vars] entry, VITE_ variable, or the frontend.
+
+# Optional — only needed if Kalodata's API is not at the default
+# https://api.kalodata.com (see worker/src/kalodataClient.ts).
+# wrangler var put KALODATA_API_BASE_URL=https://...
+# KALODATA_API_BASE_URL
 
 # Set via `wrangler var put STRIPE_PRICE_ID=price_xxx`
 # STRIPE_PRICE_ID  — the main Launchly app subscription (£5/mo), already in use.

@@ -1,48 +1,98 @@
 /**
- * The actual creator-search data layer.
- *
- * IMPORTANT — audit finding: Launchly has no real creator-search backend
- * anywhere in this repository today. `src/pages/bots/demo-data.ts` in the
- * frontend is an explicitly-labelled, seeded-random *simulation* built for
- * the Bots page UI — its own comments say plainly that "nothing in this
- * module touches TikTok". There is no upstream provider integration, no
- * Supabase cache table, and no parser to reuse here.
- *
- * So this file is the one real gateway this worker exposes for creator
- * search — both the public /api/v1/creators/search endpoint and any future
- * in-app search should call `searchCreators` here — but until a real
- * upstream data source is wired in below, it returns an honest "not yet
- * connected" error instead of inventing creator data. Never replace the
- * `throw` below with demo/simulated data to make the endpoint "work" —
- * that would return fabricated numbers to a paying API customer.
+ * The actual creator-search data layer: cache-in-front-of-upstream, shared
+ * by both the public GET /api/v1/creators/search and any future in-app
+ * search. Callers should never talk to kalodataClient.ts directly — this is
+ * the one place that decides cache vs. live upstream call.
  */
+import { createClient } from '@supabase/supabase-js';
+import type { Env } from './types';
+import {
+  kalodataSearchCreators,
+  UpstreamConfigError,
+  UpstreamRequestError,
+  type NormalizedCreator,
+} from './kalodataClient';
 
 export interface CreatorSearchParams {
   q: string;
   region?: string;
 }
 
-export interface CreatorResult {
-  id: string;
-  username: string;
-  displayName: string | null;
-  avatar: string | null;
-  region: string | null;
-  followers: number | null;
-  likes: number | null;
-  videoCount: number | null;
-  gmv: number | null;
-  itemsSold: number | null;
-  productCount: number | null;
-}
+export type CreatorResult = NormalizedCreator;
 
 export class CreatorSearchUnavailableError extends Error {}
 
-export async function searchCreators(_params: CreatorSearchParams): Promise<CreatorResult[]> {
-  // TODO: wire in Launchly's real creator-data source here (upstream
-  // provider request + normalization + Supabase cache), then return real
-  // CreatorResult[] instead of throwing. Everything upstream of this
-  // function — auth, subscription check, rate limiting, response shaping —
-  // is already wired and ready for it.
-  throw new CreatorSearchUnavailableError('Creator search is not connected to a live data source yet.');
+const SEARCH_CACHE_TTL_SECONDS = 6 * 60 * 60; // 6 hours
+
+function getSupabase(env: Env) {
+  return createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
+}
+
+function cacheKey(params: CreatorSearchParams): string {
+  const region = (params.region || 'ALL').toUpperCase();
+  const q = params.q.trim().toLowerCase();
+  return `creator:search:${region}:${q}`;
+}
+
+async function readCache(env: Env, key: string): Promise<CreatorResult[] | null> {
+  try {
+    const supabase = getSupabase(env);
+    const { data } = await supabase
+      .from('creator_api_cache')
+      .select('response, expires_at')
+      .eq('cache_key', key)
+      .maybeSingle();
+
+    if (!data) return null;
+    if (new Date(data.expires_at).getTime() <= Date.now()) return null;
+    return data.response as CreatorResult[];
+  } catch {
+    return null; // cache is an optimization, never a hard dependency
+  }
+}
+
+async function writeCache(env: Env, key: string, params: CreatorSearchParams, results: CreatorResult[]) {
+  try {
+    const supabase = getSupabase(env);
+    const expiresAt = new Date(Date.now() + SEARCH_CACHE_TTL_SECONDS * 1000).toISOString();
+    await supabase.from('creator_api_cache').upsert(
+      {
+        cache_key: key,
+        query: params.q,
+        region: params.region ?? null,
+        endpoint: 'search',
+        response: results,
+        expires_at: expiresAt,
+      },
+      { onConflict: 'cache_key' }
+    );
+  } catch {
+    /* a failed cache write must never fail the actual search response */
+  }
+}
+
+/**
+ * Search creators, using the cache in front of the real Kalodata upstream.
+ * Never returns fabricated data: a config or upstream failure raises
+ * CreatorSearchUnavailableError instead of falling back to placeholder rows.
+ */
+export async function searchCreators(env: Env, params: CreatorSearchParams): Promise<CreatorResult[]> {
+  const key = cacheKey(params);
+
+  const cached = await readCache(env, key);
+  if (cached) return cached;
+
+  try {
+    const results = await kalodataSearchCreators(env, params);
+    await writeCache(env, key, params, results);
+    return results;
+  } catch (err) {
+    if (err instanceof UpstreamConfigError) {
+      throw new CreatorSearchUnavailableError('Creator search is not configured yet.');
+    }
+    if (err instanceof UpstreamRequestError) {
+      throw new CreatorSearchUnavailableError('Creator search is temporarily unavailable.');
+    }
+    throw new CreatorSearchUnavailableError('Creator search is temporarily unavailable.');
+  }
 }
