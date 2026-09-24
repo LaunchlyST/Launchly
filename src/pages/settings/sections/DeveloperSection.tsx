@@ -2,6 +2,7 @@ import React from 'react';
 import { Webhook } from 'lucide-react';
 import { SettingsSection, SettingsCard } from '../components/SettingsSection';
 import { SettingsRow } from '../components/SettingsRow';
+import { CreatorApiCard } from '../components/CreatorApiCard';
 
 export function DeveloperSection() {
   return (
@@ -17,17 +18,7 @@ export function DeveloperSection() {
         </SettingsRow>
       </SettingsCard>
 
-      <SettingsCard title="Creator API">
-        <SettingsRow
-          label="Search TikTok Shop creators"
-          description="Search TikTok Shop creators and retrieve creator analytics through Launchly."
-        >
-          <span className="stg-badge is-warn">In development</span>
-        </SettingsRow>
-        <SettingsRow label="Endpoint">
-          <code className="stg-code">GET /api/launchly/creators/search</code>
-        </SettingsRow>
-      </SettingsCard>
+      <CreatorApiCard />
 
       <SettingsCard title="API documentation">
         <SettingsRow label="Documentation">

@@ -12,4 +12,18 @@ FRONTEND_URL = "https://launchly.pazeruga.workers.dev"
 # SUPABASE_SERVICE_ROLE_KEY
 
 # Set via `wrangler var put STRIPE_PRICE_ID=price_xxx`
-# STRIPE_PRICE_ID
+# STRIPE_PRICE_ID  — the main Launchly app subscription (£5/mo), already in use.
+
+# Set via `wrangler var put CREATOR_API_PRICE_ID=price_xxx`
+# CREATOR_API_PRICE_ID  — the separate "Launchly Search Creator API" £5/mo
+# price. Create this Price in Stripe (see subscription-backend/README.md),
+# then set it here. Required for POST /api/creator-api-subscription/checkout.
+
+# Optional — enables real per-key rate limiting on the public
+# GET /api/v1/creators/search endpoint (60 req/min/key). Without it the
+# endpoint still works, it just skips the rate-limit check.
+# Create with: wrangler kv:namespace create API_RATE_LIMIT
+# then uncomment and fill in the id below:
+# [[kv_namespaces]]
+# binding = "API_RATE_LIMIT"
+# id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"

@@ -1,14 +1,19 @@
 import { createClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
+import type { Env } from "./types";
+import { json } from "./types";
+import {
+  handleCreatorApiCheckout,
+  handleCreatorApiManage,
+  handleCreatorApiStatus,
+  markApiSubscriptionCanceled,
+  resolveApiSubscriptionUserId,
+  upsertApiSubscriptionFromStripe,
+} from "./creatorApiSubscription";
+import { handleApiUsage, handleCreateApiKey, handleListApiKeys, handleRevokeApiKey } from "./apiKeys";
+import { handleCreatorSearchApi } from "./creatorSearchApi";
 
-export interface Env {
-  STRIPE_SECRET_KEY: string;
-  STRIPE_WEBHOOK_SECRET: string;
-  SUPABASE_URL: string;
-  SUPABASE_SERVICE_ROLE_KEY: string;
-  FRONTEND_URL: string;
-  STRIPE_PRICE_ID: string;
-}
+export type { Env };
 
 const corsHeaders: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
@@ -41,6 +46,37 @@ export default {
         return await handleManageSubscription(request, env);
       }
 
+      // ---- Search Creator API: subscription management (authenticated) ----
+      if (url.pathname === "/api/creator-api-subscription/checkout" && request.method === "POST") {
+        return await handleCreatorApiCheckout(request, env);
+      }
+      if (url.pathname === "/api/creator-api-subscription/manage" && request.method === "POST") {
+        return await handleCreatorApiManage(request, env);
+      }
+      if (url.pathname === "/api/creator-api-subscription/status" && request.method === "GET") {
+        return await handleCreatorApiStatus(request, env);
+      }
+
+      // ---- Search Creator API: key management (authenticated) ----
+      if (url.pathname === "/api/developer/api-keys" && request.method === "POST") {
+        return await handleCreateApiKey(request, env);
+      }
+      if (url.pathname === "/api/developer/api-keys" && request.method === "GET") {
+        return await handleListApiKeys(request, env);
+      }
+      if (url.pathname === "/api/developer/api-usage" && request.method === "GET") {
+        return await handleApiUsage(request, env);
+      }
+      const revokeMatch = url.pathname.match(/^\/api\/developer\/api-keys\/([^/]+)\/revoke$/);
+      if (revokeMatch && request.method === "POST") {
+        return await handleRevokeApiKey(request, env, revokeMatch[1]);
+      }
+
+      // ---- Search Creator API: the public, paid, Bearer-authenticated endpoint ----
+      if (url.pathname === "/api/v1/creators/search" && request.method === "GET") {
+        return await handleCreatorSearchApi(request, env);
+      }
+
       return new Response("Not Found", { status: 404, headers: corsHeaders });
     } catch (err: any) {
       console.error("Worker error:", err);
@@ -56,15 +92,8 @@ function getSupabase(env: Env) {
   return createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
 }
 
-function json(data: any, status = 200): Response {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}
-
 async function handleCreateCheckout(request: Request, env: Env): Promise<Response> {
-  const { userId, email } = await request.json();
+  const { userId, email } = await request.json<{ userId?: string; email?: string }>();
 
   if (!userId || !email) {
     return json({ error: "Missing userId or email" }, 400);
@@ -72,7 +101,7 @@ async function handleCreateCheckout(request: Request, env: Env): Promise<Respons
 
   const supabase = getSupabase(env);
   const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
-    apiVersion: "2024-12-18.acacia",
+    apiVersion: "2025-02-24.acacia",
   });
 
   // Check if user already has a stripe customer ID
@@ -131,7 +160,7 @@ async function handleWebhook(request: Request, env: Env): Promise<Response> {
   }
 
   const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
-    apiVersion: "2024-12-18.acacia",
+    apiVersion: "2025-02-24.acacia",
   });
 
   let event: Stripe.Event;
@@ -150,20 +179,28 @@ async function handleWebhook(request: Request, env: Env): Promise<Response> {
         const session = event.data.object as Stripe.Checkout.Session;
         const userId = session.metadata?.supabase_user_id;
         const subscriptionId = session.subscription as string;
+        const isCreatorApi = session.metadata?.product === "search_creator_api";
 
         if (userId && subscriptionId) {
-          // Fetch the subscription to get period end
           const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-          const periodEnd = new Date(subscription.current_period_end * 1000).toISOString();
 
-          await supabase
-            .from("users")
-            .update({
-              stripe_subscription_id: subscriptionId,
-              subscription_status: "active",
-              subscription_current_period_end: periodEnd,
-            })
-            .eq("id", userId);
+          if (isCreatorApi) {
+            await upsertApiSubscriptionFromStripe(env, {
+              userId,
+              customerId: subscription.customer as string,
+              subscription,
+            });
+          } else {
+            const periodEnd = new Date(subscription.current_period_end * 1000).toISOString();
+            await supabase
+              .from("users")
+              .update({
+                stripe_subscription_id: subscriptionId,
+                subscription_status: "active",
+                subscription_current_period_end: periodEnd,
+              })
+              .eq("id", userId);
+          }
         }
         break;
       }
@@ -172,6 +209,18 @@ async function handleWebhook(request: Request, env: Env): Promise<Response> {
       case "customer.subscription.updated": {
         const subscription = event.data.object as Stripe.Subscription;
         const customerId = subscription.customer as string;
+        const isCreatorApi = subscription.metadata?.product === "search_creator_api";
+
+        if (isCreatorApi) {
+          const userId = await resolveApiSubscriptionUserId(env, {
+            customerId,
+            subscriptionMetadataUserId: subscription.metadata?.supabase_user_id,
+          });
+          if (userId) {
+            await upsertApiSubscriptionFromStripe(env, { userId, customerId, subscription });
+          }
+          break;
+        }
 
         const { data: user } = await supabase
           .from("users")
@@ -212,6 +261,12 @@ async function handleWebhook(request: Request, env: Env): Promise<Response> {
       case "customer.subscription.deleted": {
         const subscription = event.data.object as Stripe.Subscription;
         const customerId = subscription.customer as string;
+        const isCreatorApi = subscription.metadata?.product === "search_creator_api";
+
+        if (isCreatorApi) {
+          await markApiSubscriptionCanceled(env, subscription);
+          break;
+        }
 
         const { data: user } = await supabase
           .from("users")
@@ -237,8 +292,21 @@ async function handleWebhook(request: Request, env: Env): Promise<Response> {
         const customerId = invoice.customer as string;
         const subscriptionId = invoice.subscription as string;
 
-        // Re-activate subscription on successful payment
         if (subscriptionId) {
+          const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+          const isCreatorApi = subscription.metadata?.product === "search_creator_api";
+
+          if (isCreatorApi) {
+            const userId = await resolveApiSubscriptionUserId(env, {
+              customerId,
+              subscriptionMetadataUserId: subscription.metadata?.supabase_user_id,
+            });
+            if (userId) {
+              await upsertApiSubscriptionFromStripe(env, { userId, customerId, subscription });
+            }
+            break;
+          }
+
           const { data: user } = await supabase
             .from("users")
             .select("id")
@@ -246,9 +314,7 @@ async function handleWebhook(request: Request, env: Env): Promise<Response> {
             .single();
 
           if (user) {
-            const subscription = await stripe.subscriptions.retrieve(subscriptionId);
             const periodEnd = new Date(subscription.current_period_end * 1000).toISOString();
-
             await supabase
               .from("users")
               .update({
@@ -264,6 +330,21 @@ async function handleWebhook(request: Request, env: Env): Promise<Response> {
       case "invoice.payment_failed": {
         const invoice = event.data.object as Stripe.Invoice;
         const customerId = invoice.customer as string;
+        const subscriptionId = invoice.subscription as string | null;
+
+        if (subscriptionId) {
+          const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+          if (subscription.metadata?.product === "search_creator_api") {
+            const userId = await resolveApiSubscriptionUserId(env, {
+              customerId,
+              subscriptionMetadataUserId: subscription.metadata?.supabase_user_id,
+            });
+            if (userId) {
+              await upsertApiSubscriptionFromStripe(env, { userId, customerId, subscription });
+            }
+            break;
+          }
+        }
 
         const { data: user } = await supabase
           .from("users")
@@ -313,7 +394,7 @@ async function handleGetSubscription(request: Request, env: Env): Promise<Respon
 }
 
 async function handleManageSubscription(request: Request, env: Env): Promise<Response> {
-  const { userId } = await request.json();
+  const { userId } = await request.json<{ userId?: string }>();
 
   if (!userId) {
     return json({ error: "Missing userId" }, 400);
@@ -321,7 +402,7 @@ async function handleManageSubscription(request: Request, env: Env): Promise<Res
 
   const supabase = getSupabase(env);
   const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
-    apiVersion: "2024-12-18.acacia",
+    apiVersion: "2025-02-24.acacia",
   });
 
   const { data: user } = await supabase

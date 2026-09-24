@@ -84,3 +84,59 @@ import { SubscriptionGate } from "./subscription-backend/react";
 | `customer.subscription.updated` | Sync status (active/past_due/cancelled) |
 | `customer.subscription.deleted` | Mark cancelled |
 | `invoice.payment_failed` | Mark past_due |
+
+## Search Creator API (paid, external)
+
+A second, independent product on the same Stripe account and the same
+worker/webhook — not a separate Stripe or billing system. Settings →
+Developer → API Access & Billing manages it.
+
+### 1. Supabase
+
+Run the second migration in the Supabase SQL editor:
+
+```sql
+-- Paste contents of supabase/migrations/002_create_creator_api_tables.sql
+```
+
+Adds `api_subscriptions`, `api_keys`, `api_usage_events`.
+
+### 2. Stripe — manual step required
+
+Create a **second** product (do not reuse `STRIPE_PRICE_ID`):
+
+- Product name: `Launchly Search Creator API`
+- Price: `£5.00 GBP`, recurring **monthly**
+
+Copy the resulting **Price ID** (`price_...`).
+
+### 3. Cloudflare Worker
+
+```bash
+wrangler var put CREATOR_API_PRICE_ID=price_xxx
+```
+
+No new secrets are needed — this reuses `STRIPE_SECRET_KEY`,
+`STRIPE_WEBHOOK_SECRET`, `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`.
+
+Optional, for real per-key rate limiting on `GET /api/v1/creators/search`
+(60 req/min/key; the endpoint works without it, just without that check):
+
+```bash
+wrangler kv:namespace create API_RATE_LIMIT
+# then add the printed [[kv_namespaces]] block to wrangler.toml
+```
+
+### External API
+
+```
+GET /api/v1/creators/search?q=<username>&region=<GB>
+Authorization: Bearer lch_live_...
+```
+
+Keys are created from Settings → Developer, and only work while the
+Search Creator API subscription is active. See `worker/src/creatorSearchService.ts`
+for the one piece this repo does not yet have: a real upstream creator-data
+source. Everything around it (auth, subscription check, rate limiting,
+usage logging, response shape) is fully wired — that function currently
+returns an honest "not connected" error instead of inventing creator data.
