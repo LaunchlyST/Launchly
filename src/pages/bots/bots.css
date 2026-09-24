@@ -42,6 +42,147 @@
   gap: 22px;
 }
 
+/* ============ Filters ============ */
+.bots-filters {
+  gap: 16px;
+}
+
+.bots-filters__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.bots-filters__title {
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.bots-filters__reset {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: none;
+  color: var(--text-3);
+  font-size: 12.5px;
+  font-weight: 550;
+  cursor: pointer;
+  transition: color var(--transition);
+}
+
+.bots-filters__reset:hover {
+  color: var(--text);
+}
+
+.bots-filters__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+}
+
+.bots-filters__field {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bots-range-btn {
+  gap: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 520;
+  cursor: pointer;
+}
+
+.bots-range-pop {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  min-width: 220px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+}
+
+.bots-range-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 550;
+  color: var(--text-3);
+}
+
+.bots-range-field input {
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-subtle);
+  color: var(--text);
+  font-size: 13px;
+}
+
+.bots-finished-row {
+  display: flex;
+  gap: 8px;
+}
+
+.bots-finished-btn {
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 520;
+  cursor: pointer;
+}
+
+.bots-history {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bots-history__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-subtle);
+  font-size: 13px;
+}
+
+.bots-history__handle {
+  font-weight: 600;
+}
+
+.bots-history__date {
+  color: var(--text-3);
+  margin-left: auto;
+}
+
+.bots-history__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 550;
+  color: var(--text-3);
+}
+
+.bots-history__status.is-done {
+  color: #0c7a48;
+}
+
 /* ============ Run controls ============ */
 .bots-run {
   display: flex;
