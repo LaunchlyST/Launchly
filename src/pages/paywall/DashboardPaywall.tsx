@@ -194,9 +194,10 @@ export function DashboardPaywall({ onUnlock, busy = false, error = null }: Dashb
                       {busy ? 'Opening Stripe…' : 'Get access'}
                     </button>
                   ) : (
-                    <button type="button" className="dp__cta dp__cta--quiet" disabled>
+                    <p className="dp__status" aria-live="off">
+                      <span className="dp__status-dot" />
                       {plan.action === 'current' ? 'Your current plan' : 'Not available yet'}
-                    </button>
+                    </p>
                   )}
                   <p className="dp__fine">{plan.fine}</p>
                 </div>

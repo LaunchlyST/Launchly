@@ -289,14 +289,30 @@ body.dp-open {
 
 .dp__cta:focus-visible { outline: 2px solid var(--navy); outline-offset: 3px; }
 
-.dp__cta--quiet {
-  background: rgba(20, 33, 58, 0.07);
+.dp__cta:disabled { opacity: 0.6; cursor: progress; }
+
+/* Plain status line for a non-actionable card — never button-shaped, so it
+   never reads as a dead link. */
+.dp__status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 46px;
+  margin: 0;
+  padding: 0 2px;
+  font-size: 13.5px;
+  font-weight: 520;
   color: var(--navy-2);
-  box-shadow: none;
-  cursor: not-allowed;
 }
 
-.dp__cta:disabled:not(.dp__cta--quiet) { opacity: 0.6; cursor: progress; }
+.dp__status-dot {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.55;
+}
 
 .dp__fine {
   margin: 11px 0 0;
