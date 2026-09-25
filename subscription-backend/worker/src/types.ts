@@ -9,11 +9,6 @@ export interface Env {
   /** Price ID for the separate "Launchly Search Creator API" £5/mo product. */
   CREATOR_API_PRICE_ID: string;
 
-  /** Server-side only — the real upstream creator-data provider (Kalodata). */
-  KALODATA_API_KEY: string;
-  /** Optional override; defaults to https://api.kalodata.com in kalodataClient.ts. */
-  KALODATA_API_BASE_URL?: string;
-
   /**
    * Optional KV namespace for the Creator Search API's per-key rate limit.
    * Without it, rate limiting is skipped (fails open) rather than blocking

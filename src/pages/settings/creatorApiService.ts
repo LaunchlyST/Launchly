@@ -111,30 +111,48 @@ export async function revokeApiKey(accessToken: string, id: string): Promise<voi
   await authedFetch(`/api/developer/api-keys/${id}/revoke`, accessToken, { method: 'POST' });
 }
 
-export interface CreatorSearchResult {
-  id: string;
+export interface CreatorProfile {
   username: string;
   displayName: string | null;
   avatar: string | null;
+  bio: string | null;
   region: string | null;
   followers: number | null;
+  following: number | null;
   likes: number | null;
   videoCount: number | null;
-  gmv: number | null;
-  itemsSold: number | null;
-  productCount: number | null;
+  /** Launchly-calculated from recentVideos, not platform-provided. */
+  avgViews: number | null;
+  avgLikes: number | null;
+  avgComments: number | null;
+  avgShares: number | null;
+  engagementRate: number | null;
+  postingFrequencyPerWeek: number | null;
+  updatedAt: string;
+}
+
+export interface CreatorVideo {
+  id: string | null;
+  description: string | null;
+  cover: string | null;
+  views: number | null;
+  likes: number | null;
+  comments: number | null;
+  shares: number | null;
+  publishedAt: string | null;
+}
+
+export interface CreatorSearchResult {
+  creator: CreatorProfile;
+  recentVideos: CreatorVideo[];
+  stale?: boolean;
 }
 
 /** In-app search (session-authenticated) — for trying the product inside Settings itself. */
-export async function searchCreatorsInApp(
-  accessToken: string,
-  q: string,
-  region?: string
-): Promise<CreatorSearchResult[]> {
+export async function searchCreatorsInApp(accessToken: string, q: string): Promise<CreatorSearchResult> {
   const params = new URLSearchParams({ q });
-  if (region) params.set('region', region);
   const res = await authedFetch(`/api/creator-api/search?${params.toString()}`, accessToken);
-  return res.data.creators;
+  return { ...res.data, stale: res.stale === true };
 }
 
 export interface ApiUsageSummary {

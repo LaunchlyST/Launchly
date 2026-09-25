@@ -58,7 +58,7 @@ export function CreatorApiCard() {
   const [usageError, setUsageError] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<CreatorSearchResult[] | null>(null);
+  const [searchResult, setSearchResult] = useState<CreatorSearchResult | null>(null);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
 
@@ -190,14 +190,14 @@ export function CreatorApiCard() {
 
   const handleSearch = async () => {
     if (!accessToken) return;
-    const q = searchQuery.trim().replace(/^https?:\/\/(www\.)?tiktok\.com\//i, '').replace(/^@/, '');
+    const q = searchQuery.trim();
     if (!q) return;
     setSearching(true);
     setSearchError(null);
     try {
-      setSearchResults(await searchCreatorsInApp(accessToken, q));
+      setSearchResult(await searchCreatorsInApp(accessToken, q));
     } catch (err) {
-      setSearchResults(null);
+      setSearchResult(null);
       setSearchError(err instanceof Error ? err.message : 'Search failed.');
     } finally {
       setSearching(false);
@@ -385,27 +385,53 @@ export function CreatorApiCard() {
               </p>
             )}
 
-            {searchResults && (
-              <ul className="stg-key-list" style={{ marginTop: 12 }}>
-                {searchResults.length === 0 && <p className="stg-muted">No creators found.</p>}
-                {searchResults.map((c) => (
-                  <li key={c.id} className="stg-creator-result">
-                    <div>
-                      <p className="stg-key-list__name">{c.displayName ?? c.username ?? '—'}</p>
-                      <p className="stg-key-list__prefix">@{c.username || '—'}</p>
-                    </div>
-                    <div className="stg-creator-result__stats">
-                      <span>Followers: {c.followers ?? '—'}</span>
-                      <span>Likes: {c.likes ?? '—'}</span>
-                      <span>Videos: {c.videoCount ?? '—'}</span>
-                      <span>GMV: {c.gmv ?? '—'}</span>
-                      <span>Items sold: {c.itemsSold ?? '—'}</span>
-                      <span>Products: {c.productCount ?? '—'}</span>
-                      <span>Region: {c.region ?? '—'}</span>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+            {searchResult && (
+              <div style={{ marginTop: 12 }}>
+                {searchResult.stale && (
+                  <p className="stg-hint" style={{ marginBottom: 8 }}>
+                    Showing recently cached data — live refresh is temporarily unavailable.
+                  </p>
+                )}
+                <div className="stg-creator-result">
+                  <div>
+                    <p className="stg-key-list__name">{searchResult.creator.displayName ?? searchResult.creator.username}</p>
+                    <p className="stg-key-list__prefix">@{searchResult.creator.username}</p>
+                    {searchResult.creator.bio && <p className="stg-muted" style={{ marginTop: 4 }}>{searchResult.creator.bio}</p>}
+                  </div>
+                  <div className="stg-creator-result__stats">
+                    <span>Followers: {searchResult.creator.followers ?? '—'}</span>
+                    <span>Following: {searchResult.creator.following ?? '—'}</span>
+                    <span>Likes: {searchResult.creator.likes ?? '—'}</span>
+                    <span>Videos: {searchResult.creator.videoCount ?? '—'}</span>
+                    <span>Avg views: {searchResult.creator.avgViews ?? '—'}</span>
+                    <span>Avg likes: {searchResult.creator.avgLikes ?? '—'}</span>
+                    <span>Avg comments: {searchResult.creator.avgComments ?? '—'}</span>
+                    <span>Avg shares: {searchResult.creator.avgShares ?? '—'}</span>
+                    <span>Engagement: {searchResult.creator.engagementRate != null ? `${searchResult.creator.engagementRate}%` : '—'}</span>
+                    <span>Posts/week: {searchResult.creator.postingFrequencyPerWeek ?? '—'}</span>
+                    <span>Region: {searchResult.creator.region ?? '—'}</span>
+                  </div>
+                </div>
+
+                {searchResult.recentVideos.length > 0 && (
+                  <ul className="stg-key-list" style={{ marginTop: 10 }}>
+                    {searchResult.recentVideos.map((v, i) => (
+                      <li key={v.id ?? i} className="stg-creator-result">
+                        <div>
+                          <p className="stg-key-list__name">{v.description ?? 'Video'}</p>
+                          <p className="stg-muted">{v.publishedAt ? new Date(v.publishedAt).toLocaleDateString() : '—'}</p>
+                        </div>
+                        <div className="stg-creator-result__stats">
+                          <span>Views: {v.views ?? '—'}</span>
+                          <span>Likes: {v.likes ?? '—'}</span>
+                          <span>Comments: {v.comments ?? '—'}</span>
+                          <span>Shares: {v.shares ?? '—'}</span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             )}
           </div>
 

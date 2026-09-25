@@ -2,10 +2,12 @@ import type { Env } from './types';
 import { apiError, json } from './types';
 import { getAuthenticatedUserId } from './auth';
 import { hasCreatorApiAccess } from './creatorApiSubscription';
-import { CreatorDataNotConnectedError, CreatorSearchUnavailableError, searchCreators } from './creatorSearchService';
-
-const MAX_QUERY_LENGTH = 100;
-const REGION_PATTERN = /^[A-Z]{2}$/;
+import {
+  CreatorSearchInvalidQueryError,
+  CreatorSearchNotFoundError,
+  CreatorSearchUnavailableError,
+  searchCreators,
+} from './creatorSearchService';
 
 /**
  * GET /api/creator-api/search
@@ -29,26 +31,26 @@ export async function handleCreatorApiSearch(request: Request, env: Env): Promis
   }
 
   const url = new URL(request.url);
-  const q = (url.searchParams.get('q') || '').trim().replace(/^@/, '');
-  const region = (url.searchParams.get('region') || '').trim().toUpperCase();
-
-  if (!q || q.length > MAX_QUERY_LENGTH) {
-    return apiError('INVALID_REQUEST', 'q is required and must be 1–100 characters.', 400);
-  }
-  if (region && !REGION_PATTERN.test(region)) {
-    return apiError('INVALID_REQUEST', 'region must be a 2-letter market code, e.g. GB.', 400);
-  }
+  const q = url.searchParams.get('q') || '';
 
   try {
-    const creators = await searchCreators(env, { q, region: region || undefined });
-    return json({ success: true, data: { creators } });
+    const result = await searchCreators(env, { q });
+    return json({
+      success: true,
+      ...(result.stale ? { stale: true } : {}),
+      data: { creator: result.creator, recentVideos: result.recentVideos },
+    });
   } catch (err) {
-    if (err instanceof CreatorDataNotConnectedError) {
-      return apiError('CREATOR_DATA_NOT_CONNECTED', 'Creator data source is not connected.', 503);
+    if (err instanceof CreatorSearchInvalidQueryError) {
+      return apiError('INVALID_QUERY', 'Invalid creator username.', 400);
+    }
+    if (err instanceof CreatorSearchNotFoundError) {
+      return apiError('CREATOR_NOT_FOUND', 'Creator not found.', 404);
     }
     if (err instanceof CreatorSearchUnavailableError) {
-      return apiError('SERVICE_UNAVAILABLE', 'Creator search is temporarily unavailable.', 503);
+      return apiError('CREATOR_DATA_UNAVAILABLE', 'Creator data is temporarily unavailable.', 503);
     }
-    return apiError('INTERNAL_ERROR', 'Something went wrong handling this request.', 500);
+    console.error('[creator-api-search] unexpected error', err instanceof Error ? err.message : err);
+    return apiError('SERVER_ERROR', 'Something went wrong handling this request.', 500);
   }
 }

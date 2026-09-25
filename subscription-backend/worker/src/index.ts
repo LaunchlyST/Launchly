@@ -14,6 +14,7 @@ import { handleApiUsage, handleCreateApiKey, handleListApiKeys, handleRevokeApiK
 import { handleCreatorSearchApi } from "./creatorSearchApi";
 import { handleCreatorApiSearch } from "./creatorApiSearch";
 import { handleCreatorApiDebug } from "./creatorApiDebug";
+import { handleStatus } from "./statusApi";
 
 export type { Env };
 
@@ -75,6 +76,11 @@ export default {
       const revokeMatch = url.pathname.match(/^\/api\/developer\/api-keys\/([^/]+)\/revoke$/);
       if (revokeMatch && request.method === "POST") {
         return await handleRevokeApiKey(request, env, revokeMatch[1]);
+      }
+
+      // ---- Search Creator API: public health check, no auth ----
+      if (url.pathname === "/api/v1/status" && request.method === "GET") {
+        return await handleStatus(env);
       }
 
       // ---- Search Creator API: the public, paid, Bearer-authenticated endpoint ----

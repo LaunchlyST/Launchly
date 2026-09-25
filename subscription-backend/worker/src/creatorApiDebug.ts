@@ -38,7 +38,12 @@ export async function handleCreatorApiDebug(request: Request, env: Env): Promise
       priceConfigured: Boolean(env.CREATOR_API_PRICE_ID),
       subscriptionStatus: sub?.status ?? 'none',
       apiKeyCount: apiKeyCount ?? 0,
-      creatorDataConnected: Boolean(env.KALODATA_API_KEY),
+      /* Creator data is Launchly's own collector (tiktokPublicCollector.ts),
+         not a third-party key — it's "connected" whenever the worker is
+         deployed. A per-request live TikTok reachability check isn't done
+         here to keep this endpoint cheap; a real search will surface any
+         actual outage as CREATOR_DATA_UNAVAILABLE. */
+      creatorDataConnected: true,
       rateLimitKvBound: Boolean(env.API_RATE_LIMIT),
     },
   });

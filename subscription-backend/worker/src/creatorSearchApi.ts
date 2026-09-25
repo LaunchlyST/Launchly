@@ -2,13 +2,16 @@ import { createClient } from '@supabase/supabase-js';
 import type { Env } from './types';
 import { apiError, json } from './types';
 import { hashApiKey, looksLikeApiKey } from './apiKeyCrypto';
-import { CreatorDataNotConnectedError, CreatorSearchUnavailableError, searchCreators } from './creatorSearchService';
+import {
+  CreatorSearchInvalidQueryError,
+  CreatorSearchNotFoundError,
+  CreatorSearchUnavailableError,
+  searchCreators,
+} from './creatorSearchService';
 import { hasCreatorApiAccess } from './creatorApiSubscription';
 
 const SCOPE = 'search_creator_api';
 const RATE_LIMIT_PER_MINUTE = 60;
-const MAX_QUERY_LENGTH = 100;
-const REGION_PATTERN = /^[A-Z]{2}$/;
 
 function getSupabase(env: Env) {
   return createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
@@ -22,6 +25,8 @@ interface AuthorizedKey {
 /**
  * Authenticate an external request via `Authorization: Bearer lch_live_...`.
  * Returns the matched key/user, or a Response to send back immediately.
+ * Nothing downstream (rate limit, creator search) runs until this passes —
+ * TikTok is never contacted before authorization succeeds.
  */
 async function authorizeRequest(
   request: Request,
@@ -70,10 +75,11 @@ async function authorizeRequest(
 }
 
 /**
- * Fixed-window rate limit, ~60 requests/minute per key. Uses a KV namespace
- * (`API_RATE_LIMIT`) if the environment has one bound; otherwise fails open
- * rather than blocking real traffic on missing infrastructure — see the
- * worker README for the binding to add.
+ * Fixed-window rate limit, 60 requests/minute per key. Uses a KV namespace
+ * (`API_RATE_LIMIT`) if the environment has one bound; otherwise this fails
+ * open (no limit enforced) rather than blocking real traffic on missing
+ * infrastructure. This is a per-colo fixed window, not a globally exact
+ * distributed limiter — enough to stop obvious abuse, not a billing meter.
  */
 async function checkRateLimit(env: Env, keyId: string): Promise<boolean> {
   if (!env.API_RATE_LIMIT) return true;
@@ -102,12 +108,13 @@ async function logUsage(env: Env, key: AuthorizedKey, status: number) {
 }
 
 /**
- * GET /api/v1/creators/search?q=...&region=...
+ * GET /api/v1/creators/search?q=...
  *
  * The public, paid Creator Search API. Bearer-authenticated, not tied to any
  * browser session. Calls the same `searchCreators` gateway an in-app search
- * would — see creatorSearchService.ts for why it currently returns an
- * honest "not connected" error rather than fabricated results.
+ * uses — see creatorSearchService.ts for the real collection pipeline.
+ * Security order is fixed: API key → scope → subscription → rate limit →
+ * search. A request that fails any earlier step never reaches TikTok.
  */
 export async function handleCreatorSearchApi(request: Request, env: Env): Promise<Response> {
   const authResult = await authorizeRequest(request, env);
@@ -122,37 +129,31 @@ export async function handleCreatorSearchApi(request: Request, env: Env): Promis
   }
 
   const url = new URL(request.url);
-  const q = (url.searchParams.get('q') || '').trim();
-  const region = (url.searchParams.get('region') || '').trim().toUpperCase();
-
-  if (!q || q.length > MAX_QUERY_LENGTH) {
-    const res = apiError('INVALID_REQUEST', 'q is required and must be 1–100 characters.', 400);
-    await logUsage(env, key, 400);
-    return res;
-  }
-  if (region && !REGION_PATTERN.test(region)) {
-    const res = apiError('INVALID_REQUEST', 'region must be a 2-letter market code, e.g. GB.', 400);
-    await logUsage(env, key, 400);
-    return res;
-  }
+  const q = url.searchParams.get('q') || '';
 
   try {
-    const creators = await searchCreators(env, { q, region: region || undefined });
+    const result = await searchCreators(env, { q });
     await logUsage(env, key, 200);
-    return json({ success: true, data: { creators } });
+    return json({
+      success: true,
+      ...(result.stale ? { stale: true } : {}),
+      data: { creator: result.creator, recentVideos: result.recentVideos },
+    });
   } catch (err) {
-    if (err instanceof CreatorDataNotConnectedError) {
-      const res = apiError('CREATOR_DATA_NOT_CONNECTED', 'Creator data source is not connected.', 503);
-      await logUsage(env, key, 503);
-      return res;
+    if (err instanceof CreatorSearchInvalidQueryError) {
+      await logUsage(env, key, 400);
+      return apiError('INVALID_QUERY', 'Invalid creator username.', 400);
+    }
+    if (err instanceof CreatorSearchNotFoundError) {
+      await logUsage(env, key, 404);
+      return apiError('CREATOR_NOT_FOUND', 'Creator not found.', 404);
     }
     if (err instanceof CreatorSearchUnavailableError) {
-      const res = apiError('SERVICE_UNAVAILABLE', 'Creator search is temporarily unavailable.', 503);
       await logUsage(env, key, 503);
-      return res;
+      return apiError('CREATOR_DATA_UNAVAILABLE', 'Creator data is temporarily unavailable.', 503);
     }
-    const res = apiError('INTERNAL_ERROR', 'Something went wrong handling this request.', 500);
+    console.error('[creator-search-api] unexpected error', err instanceof Error ? err.message : err);
     await logUsage(env, key, 500);
-    return res;
+    return apiError('SERVER_ERROR', 'Something went wrong handling this request.', 500);
   }
 }

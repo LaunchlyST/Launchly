@@ -10,14 +10,10 @@ FRONTEND_URL = "https://launchly.pazeruga.workers.dev"
 # STRIPE_WEBHOOK_SECRET
 # SUPABASE_URL
 # SUPABASE_SERVICE_ROLE_KEY
-# KALODATA_API_KEY  — server-side only. Real upstream creator-data provider
-#   for the Search Creator API. Set with: wrangler secret put KALODATA_API_KEY
-#   Never put this in a [vars] entry, VITE_ variable, or the frontend.
 
-# Optional — only needed if Kalodata's API is not at the default
-# https://api.kalodata.com (see worker/src/kalodataClient.ts).
-# wrangler var put KALODATA_API_BASE_URL=https://...
-# KALODATA_API_BASE_URL
+# The Search Creator API's creator data is Launchly's own collector
+# (worker/src/tiktokPublicCollector.ts, reading public TikTok profile
+# pages) — no third-party API key needed for it.
 
 # STRIPE_PRICE_ID  — the main Launchly app subscription (£5/mo), already in
 # use. Set via `wrangler secret put STRIPE_PRICE_ID` (or a [vars] entry —
@@ -29,7 +25,7 @@ FRONTEND_URL = "https://launchly.pazeruga.workers.dev"
 # then set it with:
 #   npx wrangler secret put CREATOR_API_PRICE_ID
 # Required for POST /api/creator-api-subscription/checkout. Without it,
-# checkout returns a CREATOR_API_BILLING_NOT_CONFIGURED error rather than
+# checkout returns a CREATOR_API_PRICE_NOT_CONFIGURED error rather than
 # falling back to any other price.
 
 # Optional — enables real per-key rate limiting on the public
