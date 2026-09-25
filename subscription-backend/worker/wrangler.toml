@@ -19,13 +19,18 @@ FRONTEND_URL = "https://launchly.pazeruga.workers.dev"
 # wrangler var put KALODATA_API_BASE_URL=https://...
 # KALODATA_API_BASE_URL
 
-# Set via `wrangler var put STRIPE_PRICE_ID=price_xxx`
-# STRIPE_PRICE_ID  — the main Launchly app subscription (£5/mo), already in use.
+# STRIPE_PRICE_ID  — the main Launchly app subscription (£5/mo), already in
+# use. Set via `wrangler secret put STRIPE_PRICE_ID` (or a [vars] entry —
+# it's a public Stripe identifier, not a secret, but `secret put` works too
+# and needs no wrangler.toml edit or redeploy of source).
 
-# Set via `wrangler var put CREATOR_API_PRICE_ID=price_xxx`
 # CREATOR_API_PRICE_ID  — the separate "Launchly Search Creator API" £5/mo
 # price. Create this Price in Stripe (see subscription-backend/README.md),
-# then set it here. Required for POST /api/creator-api-subscription/checkout.
+# then set it with:
+#   npx wrangler secret put CREATOR_API_PRICE_ID
+# Required for POST /api/creator-api-subscription/checkout. Without it,
+# checkout returns a CREATOR_API_BILLING_NOT_CONFIGURED error rather than
+# falling back to any other price.
 
 # Optional — enables real per-key rate limiting on the public
 # GET /api/v1/creators/search endpoint (60 req/min/key). Without it the

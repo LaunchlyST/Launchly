@@ -45,6 +45,8 @@ export async function handleCreatorApiCheckout(request: Request, env: Env): Prom
   if (!userId) return apiError('UNAUTHENTICATED', 'Sign in required.', 401);
 
   if (!env.CREATOR_API_PRICE_ID) {
+    // Safe to log: the variable name and that it's missing, never a secret value.
+    console.error('[creator-api] CREATOR_API_PRICE_ID is not configured — refusing checkout.');
     return apiError(
       'CREATOR_API_BILLING_NOT_CONFIGURED',
       'Creator API billing is not configured.',

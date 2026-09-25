@@ -102,14 +102,28 @@ Run the migrations in the Supabase SQL editor, in order:
 
 Adds `api_subscriptions`, `api_keys`, `api_usage_events`, `creator_api_cache`.
 
-### 2. Stripe — manual step required
+### 2. Search Creator API Stripe Price — manual step required
 
-Create a **second** product (do not reuse `STRIPE_PRICE_ID`):
+1. In Stripe create: `Launchly Search Creator API`
+2. Price: `£5.00 GBP`
+3. Billing: Monthly recurring
+4. Copy the Stripe Price ID: `price_...`
+5. From the `worker` folder run:
+   ```bash
+   npx wrangler secret put CREATOR_API_PRICE_ID
+   ```
+6. Paste the full `price_...` value when prompted.
+7. Deploy:
+   ```bash
+   npx wrangler deploy
+   ```
 
-- Product name: `Launchly Search Creator API`
-- Price: `£5.00 GBP`, recurring **monthly**
-
-Copy the resulting **Price ID** (`price_...`).
+This must be a **separate** product from `STRIPE_PRICE_ID` (the main
+Launchly app subscription) — do not reuse it. The checkout route
+(`worker/src/creatorApiSubscription.ts`) reads only `env.CREATOR_API_PRICE_ID`
+and never falls back to `STRIPE_PRICE_ID` or any hardcoded value; if the
+variable is missing, checkout refuses with a `CREATOR_API_BILLING_NOT_CONFIGURED`
+error instead of guessing a price.
 
 ### 3. Kalodata (upstream creator data) — manual step required
 
@@ -118,7 +132,6 @@ Create/locate a Kalodata API key with access to creator search.
 ### 4. Cloudflare Worker
 
 ```bash
-wrangler var put CREATOR_API_PRICE_ID=price_xxx
 wrangler secret put KALODATA_API_KEY
 # paste the real key at the prompt — never in a file, chat, or commit
 ```
