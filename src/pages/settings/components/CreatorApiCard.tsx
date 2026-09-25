@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Lock, ShieldCheck, AlertTriangle, ExternalLink, Plus, Search } from 'lucide-react';
+import { Lock, ShieldCheck, AlertTriangle, ExternalLink, Plus, Search, Check } from 'lucide-react';
 import { useAuthStore } from '../../../auth-store';
 import { WORKER_URL } from '../../../useSubscription';
 import {
@@ -62,14 +62,17 @@ export function CreatorApiCard() {
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
 
-  const refreshStatus = useCallback(async () => {
-    if (!accessToken) return;
+  const refreshStatus = useCallback(async (): Promise<CreatorApiSubscription | null> => {
+    if (!accessToken) return null;
     setLoading(true);
     setError(null);
     try {
-      setStatus(await getCreatorApiStatus(accessToken));
+      const next = await getCreatorApiStatus(accessToken);
+      setStatus(next);
+      return next;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not load your Search Creator API status.');
+      return null;
     } finally {
       setLoading(false);
     }
@@ -108,14 +111,33 @@ export function CreatorApiCard() {
     }
   }, [status?.active, refreshKeys, refreshUsage]);
 
-  // Coming back from Stripe Checkout — re-check the real status rather than
-  // trusting the redirect itself.
+  // Coming back from Stripe Checkout — the success query param is only ever
+  // used for this one-time UI message; it never unlocks anything by itself.
+  // The webhook can take a moment to land, so poll the real status a few
+  // times rather than showing "Locked" for a redirect that already paid.
+  const [checkoutReturn, setCheckoutReturn] = useState<'success' | 'cancelled' | null>(null);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('creatorApi')) {
+    const outcome = params.get('creatorApi');
+    if (outcome === 'success' || outcome === 'cancelled') {
       window.history.replaceState({}, '', window.location.pathname);
-      refreshStatus();
+      setCheckoutReturn(outcome);
     }
+    if (outcome !== 'success') return;
+
+    let cancelled = false;
+    const delays = [0, 1500, 3000, 5000];
+    (async () => {
+      for (const delay of delays) {
+        if (delay > 0) await new Promise((r) => setTimeout(r, delay));
+        if (cancelled) return;
+        const result = await refreshStatus();
+        if (result?.active) return;
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -231,6 +253,13 @@ export function CreatorApiCard() {
             <li key={f}>✓ {f}</li>
           ))}
         </ul>
+
+        {checkoutReturn === 'success' && (
+          <p className="stg-inline-ok" style={{ marginBottom: 8 }}>
+            <Check size={13} />{' '}
+            {status?.active ? 'Creator API activated.' : 'Payment received. Activating Creator API…'}
+          </p>
+        )}
 
         {loading ? (
           <p className="stg-muted">Checking your subscription…</p>

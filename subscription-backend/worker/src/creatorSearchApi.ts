@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import type { Env } from './types';
 import { apiError, json } from './types';
 import { hashApiKey, looksLikeApiKey } from './apiKeyCrypto';
-import { CreatorSearchUnavailableError, searchCreators } from './creatorSearchService';
+import { CreatorDataNotConnectedError, CreatorSearchUnavailableError, searchCreators } from './creatorSearchService';
 import { hasCreatorApiAccess } from './creatorApiSubscription';
 
 const SCOPE = 'search_creator_api';
@@ -141,6 +141,11 @@ export async function handleCreatorSearchApi(request: Request, env: Env): Promis
     await logUsage(env, key, 200);
     return json({ success: true, data: { creators } });
   } catch (err) {
+    if (err instanceof CreatorDataNotConnectedError) {
+      const res = apiError('CREATOR_DATA_NOT_CONNECTED', 'Creator data source is not connected.', 503);
+      await logUsage(env, key, 503);
+      return res;
+    }
     if (err instanceof CreatorSearchUnavailableError) {
       const res = apiError('SERVICE_UNAVAILABLE', 'Creator search is temporarily unavailable.', 503);
       await logUsage(env, key, 503);

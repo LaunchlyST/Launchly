@@ -122,7 +122,7 @@ This must be a **separate** product from `STRIPE_PRICE_ID` (the main
 Launchly app subscription) — do not reuse it. The checkout route
 (`worker/src/creatorApiSubscription.ts`) reads only `env.CREATOR_API_PRICE_ID`
 and never falls back to `STRIPE_PRICE_ID` or any hardcoded value; if the
-variable is missing, checkout refuses with a `CREATOR_API_BILLING_NOT_CONFIGURED`
+variable is missing, checkout refuses with a `CREATOR_API_PRICE_NOT_CONFIGURED`
 error instead of guessing a price.
 
 ### 3. Kalodata (upstream creator data) — manual step required

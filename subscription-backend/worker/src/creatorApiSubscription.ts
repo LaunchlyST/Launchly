@@ -48,8 +48,8 @@ export async function handleCreatorApiCheckout(request: Request, env: Env): Prom
     // Safe to log: the variable name and that it's missing, never a secret value.
     console.error('[creator-api] CREATOR_API_PRICE_ID is not configured — refusing checkout.');
     return apiError(
-      'CREATOR_API_BILLING_NOT_CONFIGURED',
-      'Creator API billing is not configured.',
+      'CREATOR_API_PRICE_NOT_CONFIGURED',
+      'Search Creator API billing is not configured.',
       500
     );
   }

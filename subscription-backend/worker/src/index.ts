@@ -13,6 +13,7 @@ import {
 import { handleApiUsage, handleCreateApiKey, handleListApiKeys, handleRevokeApiKey } from "./apiKeys";
 import { handleCreatorSearchApi } from "./creatorSearchApi";
 import { handleCreatorApiSearch } from "./creatorApiSearch";
+import { handleCreatorApiDebug } from "./creatorApiDebug";
 
 export type { Env };
 
@@ -56,6 +57,9 @@ export default {
       }
       if (url.pathname === "/api/creator-api-subscription/status" && request.method === "GET") {
         return await handleCreatorApiStatus(request, env);
+      }
+      if (url.pathname === "/api/creator-api-subscription/debug" && request.method === "GET") {
+        return await handleCreatorApiDebug(request, env);
       }
 
       // ---- Search Creator API: key management (authenticated) ----

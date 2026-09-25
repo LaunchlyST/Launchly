@@ -21,6 +21,8 @@ export interface CreatorSearchParams {
 export type CreatorResult = NormalizedCreator;
 
 export class CreatorSearchUnavailableError extends Error {}
+/** Specifically: no upstream provider is wired in yet (KALODATA_API_KEY unset). */
+export class CreatorDataNotConnectedError extends Error {}
 
 const SEARCH_CACHE_TTL_SECONDS = 6 * 60 * 60; // 6 hours
 
@@ -88,7 +90,7 @@ export async function searchCreators(env: Env, params: CreatorSearchParams): Pro
     return results;
   } catch (err) {
     if (err instanceof UpstreamConfigError) {
-      throw new CreatorSearchUnavailableError('Creator search is not configured yet.');
+      throw new CreatorDataNotConnectedError('Creator data source is not connected.');
     }
     if (err instanceof UpstreamRequestError) {
       throw new CreatorSearchUnavailableError('Creator search is temporarily unavailable.');

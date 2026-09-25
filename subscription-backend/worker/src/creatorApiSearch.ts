@@ -2,7 +2,7 @@ import type { Env } from './types';
 import { apiError, json } from './types';
 import { getAuthenticatedUserId } from './auth';
 import { hasCreatorApiAccess } from './creatorApiSubscription';
-import { CreatorSearchUnavailableError, searchCreators } from './creatorSearchService';
+import { CreatorDataNotConnectedError, CreatorSearchUnavailableError, searchCreators } from './creatorSearchService';
 
 const MAX_QUERY_LENGTH = 100;
 const REGION_PATTERN = /^[A-Z]{2}$/;
@@ -43,6 +43,9 @@ export async function handleCreatorApiSearch(request: Request, env: Env): Promis
     const creators = await searchCreators(env, { q, region: region || undefined });
     return json({ success: true, data: { creators } });
   } catch (err) {
+    if (err instanceof CreatorDataNotConnectedError) {
+      return apiError('CREATOR_DATA_NOT_CONNECTED', 'Creator data source is not connected.', 503);
+    }
     if (err instanceof CreatorSearchUnavailableError) {
       return apiError('SERVICE_UNAVAILABLE', 'Creator search is temporarily unavailable.', 503);
     }
