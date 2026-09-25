@@ -49,6 +49,22 @@ jobs:
           VITE_BUG_URL: ${{ vars.VITE_BUG_URL }}
           VITE_CHANGELOG_URL: ${{ vars.VITE_CHANGELOG_URL }}
 
+      # Fails fast with an unambiguous message (never the secret value
+      # itself) instead of leaving it to Wrangler's own generic
+      # "set a CLOUDFLARE_API_TOKEN environment variable" error further down
+      # the log, which reads the same whether the secret is unset or just
+      # didn't save in the GitHub UI.
+      - name: Check Cloudflare credentials are present
+        run: |
+          missing=""
+          [ -z "${{ secrets.CLOUDFLARE_API_TOKEN }}" ] && missing="$missing CLOUDFLARE_API_TOKEN"
+          [ -z "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" ] && missing="$missing CLOUDFLARE_ACCOUNT_ID"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing repository secret(s):$missing — add them at Settings > Secrets and variables > Actions, then re-run this workflow."
+            exit 1
+          fi
+          echo "Cloudflare credentials are present."
+
       - uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
