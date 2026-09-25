@@ -104,8 +104,25 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
+      # wrangler.jsonc declares a `build.command`, so `wrangler deploy` always
+      # reruns `npm run build` itself right before uploading — as a
+      # subprocess of THIS step, inheriting only THIS step's env. The
+      # standalone `npm run build` step above (with the VITE_ vars) never
+      # actually reached Cloudflare: wrangler's internal rebuild silently
+      # overwrote its output with a build missing every VITE_ variable,
+      # every single run. Same variables repeated here so wrangler's own
+      # build gets them too.
       - name: Deploy
         run: npx wrangler@4.129.0 deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          VITE_WORKER_URL: ${{ secrets.VITE_WORKER_URL }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_PAYWALL_IMAGE: ${{ vars.VITE_PAYWALL_IMAGE }}
+          VITE_PAYWALL_HORIZON: ${{ vars.VITE_PAYWALL_HORIZON }}
+          VITE_PAYWALL_FOLIAGE: ${{ vars.VITE_PAYWALL_FOLIAGE }}
+          VITE_FEEDBACK_EMAIL: ${{ vars.VITE_FEEDBACK_EMAIL }}
+          VITE_BUG_URL: ${{ vars.VITE_BUG_URL }}
+          VITE_CHANGELOG_URL: ${{ vars.VITE_CHANGELOG_URL }}
