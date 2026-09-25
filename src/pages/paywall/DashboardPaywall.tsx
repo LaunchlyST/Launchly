@@ -8,12 +8,14 @@ import './dashboard-paywall.css';
 export interface DashboardPaywallProps {
   /** The existing Stripe checkout handler. Unchanged. */
   onUnlock: () => void | Promise<void>;
+  /** The Free card ("enter" action) sends them straight to the dashboard. */
+  onEnter?: () => void;
   busy?: boolean;
   error?: string | null;
 }
 
 /** How far the page scrolls, in viewport heights, to run the camera. */
-const TRAVEL_VH = 1.6;
+const TRAVEL_VH = 1.15;
 /** Progress at which the camera stops and the cards are fully usable. */
 const REVEALED = 0.62;
 
@@ -33,7 +35,7 @@ const ease = (t: number) => t * t * (3 - 2 * t);
  * Reduced motion and narrow screens skip the camera entirely and lay the plans
  * out as ordinary scrolling content, so nothing is reachable only by animation.
  */
-export function DashboardPaywall({ onUnlock, busy = false, error = null }: DashboardPaywallProps) {
+export function DashboardPaywall({ onUnlock, onEnter, busy = false, error = null }: DashboardPaywallProps) {
   const [progress, setProgress] = useState(0);
   const [flat, setFlat] = useState(false);
   const plansRef = useRef<HTMLDivElement | null>(null);
@@ -193,10 +195,18 @@ export function DashboardPaywall({ onUnlock, busy = false, error = null }: Dashb
                     >
                       {busy ? 'Opening Stripe…' : 'Get access'}
                     </button>
+                  ) : plan.action === 'enter' ? (
+                    <button
+                      type="button"
+                      className="dp__cta"
+                      onClick={onEnter}
+                      tabIndex={plansVisible ? 0 : -1}
+                    >
+                      Continue with Free
+                    </button>
                   ) : (
                     <p className="dp__status" aria-live="off">
-                      <span className="dp__status-dot" />
-                      {plan.action === 'current' ? 'Your current plan' : 'Not available yet'}
+                      Not available yet
                     </p>
                   )}
                   <p className="dp__fine">{plan.fine}</p>

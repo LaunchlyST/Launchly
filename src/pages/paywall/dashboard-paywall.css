@@ -161,17 +161,17 @@ body.dp-open {
   grid-area: 1 / 1;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: clamp(14px, 1.6vw, 22px);
-  width: min(1060px, calc(100% - 48px));
+  gap: clamp(16px, 1.8vw, 26px);
+  width: min(1180px, calc(100% - 48px));
   align-items: stretch;
 }
 
 .dp__card {
   display: flex;
   flex-direction: column;
-  padding: clamp(20px, 2vw, 28px);
+  padding: clamp(24px, 2.4vw, 34px);
   border: 1px solid rgba(20, 33, 58, 0.1);
-  border-radius: 20px;
+  border-radius: 22px;
   background: rgba(255, 253, 248, 0.93);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);

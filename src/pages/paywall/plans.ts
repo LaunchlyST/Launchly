@@ -17,7 +17,7 @@
  *    under another name.
  */
 
-export type PlanAction = 'current' | 'checkout' | 'unavailable';
+export type PlanAction = 'current' | 'checkout' | 'unavailable' | 'enter';
 
 export interface Plan {
   id: string;
@@ -42,7 +42,7 @@ export const PLANS: Plan[] = [
       'Save your OpenAI and xAI keys in this browser',
       'Keys stay on your device — never sent to Launchly',
     ],
-    action: 'current',
+    action: 'enter',
     fine: 'Generating images and video needs Model Access.',
   },
   {

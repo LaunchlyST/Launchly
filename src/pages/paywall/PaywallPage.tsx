@@ -97,6 +97,7 @@ export function PaywallPage({
            so both URLs show one offer rather than two different ones. */
         <DashboardPaywall
           onUnlock={createCheckout}
+          onEnter={onBackToEditor}
           busy={checkoutLoading}
           error={error}
         />
