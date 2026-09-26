@@ -84,7 +84,7 @@ export function App() {
 
   // Only used to hold the first paint until entitlement is known, so neither
   // the editor nor the paywall flashes. The gate itself decides what renders.
-  const { loading: subLoading, isActive } = useSubscription();
+  const { loading: subLoading } = useSubscription();
 
   const handlePopState = useCallback(() => {
     setRoute(getRoutePath());
@@ -119,14 +119,12 @@ export function App() {
 
   // Home route (/): declared here, above every early return, so the hook count
   // is identical on every render. Placing it lower made React see a different
-  // number of hooks once the loading branch stopped returning early. Waits on
-  // subLoading too, so a signed-in visitor without an active subscription lands
-  // on /paywall instead of always being sent to /inside first.
+  // number of hooks once the loading branch stopped returning early.
   useEffect(() => {
-    if (!authLoading && !subLoading && user && route === '/') {
-      navigate(isActive ? PAGES.inside : PAGES.paywall);
+    if (!authLoading && user && route === '/') {
+      navigate(PAGES.inside);
     }
-  }, [user, authLoading, subLoading, isActive, route, navigate]);
+  }, [user, authLoading, route, navigate]);
 
   // Combined loading: auth loading OR subscription loading (when user exists)
   const isLoading = authLoading || (user && subLoading);
