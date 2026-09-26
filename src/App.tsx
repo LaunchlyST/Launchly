@@ -26,7 +26,7 @@ import './App.css';
 const PAGES = {
   getIn: '/get-in',
   paywall: '/paywall',
-  inside: '/inside',
+  inside: '/dashboard',
   bots: '/bots',
   monitorControl: '/monitor-control',
   automation: '/automation',
@@ -38,7 +38,7 @@ const TITLES: Record<string, string> = {
   [PAGES.getIn]: 'Get in — Launchly',
   '/signup': 'Get in — Launchly',
   [PAGES.paywall]: 'Paywall — Launchly',
-  [PAGES.inside]: 'Inside — Launchly',
+  [PAGES.inside]: 'Dashboard — Launchly',
   [PAGES.bots]: 'Bots — Launchly',
   [PAGES.monitorControl]: 'Monitor Control — Launchly',
   [PAGES.automation]: 'Automation — Launchly',
@@ -54,13 +54,13 @@ function getRoutePath() {
   /* A return from Stripe is always handled by the Paywall page, wherever the
      worker's success/cancel URL happens to point. */
   if (new URLSearchParams(window.location.search).has('subscription')) return PAGES.paywall;
-  /* '/pricing' and '/dashboard' are the old names, kept as aliases. A
+  /* '/pricing' and '/inside' are the old names, kept as aliases. A
      '?section=settings' on either one is an even older link shape to the
      same page — honored here so those links land on Settings instead of
      silently opening the dashboard behind them. */
   if (new URLSearchParams(window.location.search).get('section') === 'settings') return PAGES.settings;
   if (path === PAGES.paywall || path === '/pricing') return PAGES.paywall;
-  if (path === PAGES.inside || path === '/dashboard') return PAGES.inside;
+  if (path === PAGES.inside || path === '/inside') return PAGES.inside;
   if (path === PAGES.bots) return PAGES.bots;
   if (path === PAGES.monitorControl) return PAGES.monitorControl;
   if (path === PAGES.automation) return PAGES.automation;
@@ -100,7 +100,7 @@ export function App() {
   useEffect(() => {
     document.title = TITLES[route] ?? 'Launchly';
     const path = window.location.pathname;
-    if (path !== route && (path === '/pricing' || path === '/dashboard')) {
+    if (path !== route && (path === '/pricing' || path === '/inside')) {
       window.history.replaceState({}, '', route + window.location.search);
     }
   }, [route]);
