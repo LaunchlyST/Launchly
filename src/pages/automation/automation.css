@@ -1,0 +1,70 @@
+.simple-page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 48px 32px 64px;
+}
+
+.simple-page__header h1 {
+  margin: 0 0 6px;
+  font-size: 26px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.simple-page__header p {
+  margin: 0 0 32px;
+  color: var(--text-muted, #6b7280);
+  font-size: 14px;
+}
+
+.simple-page__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.simple-page__card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 20px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 16px;
+  background: var(--surface, #fff);
+}
+
+.simple-page__card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin-bottom: 12px;
+  border-radius: 10px;
+  background: rgba(91, 94, 244, 0.1);
+  color: #5b5ef4;
+}
+
+.simple-page__card h2 {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.simple-page__card p {
+  margin: 0 0 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-muted, #6b7280);
+}
+
+.simple-page__badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.06);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: rgba(0, 0, 0, 0.55);
+}

@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Sparkles, Settings, LogOut, Bot } from 'lucide-react';
+import { Sparkles, Settings, LogOut, Bot, Zap, Library as LibraryIcon } from 'lucide-react';
 import { SettingsPage } from './pages/settings/SettingsPage';
 import { GeneratorPage } from './pages/inside/GeneratorPage';
 import { BotsPage } from './pages/bots/BotsPage';
+import { AutomationPage } from './pages/automation/AutomationPage';
+import { LibraryPage } from './pages/library/LibraryPage';
 import { MonitorControlPage } from './pages/monitor/MonitorControlPage';
 import { MonitorControlIcon } from './pages/monitor/MonitorControlIcon';
 import { SubscriptionGate } from './subscription/SubscriptionGate';
@@ -27,6 +29,8 @@ const PAGES = {
   inside: '/inside',
   bots: '/bots',
   monitorControl: '/monitor-control',
+  automation: '/automation',
+  library: '/library',
   settings: '/settings',
 } as const;
 
@@ -37,6 +41,8 @@ const TITLES: Record<string, string> = {
   [PAGES.inside]: 'Inside — Launchly',
   [PAGES.bots]: 'Bots — Launchly',
   [PAGES.monitorControl]: 'Monitor Control — Launchly',
+  [PAGES.automation]: 'Automation — Launchly',
+  [PAGES.library]: 'Library — Launchly',
   [PAGES.settings]: 'Settings — Launchly',
   '/': 'Launchly',
 };
@@ -48,11 +54,17 @@ function getRoutePath() {
   /* A return from Stripe is always handled by the Paywall page, wherever the
      worker's success/cancel URL happens to point. */
   if (new URLSearchParams(window.location.search).has('subscription')) return PAGES.paywall;
-  /* '/pricing' and '/dashboard' are the old names, kept as aliases. */
+  /* '/pricing' and '/dashboard' are the old names, kept as aliases. A
+     '?section=settings' on either one is an even older link shape to the
+     same page — honored here so those links land on Settings instead of
+     silently opening the dashboard behind them. */
+  if (new URLSearchParams(window.location.search).get('section') === 'settings') return PAGES.settings;
   if (path === PAGES.paywall || path === '/pricing') return PAGES.paywall;
   if (path === PAGES.inside || path === '/dashboard') return PAGES.inside;
   if (path === PAGES.bots) return PAGES.bots;
   if (path === PAGES.monitorControl) return PAGES.monitorControl;
+  if (path === PAGES.automation) return PAGES.automation;
+  if (path === PAGES.library) return PAGES.library;
   if (path === PAGES.settings) return PAGES.settings;
   return '/';
 }
@@ -285,6 +297,24 @@ export function App() {
               </button>
             </Tooltip>
             <div className="app__rail-spacer" />
+            <Tooltip text="Automation">
+              <button
+                className="app__rail-btn"
+                onClick={() => navigate(PAGES.automation)}
+                aria-label="Automation"
+              >
+                <Zap size={20} />
+              </button>
+            </Tooltip>
+            <Tooltip text="Library">
+              <button
+                className="app__rail-btn"
+                onClick={() => navigate(PAGES.library)}
+                aria-label="Library"
+              >
+                <LibraryIcon size={20} />
+              </button>
+            </Tooltip>
             <Tooltip text="Settings — manage API keys">
               <button
                 className="app__rail-btn"
@@ -313,6 +343,110 @@ export function App() {
           </aside>
           <main className="app__main">
             <MonitorControlPage />
+          </main>
+        </div>
+      </SubscriptionGate>
+    );
+  }
+
+  /* Automation and Library: same shell and gate as the rest of the paid app. */
+  if (route === PAGES.automation || route === PAGES.library) {
+    if (!user) {
+      return (
+        <div className="app app--auth">
+          <main className="app__main">
+            {authView === 'login' ? (
+              <Login onSwitchToSignUp={() => setAuthView('signup')} />
+            ) : (
+              <SignUp onSwitchToLogin={() => setAuthView('login')} />
+            )}
+          </main>
+        </div>
+      );
+    }
+
+    return (
+      <SubscriptionGate>
+        <div className="app">
+          <aside className="app__rail">
+            <div className="app__brand" title="Launchly">
+              <Sparkles size={22} strokeWidth={2.2} />
+            </div>
+            <div className="app__rail-divider" />
+            <Tooltip text="Create">
+              <button
+                className="app__rail-btn"
+                onClick={() => navigate(PAGES.inside)}
+                aria-label="Create"
+              >
+                <Sparkles size={20} />
+              </button>
+            </Tooltip>
+            <Tooltip text="Bots">
+              <button
+                className="app__rail-btn"
+                onClick={() => navigate(PAGES.bots)}
+                aria-label="Bots"
+              >
+                <Bot size={20} />
+              </button>
+            </Tooltip>
+            <Tooltip text="Monitor Control">
+              <button
+                className="app__rail-btn"
+                onClick={() => navigate(PAGES.monitorControl)}
+                aria-label="Monitor Control"
+              >
+                <MonitorControlIcon size={20} />
+              </button>
+            </Tooltip>
+            <div className="app__rail-spacer" />
+            <Tooltip text="Automation">
+              <button
+                className={`app__rail-btn ${route === PAGES.automation ? 'is-active' : ''}`}
+                onClick={() => navigate(PAGES.automation)}
+                aria-label="Automation"
+              >
+                <Zap size={20} />
+              </button>
+            </Tooltip>
+            <Tooltip text="Library">
+              <button
+                className={`app__rail-btn ${route === PAGES.library ? 'is-active' : ''}`}
+                onClick={() => navigate(PAGES.library)}
+                aria-label="Library"
+              >
+                <LibraryIcon size={20} />
+              </button>
+            </Tooltip>
+            <Tooltip text="Settings — manage API keys">
+              <button
+                className="app__rail-btn"
+                onClick={() => navigate(PAGES.settings)}
+                aria-label="Settings"
+              >
+                <Settings size={20} />
+              </button>
+            </Tooltip>
+            <div className="app__rail-status">
+              <span
+                className={`app__rail-dot ${hasAnyKey ? 'is-active' : ''}`}
+                title={hasAnyKey ? 'Models connected' : 'No API keys connected'}
+              />
+            </div>
+            <Tooltip text="Sign out">
+              <button
+                className="app__rail-btn"
+                onClick={handleLogout}
+                disabled={loggingOut}
+                aria-label="Sign Out"
+              >
+                <LogOut size={20} />
+              </button>
+            </Tooltip>
+          </aside>
+          <main className="app__main">
+            {route === PAGES.automation ? <AutomationPage /> : <LibraryPage />}
           </main>
         </div>
       </SubscriptionGate>
@@ -368,6 +502,24 @@ export function App() {
               </button>
             </Tooltip>
             <div className="app__rail-spacer" />
+            <Tooltip text="Automation">
+              <button
+                className="app__rail-btn"
+                onClick={() => navigate(PAGES.automation)}
+                aria-label="Automation"
+              >
+                <Zap size={20} />
+              </button>
+            </Tooltip>
+            <Tooltip text="Library">
+              <button
+                className="app__rail-btn"
+                onClick={() => navigate(PAGES.library)}
+                aria-label="Library"
+              >
+                <LibraryIcon size={20} />
+              </button>
+            </Tooltip>
             <Tooltip text="Settings — manage API keys">
               <button
                 className="app__rail-btn"
@@ -458,6 +610,24 @@ export function App() {
               </button>
             </Tooltip>
             <div className="app__rail-spacer" />
+            <Tooltip text="Automation">
+              <button
+                className="app__rail-btn"
+                onClick={() => navigate(PAGES.automation)}
+                aria-label="Automation"
+              >
+                <Zap size={20} />
+              </button>
+            </Tooltip>
+            <Tooltip text="Library">
+              <button
+                className="app__rail-btn"
+                onClick={() => navigate(PAGES.library)}
+                aria-label="Library"
+              >
+                <LibraryIcon size={20} />
+              </button>
+            </Tooltip>
             <Tooltip text="Settings — manage API keys">
               <button
                 className="app__rail-btn"
@@ -545,6 +715,24 @@ export function App() {
               </button>
             </Tooltip>
             <div className="app__rail-spacer" />
+            <Tooltip text="Automation">
+              <button
+                className="app__rail-btn"
+                onClick={() => navigate(PAGES.automation)}
+                aria-label="Automation"
+              >
+                <Zap size={20} />
+              </button>
+            </Tooltip>
+            <Tooltip text="Library">
+              <button
+                className="app__rail-btn"
+                onClick={() => navigate(PAGES.library)}
+                aria-label="Library"
+              >
+                <LibraryIcon size={20} />
+              </button>
+            </Tooltip>
             <Tooltip text="Settings — manage API keys">
               <button className="app__rail-btn is-active" aria-label="Settings">
                 <Settings size={20} />
