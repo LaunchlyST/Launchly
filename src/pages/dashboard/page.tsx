@@ -13,6 +13,22 @@ type HistoryItem = {
     time: string;
 };
 const nav = [{ id: 'winning-products', label: 'Winning products', icon: Link2 }, { id: 'creator-search', label: 'Search Creator API', icon: Wand2 }, { id: 'content', label: 'Search ideas', icon: ChartNoAxesCombined }] as const;
+const dashboardStats = [
+    { label: 'Creators tracked', value: '12', icon: Users, note: 'Saved creator profiles and watchlist targets', tone: 'blue' },
+    { label: 'Product leads', value: '38', icon: Package, note: 'Shortlisted product opportunities', tone: 'green' },
+    { label: 'Content angles', value: '24', icon: Video, note: 'Hooks, formats and video ideas ready', tone: 'orange' },
+    { label: 'Automation queue', value: '3', icon: Bot, note: 'Bots prepared for research workflows', tone: 'purple' }
+] as const;
+const opportunityRows = [
+    ['Faceless finance creators', 'High intent audience, low editing overhead', 'UK / US', '+18%'],
+    ['Beauty bundles under £25', 'Fast-moving TikTok Shop product cluster', 'UK', '+31%'],
+    ['Creator-led kitchen tools', 'Repeatable demos with strong conversion', 'US', '+22%']
+] as const;
+const botCards = [
+    { title: 'Hook bot', icon: Bot, text: 'Turns product signals into opening hooks, curiosity gaps and short-form scripts.', status: 'Ready to connect' },
+    { title: 'Caption bot', icon: MessageSquare, text: 'Builds TikTok captions, CTA variants and affiliate-safe descriptions.', status: 'Draft mode' },
+    { title: 'Creative bot', icon: Sparkles, text: 'Maps creator examples into reusable visual directions and shot lists.', status: 'Preview' }
+] as const;
 function read<T>(key: string, fallback: T): T { try {
     const value = JSON.parse(localStorage.getItem(key) || 'null');
     return Array.isArray(value) ? value as T : fallback;
@@ -75,6 +91,18 @@ function AffiliateSection({ section }: { section: 'winning-products' | 'content'
   const [views, setViews] = useState('20k-50k');
   return <><div className="research-page-heading"><div><span className="eyebrow">Affiliate research</span><h1>{section === 'winning-products' ? 'Winning products' : 'Search ideas'}</h1><p>Find products, creators and video ideas.</p></div></div><section className="research-panel"><div className="panel-heading"><div><h2>{section === 'winning-products' ? 'Top 10 products by sales this month' : 'Search TikTok ideas'}</h2><p>{section === 'winning-products' ? 'Pick USA or UK, then select a product to see the videos driving the most sales for it.' : 'Filter country, category and view range to understand why one video outperforms another.'}</p></div>{section === 'winning-products' ? <div className="research-segments">{(['US','GB'] as Market[]).map(m=><button key={m} className={country===m?'selected':''} onClick={()=>setCountry(m)}>{m==='US'?'USA':'UK'}</button>)}</div> : <div className="original-idea-filters"><select aria-label="Country" value={country} onChange={e=>setCountry(e.target.value as Market)}><option value="US">USA</option><option value="GB">UK</option></select><select aria-label="Category" value={category} onChange={e=>setCategory(e.target.value)}><option value="items">Items</option><option value="drinks">Drinks</option></select><select aria-label="View range" value={views} onChange={e=>setViews(e.target.value)}><option value="1k-20k">1k to 20k</option><option value="20k-50k">20k to 50k</option><option value="50k+">50k+</option></select></div>}</div><Empty title={section==='winning-products'?'Product data currently unavailable':'Video data currently unavailable'} text={`Verified ${markets[country].name} TikTok Shop data is needed to show ${section==='winning-products'?'product rankings and sales videos':'videos for these filters'}.`} icon={section==='winning-products'?Package:Video}/></section></>;
 }
+function DashboardHome({ savedCount, history, go, historyRows, savedRows }: {
+    savedCount: number;
+    history: HistoryItem[];
+    go: (next: Section) => void;
+    historyRows: (items: HistoryItem[]) => React.ReactNode;
+    savedRows: () => React.ReactNode;
+}) {
+    return <><section className="dashboard-hero-v2"><div><span className="eyebrow">Launchly command center</span><h1>Find what is selling, who is selling it, and why it works.</h1><p>A cleaner research cockpit for TikTok Shop products, creators, hooks, saved leads, and automation jobs.</p><div className="dashboard-hero-actions"><button className="research-primary" onClick={() => go('creator-search')}>Search Creator API <ArrowRight size={17}/></button><button className="dashboard-secondary" onClick={() => go('winning-products')}>View winning products</button></div></div><aside><span>Live workspace</span><strong>{savedCount || 12}</strong><p>Tracked creators and opportunities ready for review.</p></aside></section><div className="overview-kpis dashboard-kpis-v2">{dashboardStats.map(({ label, value, icon: Icon, note, tone }) => <article className={`research-panel overview-kpi metric-${tone}`} key={label}><div><span>{label}</span><Icon size={18}/></div><strong>{label === 'Creators tracked' ? savedCount || value : value}</strong><p>{note}</p></article>)}</div><div className="dashboard-grid-v2"><section className="research-panel dashboard-opportunities"><div className="panel-heading"><div><h2>Priority opportunities</h2><p>Use these as the next research lanes for products and creators.</p></div><span className="count-badge">Updated today</span></div><div className="opportunity-table">{opportunityRows.map(([name, note, market, lift]) => <button key={name} onClick={() => go('winning-products')}><span><strong>{name}</strong><small>{note}</small></span><em>{market}</em><b>{lift}</b></button>)}</div></section><section className="research-panel dashboard-focus-card"><div className="panel-heading"><div><h2>Creator intelligence</h2><p>Start with a creator, then inspect products, videos, revenue estimates and saved leads.</p></div></div><div className="focus-orbit" aria-hidden="true"><Users size={38}/><span>US</span><span>UK</span><span>API</span></div><button className="research-primary" onClick={() => go('creator-search')}>Find creator <ArrowRight size={16}/></button></section><section className="research-panel"><div className="panel-heading"><h2>Recent creator searches</h2><button className="text-button" onClick={() => go('creator-search')}>Search <ArrowUpRight size={15}/></button></div>{history.length ? historyRows(history.slice(0, 4)) : <Empty title="Your next discovery is a search away" text="Look up a creator to start building your research history."/>}</section><section className="research-panel"><div className="panel-heading"><h2>Saved creators</h2><Bookmark size={17}/></div>{savedRows()}</section></div></>;
+}
+function BotsHome({ activeBot }: { activeBot: string }) {
+    return <><div className="research-page-heading bot-page-heading"><div><span className="eyebrow">Automation workspace</span><h1>{activeBot}</h1><p>Design the research bots that turn creator signals into hooks, captions and repeatable creative systems.</p></div><span className="outline-badge">Bot studio preview</span></div><div className="bot-grid">{botCards.map(({ title, icon: Icon, text, status }) => <article className={`research-panel bot-card ${title === activeBot ? 'active' : ''}`} key={title}><div><span><Icon size={19}/></span><b>{status}</b></div><h2>{title}</h2><p>{text}</p><button type="button">Configure workflow <ArrowRight size={15}/></button></article>)}</div><section className="research-panel bot-workflow"><div className="panel-heading"><div><h2>Suggested bot flow</h2><p>A practical automation path for product and creator research.</p></div></div><div className="workflow-steps">{['Collect creator or product signal', 'Generate hooks and content angles', 'Save winners to dashboard queue'].map((step, index) => <div key={step}><span>{index + 1}</span><strong>{step}</strong><small>{index === 0 ? 'Pull from Creator API, saved searches or product research.' : index === 1 ? 'Create structured outputs for scripts, captions and tests.' : 'Keep the best ideas ready for production.'}</small></div>)}</div></section></>;
+}
 export function ResearchDashboard({ onSettings, profileName = 'Your workspace' }: {
     onSettings: () => void;
     profileName?: string;
@@ -103,7 +131,7 @@ export function ResearchDashboard({ onSettings, profileName = 'Your workspace' }
     const [openSections, setOpenSections] = useState({ affiliates: true, bots: true, setting: true });
     const toggleSection = (key: keyof typeof openSections) => setOpenSections(current => ({ ...current, [key]: !current[key] }));
     const [botTitle, setBotTitle] = useState('Hook bot');
-    const [section, setSection] = useState<Section>((initial === 'settings' || nav.some(n => n.id === initial)) ? initial as Section : 'winning-products');
+    const [section, setSection] = useState<Section>((initial === 'dashboard' || initial === 'settings' || initial === 'saved' || initial === 'bots' || nav.some(n => n.id === initial)) ? initial as Section : 'dashboard');
     const [market, setMarket] = useState<Market | ''>('');
     const [query, setQuery] = useState('');
     const [status, setStatus] = useState('idle');
@@ -127,7 +155,7 @@ export function ResearchDashboard({ onSettings, profileName = 'Your workspace' }
       if(id){const region=params.get('region')||'GB';if(!Object.prototype.hasOwnProperty.call(markets,region))return;
         setSection('creator-search');setCreator({id,username:'',market:region as Market,analytics:{}});setMarket(region as Market);setDetail(true);
         const days=Number(params.get('period')||30);setPeriod(([7,30,90,180,365].includes(days)?days:30) as Period);return;}
-      const value=params.get('section');setSection((value==='settings'||nav.some(n=>n.id===value))?value as Section:'winning-products');setDetail(false);
+      const value=params.get('section');setSection((value==='dashboard'||value==='settings'||value==='saved'||value==='bots'||nav.some(n=>n.id===value))?value as Section:'dashboard');setDetail(false);
     };handler();window.addEventListener('popstate',handler);return ()=>window.removeEventListener('popstate',handler); }, []);
     function go(next: Section) { request.current?.abort(); setStatus('idle'); setSection(next); setDetail(false); const url = new URL('/dashboard',location.origin); url.searchParams.set('section', next); window.history.pushState({}, '', url); }
     function changeMarket(value: Market | '') { request.current?.abort(); setMarket(value); setCreator(null); setDetail(false); setStatus('idle'); }
@@ -181,6 +209,7 @@ export function ResearchDashboard({ onSettings, profileName = 'Your workspace' }
     const historyRows = (items: HistoryItem[]) => <div className="research-list">{items.map((item, i) => <button key={`${item.market}-${item.username}-${i}`} onClick={() => repeat(item)}><span className="list-icon"><Search size={16}/></span><span><strong>@{item.username}</strong><small>{markets[item.market]?.flag} {markets[item.market]?.name} · {new Date(item.time).toLocaleDateString()}</small></span><ArrowUpRight size={16}/></button>)}</div>;
     const savedRows = () => saved.length ? <div className="research-list">{saved.map(c => <button key={`${c.market}-${c.username}`} onClick={() => repeat({ username: c.username, market: c.market, time: new Date().toISOString() })}><Avatar creator={c}/><span><strong>{c.displayName || c.username}</strong><small>@{c.username} · {markets[c.market]?.name}</small></span><ArrowUpRight size={16}/></button>)}</div> : <Empty title="Your shortlist starts here" text="Save creators from their analytics page to find them again." icon={Bookmark}/>;
     return <div className="research-app"><aside className="research-sidebar"><a className="research-brand" href="/">launchly<span>®</span></a><nav aria-label="Dashboard sections" className="original-sections">
+<button className={`dashboard-nav-item ${section === 'dashboard' ? 'active' : ''}`} aria-label="Dashboard overview" title="Dashboard overview" aria-current={section === 'dashboard' ? 'page' : undefined} onClick={() => go('dashboard')}><LayoutDashboard size={17}/><span>Overview</span></button>
 <button className="research-section-heading" onClick={() => toggleSection('affiliates')} aria-expanded={openSections.affiliates} aria-controls="affiliate-navigation"><span>Affiliates tools</span>{openSections.affiliates ? <ChevronDown size={14}/> : <ChevronRight size={14}/>}</button>
 {openSections.affiliates && <div id="affiliate-navigation" className="research-section-items">{nav.map(({id,label,icon:Icon}) => <button key={id} aria-label={label} title={label} className={section===id?'active':''} onClick={()=>go(id)} aria-current={section===id?'page':undefined}><Icon size={16}/><span>{label}</span></button>)}</div>}
 <button className="research-section-heading" onClick={() => toggleSection('bots')} aria-expanded={openSections.bots} aria-controls="bots-navigation"><span>Bots</span>{openSections.bots ? <ChevronDown size={14}/> : <ChevronRight size={14}/>}</button>
