@@ -3,6 +3,7 @@ import Stripe from "stripe";
 import { handleCreator } from './creator';
 import type { CreatorProviderEnv } from './services/creator-provider';
 import { creatorPlanFields, isLaunchlyCreatorPrice } from './services/creator-plan';
+import { handleBusinessConnect, isBusinessRoute } from './business/businessRoutes';
 
 export interface Env extends CreatorProviderEnv {
   CREATOR_DEBUG?: string;
@@ -12,6 +13,12 @@ export interface Env extends CreatorProviderEnv {
   SUPABASE_SERVICE_ROLE_KEY: string;
   FRONTEND_URL: string;
   STRIPE_PRICE_ID: string;
+  /** Optional: switches Business Connect to Google Places (ratings, reviews, photos). */
+  GOOGLE_PLACES_API_KEY?: string;
+  GMAIL_CLIENT_ID?: string;
+  GMAIL_CLIENT_SECRET?: string;
+  /** Optional KV for per-user rate limits. */
+  API_RATE_LIMIT?: KVNamespace;
 }
 
 const corsHeaders: Record<string, string> = {
@@ -30,6 +37,10 @@ export default {
 
     if (url.pathname.startsWith('/api/launchly/creators/')) {
       return handleCreator(request, env, corsHeaders);
+    }
+
+    if (isBusinessRoute(url.pathname)) {
+      return handleBusinessConnect(request, env);
     }
 
     try {

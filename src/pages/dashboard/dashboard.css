@@ -1206,3 +1206,62 @@
   .sidebar-bottom .workspace-profile { flex-wrap: wrap; gap: 6px; }
   .workspace-profile .sidebar-logout { margin: 0; }
 }
+
+/* ---- Bots ---- */
+.bot-panel{display:flex;flex-direction:column;gap:18px}
+.bot-form{display:grid;gap:14px;max-width:620px}
+.bot-form label{display:grid;gap:6px;font-size:12px;color:#6b7a90}
+.bot-form input,.bot-form select{border:1px solid #e1e7f0;border-radius:9px;padding:11px 12px;font:inherit;font-size:13px;color:#1c2a3d;background:#fff;outline:none}
+.bot-form input:focus,.bot-form select:focus{border-color:#b9cdf5;box-shadow:0 0 0 3px #2563eb14}
+.bot-form__row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.bot-form .research-primary{justify-self:start}
+.bot-output{border:1px solid #e5eaf2;border-radius:12px;background:#fafbfd}
+.bot-output__head{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid #e5eaf2;font-size:12px}
+.bot-output__head button{display:flex;align-items:center;gap:6px;border:1px solid #e1e7f0;background:#fff;border-radius:7px;padding:6px 10px;font-size:11px;color:#51627a;cursor:pointer}
+.bot-output pre{white-space:pre-wrap;font:13px/1.7 inherit;font-family:inherit;padding:16px;color:#1f2d40}
+
+/* ---- Automation → Monitor ---- */
+.monitor-layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:18px;align-items:start}
+.monitor-screen-panel{display:flex;flex-direction:column;gap:14px}
+.monitor-status{display:flex;align-items:center;gap:6px;font-size:11px;color:#8794a7}
+.monitor-status i{width:7px;height:7px;border-radius:50%;background:#b5c0cf}
+.monitor-status.is-live{color:#2f7d62}.monitor-status.is-live i{background:#2fae7f;box-shadow:0 0 0 3px #2fae7f22}
+.monitor-screen{position:relative;aspect-ratio:16/9;border:1px solid #e2e8f1;border-radius:12px;background:#f5f7fb;overflow:hidden;display:grid;place-items:center}
+.monitor-screen video{width:100%;height:100%;object-fit:contain;background:#0e1420}
+.monitor-connect{text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px;padding:24px}
+.monitor-connect>span{width:58px;height:58px;border-radius:16px;display:grid;place-items:center;background:#fff;border:1px solid #e2e8f1;color:#5a79a8}
+.monitor-connect h3{font-size:15px;font-weight:600;color:#1c2a3d}
+.monitor-connect p{font-size:12px;color:#8794a7;margin-bottom:6px}
+.monitor-ai-cursor{position:absolute;transform:translate(-3px,-3px);color:#2563eb;display:flex;align-items:flex-start;gap:2px;pointer-events:none;transition:left .35s ease,top .35s ease;filter:drop-shadow(0 2px 4px #0003)}
+.monitor-ai-cursor span{font-size:10px;font-weight:700;background:#2563eb;color:#fff;border-radius:5px;padding:1px 5px;margin-top:14px}
+.monitor-ask form{display:flex;gap:8px}
+.monitor-ask input[type=text],.monitor-ask form input{flex:1;min-width:0;border:1px solid #e1e7f0;border-radius:9px;padding:11px 12px;font:inherit;font-size:13px;outline:none}
+.monitor-ask form input:focus{border-color:#b9cdf5;box-shadow:0 0 0 3px #2563eb14}
+.monitor-icon-btn{width:42px;border:1px solid #e1e7f0;border-radius:9px;background:#fff;color:#51627a;display:grid;place-items:center;cursor:pointer}
+.monitor-icon-btn.is-on{background:#eef4ff;border-color:#b9cdf5;color:#2563eb}
+.monitor-icon-btn:disabled{opacity:.5;cursor:not-allowed}
+.monitor-speak{display:flex;align-items:center;gap:6px;font-size:11px;color:#8794a7;margin-top:8px}
+.monitor-side{display:flex;flex-direction:column;gap:12px;position:sticky;top:16px}
+.monitor-ai-mouse{display:flex;align-items:center;gap:12px}
+.monitor-ai-mouse strong{display:block;font-size:13px}
+.monitor-ai-mouse small{font-size:11px;color:#8794a7}
+.monitor-ai-mouse__icon{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:#f1f4f9;color:#9aa8bb}
+.monitor-ai-mouse__icon.is-active{background:#eef4ff;color:#2563eb;animation:monitor-pulse 1.6s ease-in-out infinite}
+@keyframes monitor-pulse{50%{box-shadow:0 0 0 6px #2563eb14}}
+.monitor-stop{display:flex;align-items:center;justify-content:center;gap:8px;height:46px;border:0;border-radius:11px;background:#d93b3b;color:#fff;font:inherit;font-size:14px;font-weight:600;cursor:pointer}
+.monitor-stop:hover:not(:disabled){background:#c22f2f}
+.monitor-stop:disabled{background:#f0d4d4;cursor:not-allowed}
+.monitor-note{font-size:11px;line-height:1.6;color:#8f9bad}
+.monitor-chat{display:flex;flex-direction:column;gap:8px;max-height:340px;overflow-y:auto;border-top:1px solid #edf1f6;padding-top:12px}
+.monitor-msg{padding:9px 11px;border-radius:10px;font-size:12px;line-height:1.55;background:#f6f8fb}
+.monitor-msg--ai{background:#eef4ff}
+.monitor-msg small{display:block;font-size:10px;font-weight:600;color:#7d8da4;margin-bottom:2px}
+@media(max-width:1000px){.monitor-layout{grid-template-columns:1fr}.monitor-side{position:static}}
+
+/* ---- Business Connect inside the dashboard shell ---- */
+.research-main .bc-page{height:auto;min-height:760px;padding:0;background:none;grid-template-columns:minmax(0,1.1fr) minmax(360px,.9fr)}
+.research-main .bc-left{max-height:calc(100vh - 150px)}
+.research-main .bc-right{max-height:calc(100vh - 150px)}
+.research-main .bc-header h1{font:500 34px Fraunces,Georgia,serif;letter-spacing:-.8px}
+.research-main .bc-input:not(.bc-input--grow){flex:0 1 175px}
+.research-notice>button{margin-left:auto;border:1px solid #d6e2f7;background:#fff;color:#2f63c4;border-radius:7px;padding:6px 10px;font:inherit;font-size:12px;cursor:pointer}

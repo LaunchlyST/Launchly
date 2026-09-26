@@ -22,7 +22,7 @@ function getRoutePath() {
   if (path === '/own-train-model') return '/own-train-model';
   if (path === '/front-page') return '/front-page';
   if (/^\/creator\/\d{1,30}$/.test(path)) return '/dashboard';
-  if (path === '/dashboard') return '/dashboard';
+  if (path === '/dashboard' || path === '/business-connect' || path === '/monitor') return '/dashboard';
   return '/';
 }
 
