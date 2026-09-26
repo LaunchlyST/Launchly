@@ -1,7 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
+import { handleCreator } from './creator';
+import type { CreatorProviderEnv } from './services/creator-provider';
+import { creatorPlanFields, isLaunchlyCreatorPrice } from './services/creator-plan';
 
-export interface Env {
+export interface Env extends CreatorProviderEnv {
+  CREATOR_DEBUG?: string;
   STRIPE_SECRET_KEY: string;
   STRIPE_WEBHOOK_SECRET: string;
   SUPABASE_URL: string;
@@ -23,6 +27,10 @@ export default {
     }
 
     const url = new URL(request.url);
+
+    if (url.pathname.startsWith('/api/launchly/creators/')) {
+      return handleCreator(request, env, corsHeaders);
+    }
 
     try {
       if (url.pathname === "/api/create-checkout" && request.method === "POST") {
@@ -68,7 +76,7 @@ function json(data: any, status = 200): Response {
 }
 
 async function handleCreateCheckout(request: Request, env: Env): Promise<Response> {
-  const { userId, email } = await request.json();
+  const { userId, email } = await request.json<{ userId?: string; email?: string }>();
 
   if (!userId || !email) {
     return json({ error: "Missing userId or email" }, 400);
@@ -76,8 +84,14 @@ async function handleCreateCheckout(request: Request, env: Env): Promise<Respons
 
   const supabase = getSupabase(env);
   const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
-    apiVersion: "2024-12-18.acacia",
+    // Retain the existing wire version; SDK typings track a newer Acacia revision.
+    apiVersion: "2024-12-18.acacia" as Stripe.LatestApiVersion,
   });
+
+  const price = await stripe.prices.retrieve(env.STRIPE_PRICE_ID);
+  if (!price.active || !isLaunchlyCreatorPrice(price, env.STRIPE_PRICE_ID)) {
+    return json({ error: "Launchly Creator API subscription is currently unavailable." }, 503);
+  }
 
   // Check if user already has a stripe customer ID
   const { data: existingUser } = await supabase
@@ -135,12 +149,13 @@ async function handleWebhook(request: Request, env: Env): Promise<Response> {
   }
 
   const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
-    apiVersion: "2024-12-18.acacia",
+    // Retain the existing wire version; SDK typings track a newer Acacia revision.
+    apiVersion: "2024-12-18.acacia" as Stripe.LatestApiVersion,
   });
 
   let event: Stripe.Event;
   try {
-    event = stripe.webhooks.constructEvent(body, sig, env.STRIPE_WEBHOOK_SECRET);
+    event = await stripe.webhooks.constructEventAsync(body, sig, env.STRIPE_WEBHOOK_SECRET);
   } catch (err: any) {
     console.error("Webhook signature verification failed:", err.message);
     return new Response(`Webhook Error: ${err.message}`, { status: 400 });
@@ -164,10 +179,11 @@ async function handleWebhook(request: Request, env: Env): Promise<Response> {
             .from("users")
             .update({
               stripe_subscription_id: subscriptionId,
-              subscription_status: "active",
+              subscription_status: subscription.status === 'active' ? 'active' : 'inactive',
               subscription_current_period_end: periodEnd,
+              ...creatorPlanFields(subscription, env.STRIPE_PRICE_ID),
             })
-            .eq("id", userId);
+            .eq("id", userId).throwOnError();
         }
         break;
       }
@@ -207,8 +223,9 @@ async function handleWebhook(request: Request, env: Env): Promise<Response> {
             .update({
               subscription_status: status,
               subscription_current_period_end: periodEnd,
+              ...creatorPlanFields(subscription, env.STRIPE_PRICE_ID),
             })
-            .eq("id", user.id);
+            .eq("id", user.id).throwOnError();
         }
         break;
       }
@@ -230,8 +247,10 @@ async function handleWebhook(request: Request, env: Env): Promise<Response> {
               subscription_status: "cancelled",
               stripe_subscription_id: null,
               subscription_current_period_end: null,
+              creator_api_plan_verified: false,
+              subscription_price_id: null,
             })
-            .eq("id", user.id);
+            .eq("id", user.id).throwOnError();
         }
         break;
       }
@@ -256,10 +275,11 @@ async function handleWebhook(request: Request, env: Env): Promise<Response> {
             await supabase
               .from("users")
               .update({
-                subscription_status: "active",
+                subscription_status: subscription.status === 'active' ? 'active' : 'inactive',
                 subscription_current_period_end: periodEnd,
+                ...creatorPlanFields(subscription, env.STRIPE_PRICE_ID),
               })
-              .eq("id", user.id);
+              .eq("id", user.id).throwOnError();
           }
         }
         break;
@@ -279,15 +299,14 @@ async function handleWebhook(request: Request, env: Env): Promise<Response> {
           await supabase
             .from("users")
             .update({ subscription_status: "past_due" })
-            .eq("id", user.id);
+            .eq("id", user.id).throwOnError();
         }
         break;
       }
     }
   } catch (err) {
     console.error(`Error processing webhook event ${event.type}:`, err);
-    // Return 200 to prevent Stripe retries for processing errors
-    // (signature verification errors already return 400 above)
+    return json({ error: "Subscription update could not be processed." }, 500);
   }
 
   return json({ received: true });
@@ -317,7 +336,7 @@ async function handleGetSubscription(request: Request, env: Env): Promise<Respon
 }
 
 async function handleManageSubscription(request: Request, env: Env): Promise<Response> {
-  const { userId } = await request.json();
+  const { userId } = await request.json<{ userId?: string }>();
 
   if (!userId) {
     return json({ error: "Missing userId" }, 400);
@@ -325,7 +344,8 @@ async function handleManageSubscription(request: Request, env: Env): Promise<Res
 
   const supabase = getSupabase(env);
   const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
-    apiVersion: "2024-12-18.acacia",
+    // Retain the existing wire version; SDK typings track a newer Acacia revision.
+    apiVersion: "2024-12-18.acacia" as Stripe.LatestApiVersion,
   });
 
   const { data: user } = await supabase
@@ -348,7 +368,7 @@ async function handleManageSubscription(request: Request, env: Env): Promise<Res
 }
 
 async function handleConfirmEmail(request: Request, env: Env): Promise<Response> {
-  const { email } = await request.json();
+  const { email } = await request.json<{ email?: string }>();
 
   if (!email) {
     return json({ error: "Missing email" }, 400);
@@ -369,7 +389,7 @@ async function handleConfirmEmail(request: Request, env: Env): Promise<Response>
 
   // Update user to mark email as confirmed
   const { error: updateError } = await supabase.auth.admin.updateUserById(user.id, {
-    email_confirmed_at: new Date().toISOString(),
+    email_confirm: true,
   });
 
   if (updateError) {

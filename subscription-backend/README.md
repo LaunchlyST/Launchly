@@ -35,7 +35,7 @@ Run the migration in the Supabase SQL editor:
 
 ### 2. Stripe
 
-1. Create a product: "Launchly Pro" — £5/month recurring
+1. Create a product: "Launchly Creator API" — £5/month recurring
 2. Copy the **Signing Secret** from Stripe Webhooks (endpoint: `https://your-worker.workers.dev/api/webhook`)
 3. Copy your **Secret Key**
 

@@ -13,6 +13,11 @@ export interface GenerationResult {
   timestamp: number;
 }
 
+export interface GenerationUsage {
+  image: number;
+  video: number;
+}
+
 interface AppStore {
   openaiKey: string;
   grokKey: string;
@@ -29,6 +34,7 @@ interface AppStore {
   error: string | null;
   videoJobId: string | null;
   videoStatus: string | null;
+  generationUsage: GenerationUsage;
 
   setSelectedModel: (m: ModelType) => void;
   setSelectedType: (t: GenerationType) => void;
@@ -39,6 +45,7 @@ interface AppStore {
   setError: (e: string | null) => void;
   setVideoJobId: (id: string | null) => void;
   setVideoStatus: (status: string | null) => void;
+  incrementGenerationUsage: (type: GenerationType) => void;
   resetUserState: () => void;
 }
 
@@ -60,6 +67,7 @@ export const useStore = create<AppStore>()(
       error: null,
       videoJobId: null,
       videoStatus: null,
+      generationUsage: { image: 0, video: 0 },
 
       setSelectedModel: (m) =>
         set({ selectedModel: m, selectedType: m === 'chatgpt' ? 'image' : 'video' }),
@@ -71,6 +79,13 @@ export const useStore = create<AppStore>()(
       setError: (e) => set({ error: e }),
       setVideoJobId: (id) => set({ videoJobId: id }),
       setVideoStatus: (status) => set({ videoStatus: status }),
+      incrementGenerationUsage: (type) =>
+        set((state) => ({
+          generationUsage: {
+            ...state.generationUsage,
+            [type]: state.generationUsage[type] + 1,
+          },
+        })),
       resetUserState: () =>
         set({
           openaiKey: '',
@@ -84,6 +99,7 @@ export const useStore = create<AppStore>()(
           error: null,
           videoJobId: null,
           videoStatus: null,
+          generationUsage: { image: 0, video: 0 },
         }),
     }),
     { name: 'tiktok-shop-creator-v2' }

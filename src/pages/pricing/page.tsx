@@ -250,7 +250,7 @@ function PlanArtwork({ kind }: { kind: 'ghost' | 'creator' | 'studio' }) {
         <span><Video size={13} /> Video</span>
         <span><Sparkles size={13} /> Hook</span>
       </div>
-      <span className="lx-art-caption">Campaign Studio Ã‚Â· Concept preview</span>
+      <span className="lx-art-caption">Campaign Studio · Concept preview</span>
     </div>
   );
 }
@@ -394,27 +394,8 @@ function PlanObject({ kind }: { kind: 'ghost' | 'creator' | 'studio' }) {
   );
 }
 
-function LaunchlyIntroScene() {
-  return (
-    <div className="lx-intro-scene" aria-hidden="true">
-      <div className="lx-particle-orbit lx-particle-orbit-a" />
-      <div className="lx-particle-orbit lx-particle-orbit-b" />
-      <div className="lx-product-stage">
-        <div className="lx-stage-glass" />
-        <div className="lx-stage-product"><span className="lx-stage-cap" /><span className="lx-stage-label">LAUNCHLY<br /><small>CREATIVE</small></span></div>
-        <div className="lx-stage-reflection" />
-      </div>
-      <div className="lx-prompt-card">
-        <span>AI CREATIVE DIRECTION</span>
-        <strong>Soft light Ã‚Â· 9:16 Ã‚Â· Product focus</strong>
-        <i /><i /><i />
-      </div>
-      <div className="lx-scene-tag">PRODUCT Ã¢â€ â€™ AD</div>
-    </div>
-  );
-}
-
 export function PricingPage() {
+  const user = useAuthStore((s) => s.user);
   const signOut = useAuthStore((s) => s.signOut);
   const resetUserState = useStore((s) => s.resetUserState);
   const {
@@ -563,7 +544,7 @@ export function PricingPage() {
     if (status === 'cancelled') {
       setNotice('Checkout cancelled. You have not been upgraded.');
     } else {
-      setNotice('Confirming your subscriptionÃ¢â‚¬Â¦');
+      setNotice('Confirming your subscription…');
       setActivationPending(true);
     }
   }, []);
@@ -578,7 +559,7 @@ export function PricingPage() {
     const poll = async () => {
       if (cancelled) return;
       if (activeRef.current) {
-        setNotice('Your Creator subscription is active.');
+        setNotice('Your Launchly Creator API subscription is active.');
         setActivationPending(false);
         return;
       }
@@ -614,6 +595,11 @@ export function PricingPage() {
   }, [isActive, activationPending]);
 
   const checkout = async () => {
+    if (!user) {
+      window.location.assign('/dashboard?section=creator-search');
+      return;
+    }
+
     try {
       await (isActive ? manageSubscription() : createCheckout());
     } catch (error) {
@@ -664,7 +650,6 @@ export function PricingPage() {
       )}
 
       <div className="lx-intro" ref={introRef} aria-hidden={plansOpen}>
-        <LaunchlyIntroScene />
         <div className="lx-intro-label"><span /> CREATE CONTENT. EARN COMMISSIONS.</div>
         <h1>Turn a product<br /><em>into a reason to stop.</em></h1>
         <p>Create AI prompts, product images and video ads for TikTok Shop.<br />Make the creative. Download it. Post it your way.</p>
@@ -690,7 +675,7 @@ export function PricingPage() {
           </div>
 
           <div className="lx-plans">
-            <article className="lx-plan lx-ghost-plan" tabIndex={0}>
+            <a className="lx-plan lx-ghost-plan" href="/dashboard" aria-label="Preview — open dashboard" style={{ textDecoration: 'none' }}>
               <div className="lx-plan-top"><span>01 / PREVIEW</span><Eye size={17} /></div>
               <PlanObject kind="ghost" />
               <h3>Preview</h3>
@@ -704,25 +689,26 @@ export function PricingPage() {
               </ul>
               <div className="lx-inset"><LockKeyhole size={15} /><span>Preview only. Upgrade to create, edit, save and export.</span></div>
               <div className="lx-plan-bottom">
-                <button className="lx-button lx-ghost-button" onClick={() => setPreviewOpen(true)}>
+                <span className="lx-button lx-ghost-button">
                   Preview <ArrowRight size={15} />
-                </button>
+                </span>
                 <small>View only. No generation access.</small>
               </div>
-            </article>
+            </a>
 
             <article className="lx-plan lx-creator-plan" tabIndex={0}>
               <div className="lx-plan-top"><span>02 / CREATE</span><span className="lx-pick"><Crown size={12} /> Creator pick</span></div>
               <PlanObject kind="creator" />
-              <h3>Creator</h3>
-              <p className="lx-description">Start creating TikTok Shop product content with image and video generation.</p>
-              <div className="lx-price">Ã‚Â£5 <small>/ month</small></div>
+              <h3>Launchly Creator API</h3>
+              <p className="lx-description">Unlimited creator username searches with real TikTok Shop creator data.</p>
+              <div className="lx-price">£5 <small>/ month</small></div>
               <div className="lx-divider" />
               <ul>
-                <li><Check /> Access the Launchly dashboard</li>
-                <li><Check /> Generate product images</li>
-                <li><Check /> Generate short videos</li>
-                <li><Check /> Download your content</li>
+                <li><Check /> Unlimited searches</li>
+                <li><Check /> Real creator data</li>
+                <li><Check /> UK and supported TikTok Shop markets</li>
+                <li><Check /> Creator analytics</li>
+                <li><Check /> Fast API access</li>
               </ul>
               <div className="lx-plan-bottom">
                 <button
@@ -730,10 +716,10 @@ export function PricingPage() {
                   disabled={checkoutLoading || loading}
                   onClick={() => void checkout()}
                 >
-                  {checkoutLoading ? <><Loader2 className="lx-spin" size={17} /> OpeningÃ¢â‚¬Â¦</> :
-                    <>{isActive ? 'Manage subscription' : 'Get Creator Access'}<ArrowRight size={16} /></>}
+                  {checkoutLoading ? <><Loader2 className="lx-spin" size={17} /> Opening…</> :
+                    <>{isActive ? 'Manage subscription' : 'Get Launchly Creator API'}<ArrowRight size={16} /></>}
                 </button>
-                <small>Provider API usage is billed separately.</small>
+                <small>£5/month. Unlimited creator searches.</small>
               </div>
             </article>
 
@@ -746,7 +732,7 @@ export function PricingPage() {
               <div className="lx-divider" />
               <span className="lx-planned">PLANNED FOR STUDIO</span>
               <ul>
-                <li><Check /> Everything in Creator</li>
+                <li><Check /> Everything in Launchly Creator API</li>
                 <li><Check /> Campaign and hook tools</li>
                 <li><Check /> Brand presets</li>
                 <li><Check /> More tools and beta features</li>
@@ -758,7 +744,7 @@ export function PricingPage() {
               </div>
             </article>
           </div>
-          <p className="lx-footer-note">Scroll up to return to space Ã‚Â· Creator subscriptions can be cancelled through billing</p>
+          <p className="lx-footer-note">Scroll up to return to space · Creator subscriptions can be cancelled through billing</p>
         </div>
       </div>
 
@@ -815,13 +801,13 @@ function GhostPreview({ onClose }: { onClose: () => void }) {
       <div className="lx-preview-grid">
         <div className="lx-preview-controls">
           <span className="lx-kicker">YOUR PROMPT</span>
-          <textarea disabled value="Create a premium product image with warm studio lightingÃ¢â‚¬Â¦" readOnly />
+          <textarea disabled value="Create a premium product image with warm studio lighting…" readOnly />
           <div className="lx-preview-tags"><span>Image</span><span>9:16</span><span>Studio light</span></div>
           <button className="lx-button" disabled><LockKeyhole size={15} /> Generation locked</button>
         </div>
         <div className="lx-preview-output">
           <PlanArtwork kind="creator" />
-          <span>Example output Ã‚Â· Not a generated project</span>
+          <span>Example output · Not a generated project</span>
         </div>
       </div>
       <button className="lx-button lx-creator-button" onClick={onClose}>Return to plans <ArrowRight size={16} /></button>
@@ -886,7 +872,7 @@ const styles = `
 .lx-header-actions button:hover{color:#fff;background:#ffffff0d}
 .lx-intro{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:90px 24px;text-align:center;
   opacity:var(--intro);transform:scale(calc(1 + var(--zoom)*.12));pointer-events:none;transition:color .6s ease}
-.lx-intro-scene{position:absolute;left:50%;top:50%;width:min(680px,72vw);height:min(540px,68vh);transform:translate(-76%,-50%) rotate(-7deg);opacity:.9;filter:drop-shadow(0 35px 55px #0008);z-index:-1}
+.lx-intro-scene{display:none!important;position:absolute;left:50%;top:50%;width:min(680px,72vw);height:min(540px,68vh);transform:translate(-76%,-50%) rotate(-7deg);opacity:.9;filter:drop-shadow(0 35px 55px #0008);z-index:-1}
 .lx-product-stage{position:absolute;left:18%;top:11%;width:44%;height:72%;transform:perspective(900px) rotateY(20deg) rotateX(5deg);transform-style:preserve-3d;animation:lx-stage-float 6s ease-in-out infinite}
 .lx-stage-glass{position:absolute;inset:-8%;border:1px solid #ffffff35;border-radius:28px;background:linear-gradient(135deg,#ffffff14,#ffffff02 45%,#8bc6ff10);box-shadow:inset 1px 1px #ffffff65,0 35px 70px #0007;backdrop-filter:blur(9px);transform:translateZ(-20px)}
 .lx-stage-product{position:absolute;left:34%;top:19%;width:32%;height:56%;border-radius:13px 13px 20px 20px;background:linear-gradient(90deg,#151822 0%,#79869b 18%,#f7fbff 47%,#8290a3 76%,#171a24);box-shadow:inset 6px 0 8px #fff8,inset -8px 0 15px #0008,0 32px 35px #0008;transform:translateZ(50px);overflow:visible}
@@ -929,10 +915,10 @@ const styles = `
 .lx-plan:hover,.lx-plan:focus-within,.lx-plan:focus{transform:translateY(-8px);filter:drop-shadow(0 28px 44px rgba(var(--tint),.13))}
 .lx-plan:focus-visible{outline:2px solid rgba(var(--tint),.72);outline-offset:10px;border-radius:32px}
 .lx-ghost-plan{--tint:148,163,184}
-.lx-creator-plan{--tint:245,158,11;background:linear-gradient(180deg,#161b27,#10151f);border-color:rgba(245,158,11,.55);box-shadow:0 22px 60px rgba(0,0,0,.5),0 0 0 1px rgba(245,158,11,.35)}
+.lx-creator-plan{--tint:200,210,230;background:linear-gradient(180deg,#141922,#0e131b);border:1px solid rgba(255,255,255,.18);box-shadow:0 16px 40px rgba(0,0,0,.35)}
 .lx-studio-plan{--tint:148,163,184}
 .lx-plan-top{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:18px;font-size:9px;font-weight:800;letter-spacing:1.65px;color:#94a3b8}
-.lx-pick{display:inline-flex;align-items:center;gap:4px;padding:4px 8px;border-radius:999px;background:rgba(245,158,11,.14);color:#fbbf24;font-size:9px;letter-spacing:0;border:1px solid rgba(245,158,11,.28)}
+.lx-pick{display:inline-flex;align-items:center;gap:4px;padding:4px 8px;border-radius:999px;background:rgba(255,255,255,.08);color:#e7ecf5;font-size:9px;letter-spacing:0;border:1px solid rgba(255,255,255,.18)}
 .lx-studio-badge{display:grid;place-items:center;width:30px;height:30px;border-radius:10px;background:rgba(148,163,184,.12);color:#cbd5e1;box-shadow:inset 0 1px rgba(255,255,255,.06);border:1px solid rgba(148,163,184,.2)}
 .lx-plan h3{font-size:26px;font-weight:800;letter-spacing:-.9px;margin:20px 0 8px;color:#f8fafc}
 .lx-description{font-size:13px;line-height:1.55;color:#94a3b8;min-height:62px;margin:0 0 18px}
@@ -954,9 +940,9 @@ const styles = `
 .lx-button:not(:disabled):hover{background:#25293a;border-color:rgba(var(--tint),.46)}
 .lx-button:disabled{color:#64748b;background:#1e2433;border-color:#2a3344}
 .lx-ghost-button{background:#1a2030!important;color:#f8fafc!important;border-color:rgba(148,163,184,.35)}
-.lx-creator-button{position:relative;overflow:hidden;background:linear-gradient(180deg,#f59e0b,#d97706)!important;color:#0b0f14!important;border-color:rgba(251,191,36,.45);box-shadow:0 10px 28px rgba(245,158,11,.22);font-size:13px!important}
+.lx-creator-button{position:relative;overflow:hidden;background:linear-gradient(180deg,#f3f5f8,#d7dde8)!important;color:#0b0f14!important;border-color:rgba(255,255,255,.28);box-shadow:0 8px 18px rgba(0,0,0,.25);font-size:13px!important}
 .lx-creator-button:before{content:"";position:absolute;inset:-1px;transform:translateX(-120%);background:linear-gradient(105deg,transparent 25%,#fff3d970 50%,transparent 72%);transition:transform .55s ease}
-.lx-creator-button:hover:not(:disabled){box-shadow:inset 0 1px #fff0d7a8,0 12px 35px #ffab4342,0 0 0 1px #ffcc8438}
+.lx-creator-button:hover:not(:disabled){box-shadow:inset 0 1px rgba(255,255,255,.35),0 10px 22px rgba(0,0,0,.28);background:linear-gradient(180deg,#ffffff,#e4e9f1)!important}
 .lx-creator-button:hover:not(:disabled):before{transform:translateX(120%)}
 .lx-creator-button>*{position:relative;z-index:1}
 .lx-creator-button:disabled{opacity:.6}
@@ -997,9 +983,9 @@ const styles = `
 .lx-engine-aperture{fill:#ffcc8d1f;stroke:#ffd19652}
 .lx-engine-beam{fill:url(#engineBody);opacity:.12;filter:blur(8px);transform-origin:140px 126px;transform:scaleY(.7)}
 .lx-engine-spark{fill:#ffb259}
-.lx-frame{position:absolute;width:94px;height:116px;border:1px solid #ffd8a642;border-radius:11px;background:linear-gradient(160deg,#ffffff18,#ffffff04);box-shadow:0 18px 28px #0008,0 0 22px #ffb25917;display:grid;place-items:center;color:#ffe0ba;font-weight:650}
+.lx-frame{position:absolute;width:94px;height:116px;border:1px solid #ffd8a642;border-radius:11px;background:linear-gradient(160deg,#ffffff18,#ffffff04);box-shadow:0 18px 28px #0008;display:grid;place-items:center;color:#ffe0ba;font-weight:650}
 .lx-frame-image{left:8px;top:22px;transform:rotate(-12deg)}.lx-frame-video{right:8px;top:47px;transform:rotate(12deg)}
-.lx-object-creator:hover .lx-engine,.lx-creator-plan:focus .lx-engine,.lx-creator-plan:focus-within .lx-engine{filter:drop-shadow(0 0 38px #ffb25948)}
+.lx-object-creator:hover .lx-engine,.lx-creator-plan:focus .lx-engine,.lx-creator-plan:focus-within .lx-engine{filter:drop-shadow(0 12px 24px rgba(0,0,0,.35))}
 .lx-object-creator:hover .lx-engine-wing-left,.lx-creator-plan:focus .lx-engine-wing-left,.lx-creator-plan:focus-within .lx-engine-wing-left{transform:translate(-16px,-7px) rotate(-7deg)}
 .lx-object-creator:hover .lx-engine-wing-right,.lx-creator-plan:focus .lx-engine-wing-right,.lx-creator-plan:focus-within .lx-engine-wing-right{transform:translate(16px,7px) rotate(7deg)}
 .lx-object-creator:hover .lx-frame-image,.lx-creator-plan:focus .lx-frame-image,.lx-creator-plan:focus-within .lx-frame-image{transform:translate(-15px,-11px) rotate(-16deg)}

@@ -1,9 +1,15 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "launchly",
-  "compatibility_date": "2026-08-31",
-  "assets": {
-    "directory": "./dist",
-    "not_found_handling": "single-page-application"
-  }
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "launchly",
+	"compatibility_date": "2026-08-31",
+	"assets": {
+		"directory": "./dist",
+		"not_found_handling": "single-page-application"
+	},
+	"kv_namespaces": [
+		{
+			"binding": "API_RATE_LIMIT",
+			"id": "2975d444c55148be9f6027186d8d8a71"
+		}
+	]
 }
