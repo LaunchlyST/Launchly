@@ -87,12 +87,6 @@ export function DashboardPaywall({ onUnlock, onEnter, busy = false, error = null
                 </div>
               </article>
             ))}
-
-            {error && (
-              <p className="dp__error" role="status">
-                We couldn’t load subscription details right now. Please try again.
-              </p>
-            )}
           </div>
         </div>
       </section>
