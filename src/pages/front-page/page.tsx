@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
-import { ArrowRight, Bot, Coins, Lightbulb, Send, Wand2 } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 
 type Pt = { x: number; y: number; w: number };
 type Spark = { x: number; y: number; vx: number; vy: number; life: number; max: number; s: number; kind: 0 | 1 };
@@ -28,6 +28,52 @@ const FEEDBACK = [
     line: 'GBP 5 for the studio. I keep the commissions. AI stays on my own meter.',
     reveal: 'Access is cheap. The upside is still the Shop payout.',
   },
+];
+
+const WORK = [
+  {
+    no: '01',
+    title: 'Winning products',
+    body: 'Scan product signals, creator velocity, and Shop demand before you spend time on a weak angle.',
+    tag: 'SIGNAL',
+  },
+  {
+    no: '02',
+    title: 'Search Creator API',
+    body: 'Turn creator and product searches into usable brief data for hooks, proof points, and creative direction.',
+    tag: 'SEARCH',
+  },
+  {
+    no: '03',
+    title: 'Search ideas',
+    body: 'Collect angles from TikTok patterns, then rewrite them into posts that fit your voice.',
+    tag: 'IDEAS',
+  },
+  {
+    no: '04',
+    title: 'Bots that draft',
+    body: 'Generate caption sets, image prompts, voiceover scripts, and testing variants from one product page.',
+    tag: 'BOTS',
+  },
+  {
+    no: '05',
+    title: 'Credits sidebar',
+    body: 'Keep AI usage clear with visible credit states while the studio stays GBP 5/month.',
+    tag: 'CREDITS',
+  },
+  {
+    no: '06',
+    title: 'Export desk',
+    body: 'Package ready-to-post files, notes, and next tests so a product moves from idea to upload.',
+    tag: 'FILES',
+  },
+];
+
+const STEPS = [
+  { no: '01', title: 'Idea', body: 'Find a product, study the current TikTok angle, and save the opening promise.', bars: [42, 78, 54] },
+  { no: '02', title: 'Creation', body: 'Launchly drafts hooks, captions, visuals, and shot notes around that product.', bars: [68, 48, 86] },
+  { no: '03', title: 'Files', body: 'Review the pack, download the assets, and keep the next test version ready.', bars: [52, 88, 64] },
+  { no: '04', title: 'Posted', body: 'Publish on TikTok Shop, watch what sells, then repeat the winning pattern.', bars: [74, 58, 92] },
 ];
 
 const EARN_STEPS = [
@@ -534,14 +580,19 @@ export function FrontPage() {
 
   useEffect(() => {
     if (!introDone) return;
-    const revealItems = Array.from(document.querySelectorAll<HTMLElement>('.lz-reveal'));
+    const revealItems = Array.from(document.querySelectorAll<HTMLElement>('.lz-reveal, [data-reveal]'));
     if (!revealItems.length) return;
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      revealItems.forEach((item) => item.classList.add('is-visible', 'is-in'));
+      return;
+    }
 
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
           if (!entry.isIntersecting) continue;
-          entry.target.classList.add('is-visible');
+          entry.target.classList.add('is-visible', 'is-in');
           observer.unobserve(entry.target);
         }
       },
@@ -960,7 +1011,7 @@ export function FrontPage() {
     setLeaving(true);
     setSlideGreen(true);
     setSlideT(0);
-    window.location.assign('/get-in');
+    window.location.assign('/inside');
   };
 
   const unlockMetrics = () => {
@@ -1223,24 +1274,39 @@ export function FrontPage() {
               <ScrambleText text="LAUNCHLY©2026" play />
             </span>
             <a className="lz-top-logo" href="/front-page" aria-label="Launchly front page">launchly</a>
+            <nav className="lz-chrome-nav" aria-label="Front page sections">
+              <a href="#studio">Studio</a>
+              <a href="#features">Features</a>
+              <a href="#process">Process</a>
+            </nav>
             <span className="lz-chrome-clock">{clock}</span>
             <span className="lz-chrome-xy">
               {xy.x.toFixed(3)} / {xy.y.toFixed(3)}
             </span>
-            <div className="lz-top-tools" aria-label="Page tools">
-              <a href="#feedback">Feedback</a>
-              <a href="/get-in">Bugs</a>
-              <a href="/dashboard">Inside</a>
-              <a href="#earn">Earn</a>
-            </div>
+            <a className="lz-chrome-cta" href="/inside">Get access</a>
           </header>
 
-          <section className="lz-hero lz-reveal">
+          <section className="lz-hero lz-reveal" data-reveal>
             <span className="lz-custom-cursor" aria-hidden="true" />
             <div className="lz-hero-copy">
+              <p className="lz-kicker">AFFILIATE AD STUDIO</p>
+              <h1>
+                Launch TikTok Shop ads
+                <ScrambleText className="lz-gradient-line" text="before the trend moves." play />
+              </h1>
               <p className="lz-hero-lead">
-                Turn your vision into ads.
+                Search the product, find the angle, generate the creative pack, and move from idea to post without rebuilding your workflow.
               </p>
+              <div className="lz-hero-actions">
+                <a className="lz-primary" href="/inside">Get access <ArrowRight size={18} /></a>
+                <a className="lz-secondary" href="#studio">View studio</a>
+              </div>
+              <div className="lz-trust-row" aria-label="Launchly proof points">
+                <span className="lz-avatar-stack" aria-hidden="true"><i /><i /><i /></span>
+                <b>GBP 5/month studio</b>
+                <span>AI usage stays separate</span>
+                <span>Ready-to-post files</span>
+              </div>
             </div>
             <div
               ref={heroWordRef}
@@ -1279,146 +1345,118 @@ export function FrontPage() {
               <i className="lz-glass-light lz-glass-light-a" />
               <i className="lz-glass-light lz-glass-light-b" />
               <i className="lz-glass-light lz-glass-light-c" />
-              <div className="lz-glass-plate">
-                <span className="lz-glass-word">LAUNCHLY</span>
-              </div>
               <div className="lz-product-window">
                 <div className="lz-window-bar">
-                  <span>Launchly desk</span>
-                  <b>01</b>
+                  <span>Launchly angle desk</span>
+                  <b>LIVE</b>
                 </div>
                 <div className="lz-product-grid-preview">
                   <div className="lz-preview-main">
-                    <small>SOLVE</small>
-                    <strong>Product in. Ads out. Keep the commissions.</strong>
-                    <p>No clear creatives, slow ship, guessing angles — Launchly removes that pain.</p>
+                    <small>WINNING PRODUCT</small>
+                    <strong>Portable blender, 19.4k saves, creator velocity rising.</strong>
+                    <p>Angle: morning protein drink in one hand before school run.</p>
                   </div>
-                  <div className="lz-preview-shot"><span>OUTPUT</span></div>
+                  <div className="lz-preview-shot"><span>9:16</span></div>
                   <div className="lz-preview-list">
-                    <span>Script</span>
-                    <span>Caption</span>
-                    <span>Image ad</span>
+                    <span>3 hooks generated</span>
+                    <span>Caption set ready</span>
+                    <span>Shot list exported</span>
                   </div>
                 </div>
+                <div className="lz-window-sheen" />
               </div>
+              <div className="lz-floating-panel lz-float-a"><b>+42%</b><span>creator match</span></div>
+              <div className="lz-floating-panel lz-float-b"><b>8 files</b><span>queued</span></div>
             </div>
-            <p className="lz-statement">
-              <ScrambleText
-                play
-                text="Launchly shapes TikTok Shop affiliate workflows with craft — ideas to ads you can download and post."
-              />
-            </p>
-            <p className="lz-statement-sub">
-              Access is GBP 5/month. AI usage is billed separately.
-            </p>
-            <div className="lz-export-controls" aria-hidden="true">
-              <span>W</span><b>1200 px</b><span>H</span><b>800 px</b><em>Custom</em>
+            <div className="lz-metrics-band" aria-label="Launchly metrics">
+              <span><b>14 min</b><em>idea to pack</em></span>
+              <span><b>6</b><em>creative angles</em></span>
+              <span><b>9:16</b><em>post format</em></span>
             </div>
           </section>
 
-          <section className="lz-work lz-feedback lz-reveal" id="feedback" aria-label="Feedback">
-            <div className="lz-work-head">
-              <h2>Feedback</h2>
-              <p className="lz-work-note">Real results before you start: see how creators use Launchly to find better ad angles and post faster.</p>
+          <section className="lz-showcase lz-reveal" id="studio" data-reveal aria-label="Studio showcase">
+            <div className="lz-showcase-head">
+              <p className="lz-kicker">STUDIO SHOWCASE</p>
+              <h2>One browser-like workspace for finding, building, and shipping ads.</h2>
             </div>
-            <ul className="lz-feedback-cards">
-              {[
-                {
-                  name: 'Maya Brooks',
-                  role: 'TikTok Shop affiliate',
-                  location: 'Manchester, UK',
-                  quote: 'Launchly helped me turn product research into ad ideas I could test the same day.',
-                  rating: 5,
-                },
-                {
-                  name: 'Daniel Price',
-                  role: 'UGC creator',
-                  location: 'Bristol, UK',
-                  quote: 'The hooks, captions, and video ideas gave my content a clearer style instead of random posting.',
-                  rating: 5,
-                },
-                {
-                  name: 'Leah Carter',
-                  role: 'Shop affiliate',
-                  location: 'London, UK',
-                  quote: 'I can test more products now because the first ad angle is not the hardest part anymore.',
-                  rating: 5,
-                },
-                {
-                  name: 'Amara Stone',
-                  role: 'Creator seller',
-                  location: 'Leeds, UK',
-                  quote: 'Searching TikTok for ideas finally turns into something useful: a post I can actually publish.',
-                  rating: 5,
-                },
-                {
-                  name: 'Noah Ellis',
-                  role: 'Affiliate creator',
-                  location: 'Cardiff, UK',
-                  quote: 'It feels like a small studio for finding the angle, creating the ad, and repeating what works.',
-                  rating: 5,
-                },
-                {
-                  name: 'Sofia Reed',
-                  role: 'TikTok marketer',
-                  location: 'Glasgow, UK',
-                  quote: 'When an ad starts winning, Launchly makes it easier to build the next version fast.',
-                  rating: 5,
-                },
-              ].map((item, i) => (
-                <li className={`lz-feedback-card lz-feedback-card-${i + 1}${i === 2 ? ' is-featured' : ''}`} key={item.name}>
-                  <div className="lz-feedback-person">
-                    <span className="lz-feedback-avatar" aria-hidden="true">
-                      <Bot size={34} strokeWidth={2.4} />
-                    </span>
-                    <div>
-                      <h3>{item.name}</h3>
-                      <div className="lz-feedback-rating" aria-label="5 out of 5 stars">
-                        <i /><i /><i /><i /><i />
-                      </div>
-                      <p>{item.role}</p>
-                      <small>{item.location}</small>
-                    </div>
-                  </div>
-                  <p className="lz-feedback-quote">{item.quote}</p>
-                  <div className="lz-feedback-stars" aria-label={`${item.rating} out of 5 stars`}>
-                    {'★★★★★'.slice(0, item.rating)}<span>{'★★★★★'.slice(item.rating)}</span>
-                  </div>
+            <div className="lz-browser-frame">
+              <div className="lz-browser-bar"><span /><span /><span /><b>launchly.studio/product-desk</b></div>
+              <div className="lz-browser-body">
+                <aside className="lz-rail"><span>Search</span><span>Ideas</span><span>Bots</span><span>Credits</span></aside>
+                <div className="lz-bento-canvas">
+                  <article className="lz-bento-wide">
+                    <small>QUOTE CARD</small>
+                    <strong>"Make the first three seconds obvious, then prove the product works."</strong>
+                  </article>
+                  <article className="lz-media-tile"><span>hook-01.mp4</span></article>
+                  <article className="lz-media-tile is-alt"><span>ugc-frame.png</span></article>
+                  <article className="lz-export-queue">
+                    <b>Export queue</b>
+                    <span><i style={{ width: '84%' }} />Script pack</span>
+                    <span><i style={{ width: '62%' }} />Caption variants</span>
+                    <span><i style={{ width: '48%' }} />Image prompts</span>
+                  </article>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="lz-spotlight lz-reveal" data-reveal aria-label="Product research spotlight">
+            <div>
+              <p className="lz-kicker">SPOTLIGHT 01</p>
+              <h2>Research feels like a control room, not a blank document.</h2>
+              <p>Product signals, creator examples, and saved angles sit together so the next ad decision is visible.</p>
+            </div>
+            <div className="lz-spotlight-panel"><span>creator velocity</span><b>19.4k saves</b><i /></div>
+          </section>
+
+          <section className="lz-spotlight lz-spotlight-flip lz-reveal" data-reveal aria-label="Creative production spotlight">
+            <div className="lz-spotlight-panel"><span>creative pack</span><b>8 assets ready</b><i /></div>
+            <div>
+              <p className="lz-kicker">SPOTLIGHT 02</p>
+              <h2>The output is built for posting, testing, and repeating.</h2>
+              <p>Every idea ends with files, captions, shot notes, and the next variant ready to run.</p>
+            </div>
+          </section>
+
+          <section className="lz-work lz-reveal" id="features" data-reveal aria-label="Features">
+            <div className="lz-work-head">
+              <h2>Built like a glass desk for affiliate work.</h2>
+              <p className="lz-work-note">The middle of Launchly is focused on the actual loop: search, shape, generate, export, and keep credits visible.</p>
+            </div>
+            <ul className="lz-grid">
+              {WORK.map((item, i) => (
+                <li
+                  className={`lz-card lz-card-${i + 1}${hoverCard === i ? ' is-on' : ''}`}
+                  key={item.no}
+                  onPointerEnter={() => setHoverCard(i)}
+                  onPointerLeave={() => setHoverCard(null)}
+                >
+                  <span>{item.no}</span>
+                  <h3>{item.title}</h3>
+                  <p>{item.body}</p>
+                  <em>{item.tag}</em>
+                  <div className="lz-card-reveal">{item.body}</div>
                 </li>
               ))}
             </ul>
           </section>
 
-          <section className="lz-steps lz-earn lz-reveal" id="earn" aria-label="How you make money">
-            <p className="lz-kicker">HOW YOU MAKE MONEY</p>
-            <h2 className="lz-earn-title">Ideas become ads. Ads can earn.</h2>
-            <p className="lz-earn-lead">
-              Start with a product idea, use Launchly to create the ad, post it on TikTok Shop, and keep the commission when it sells.
-            </p>
-            <div className="lz-earn-flow" aria-hidden="true">
-              <span className="lz-flow-node lz-flow-node-a">
-                <Lightbulb size={22} />
-              </span>
-              <i className="lz-flow-line lz-flow-line-a" />
-              <span className="lz-flow-node lz-flow-node-b">
-                <Wand2 size={22} />
-              </span>
-              <i className="lz-flow-line lz-flow-line-b" />
-              <span className="lz-flow-node lz-flow-node-c">
-                <Send size={22} />
-              </span>
-              <i className="lz-flow-line lz-flow-line-c" />
-              <span className="lz-flow-node lz-flow-node-d">
-                <Coins size={22} />
-              </span>
-              <i className="lz-flow-line lz-flow-line-d" />
-            </div>
+          <section className="lz-steps lz-reveal" id="process" data-reveal aria-label="Workflow">
+            <p className="lz-kicker">PROCESS</p>
+            <h2 className="lz-earn-title">Idea to creation to files to posted.</h2>
+            <p className="lz-earn-lead">A simple flow line keeps the work moving from research to a pack you can publish.</p>
+            <div className="lz-workflow-line" aria-hidden="true"><i /><i /><i /></div>
             <ol>
-              {EARN_STEPS.map((step) => (
+              {STEPS.map((step) => (
                 <li key={step.no}>
                   <span>{step.no}</span>
                   <em>{step.title}</em>
                   <b>{step.body}</b>
+                  <div className="lz-step-bars" aria-hidden="true">
+                    {step.bars.map((bar) => <i key={bar} style={{ width: `${bar}%` }} />)}
+                  </div>
                 </li>
               ))}
             </ol>
@@ -1445,7 +1483,7 @@ export function FrontPage() {
               ref={unlockRef}
               className={`lz-unlock${slideGreen ? ' is-green' : ''}${unlockDragActive ? ' is-dragging' : ''}`}
               role="slider"
-              aria-label="Slide Get access left to open get-in page"
+              aria-label="Slide Get access left to open inside page"
               aria-valuemin={0}
               aria-valuemax={100}
               aria-valuenow={Math.round((1 - slideT) * 100)}
@@ -1462,7 +1500,7 @@ export function FrontPage() {
                 <ArrowRight size={20} className="lz-unlock-arrow" aria-hidden="true" />
               </div>
             </div>
-            <p className="lz-access-hint">SLIDE LEFT — OPEN GET-IN</p>
+            <p className="lz-access-hint">SLIDE LEFT - OPEN INSIDE</p>
             </div>
           </section>
         </div>
@@ -1473,7 +1511,7 @@ export function FrontPage() {
 
 
 const styles = `
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,300;1,9..144,500&family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700;800;900&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,300;1,9..144,500&family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap');
 .app--inside:has(.lz),.app--inside:has(.lz) .app__main{background:transparent!important;padding:0!important;display:block!important}
 .app--inside:has(.lz.is-gated),.app--inside:has(.lz.is-gated) .app__main,.app:has(.lz.is-gated),
 .app--inside:has(.lz.is-intro),.app--inside:has(.lz.is-intro) .app__main,.app:has(.lz.is-intro){height:100%!important;overflow:hidden!important}
@@ -2083,4 +2121,54 @@ html:has(.lz.is-intro),body:has(.lz.is-intro),#root:has(.lz.is-intro){height:100
   .lz-feedback-cards{min-height:auto;display:grid!important;grid-template-columns:1fr!important;gap:18px!important}
   .lz-feedback-card{position:relative!important;left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;width:100%!important}
 }
+
+/* Final opened-page composition */
+.lz.is-open{font-family:"Inter Tight",Inter,ui-sans-serif,system-ui,sans-serif!important;color:#17212b!important;background:#eef5fb!important;overflow-x:hidden!important}
+.lz.is-open .lz-doc{position:relative;overflow:hidden;background:
+  radial-gradient(circle at 18% 10%,rgba(210,231,255,.86),transparent 26%),
+  radial-gradient(circle at 78% 14%,rgba(230,219,255,.66),transparent 24%),
+  linear-gradient(180deg,#f9fbff 0%,#eef5fb 42%,#f7f9fc 100%)!important}
+.lz.is-open .lz-chrome{position:sticky!important;top:0!important;z-index:50!important;display:grid!important;grid-template-columns:auto auto 1fr auto auto auto!important;gap:18px!important;align-items:center!important;padding:14px clamp(16px,3vw,42px)!important;background:rgba(248,251,255,.66)!important;border-bottom:1px solid rgba(255,255,255,.78)!important;box-shadow:0 18px 50px rgba(41,61,84,.08)!important;backdrop-filter:blur(20px)!important;color:#223041!important}
+.lz.is-open .lz-chrome-brand,.lz.is-open .lz-chrome-clock,.lz.is-open .lz-chrome-xy{font-family:"IBM Plex Mono",ui-monospace,monospace!important;font-size:10px!important;letter-spacing:.14em!important;color:rgba(34,48,65,.58)!important}
+.lz.is-open .lz-top-logo{font-weight:900!important;font-size:18px!important;letter-spacing:-.03em!important;color:#111b26!important;text-decoration:none!important}
+.lz-chrome-nav{display:flex;justify-content:center;gap:8px}
+.lz-chrome-nav a,.lz-chrome-cta{display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:0 14px;border-radius:999px;text-decoration:none;font-size:12px;font-weight:800;color:#273548;background:rgba(255,255,255,.42);border:1px solid rgba(255,255,255,.72)}
+.lz-chrome-cta{color:#fff;background:linear-gradient(135deg,#17212b,#526173);box-shadow:0 12px 30px rgba(35,52,72,.18)}
+.lz.is-open .lz-hero{position:relative!important;display:grid!important;grid-template-columns:minmax(0,.9fr) minmax(360px,1.1fr)!important;gap:clamp(28px,5vw,78px)!important;align-items:center!important;min-height:100svh!important;padding:clamp(86px,10vh,128px) clamp(18px,5.5vw,88px) 42px!important;text-align:left!important;background:transparent!important;cursor:auto!important}
+.lz.is-open .lz-hero-copy{order:0!important;max-width:720px!important;margin:0!important;text-align:left!important}
+.lz.is-open .lz-kicker{display:inline-flex;align-items:center;width:max-content;max-width:100%;padding:7px 11px;border:1px solid rgba(120,145,176,.2);border-radius:999px;background:rgba(255,255,255,.56);font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:10px;font-weight:700;letter-spacing:.18em;color:#5b6f89}
+.lz.is-open .lz-hero h1{margin:18px 0 0!important;max-width:760px!important;font-family:"Inter Tight",Inter,ui-sans-serif,system-ui,sans-serif!important;font-size:clamp(54px,6.8vw,98px)!important;line-height:.91!important;font-weight:900!important;letter-spacing:0!important;color:#121b25!important}
+.lz-gradient-line{display:block;background:linear-gradient(100deg,#273548 0%,#7fa8cf 52%,#9b8fd6 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lz.is-open .lz-hero-lead{margin:24px 0 0!important;max-width:36rem!important;font-size:clamp(16px,1.35vw,20px)!important;line-height:1.55!important;font-weight:600!important;color:rgba(30,43,58,.68)!important}
+.lz.is-open .lz-hero-actions{justify-content:flex-start!important;margin-top:30px!important}
+.lz-primary,.lz-secondary{display:inline-flex;align-items:center;gap:9px;min-height:46px;padding:0 18px;border-radius:999px;text-decoration:none;font-weight:900;font-size:14px}
+.lz-primary{color:#fff;background:linear-gradient(135deg,#141f2b,#536274);box-shadow:0 18px 42px rgba(38,55,75,.22)}
+.lz-secondary{color:#263647;background:rgba(255,255,255,.54);border:1px solid rgba(255,255,255,.82)}
+.lz-trust-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:26px;font-size:12px;font-weight:800;color:rgba(38,52,70,.58)}
+.lz-avatar-stack{display:flex}.lz-avatar-stack i{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#dfeeff,#aebee0);border:2px solid #fff;margin-left:-7px}.lz-avatar-stack i:first-child{margin-left:0}
+.lz.is-open .lz-reactive-word{grid-column:1/-1;order:4!important;margin:10px auto 0!important;font-size:clamp(24px,4.5vw,62px)!important;line-height:.95!important;opacity:.12!important;pointer-events:auto!important}
+.lz.is-open .lz-glass{display:block!important;position:relative!important;min-height:560px!important;perspective:1100px}
+.lz-product-window{position:relative!important;display:block!important;width:min(620px,100%)!important;margin:0 auto!important;min-height:440px!important;border-radius:24px!important;background:linear-gradient(150deg,rgba(255,255,255,.78),rgba(235,244,255,.38))!important;border:1px solid rgba(255,255,255,.86)!important;box-shadow:0 34px 88px rgba(50,70,95,.18),inset 0 1px 0 rgba(255,255,255,.96)!important;transform:rotateY(-10deg) rotateX(5deg);overflow:hidden!important}
+.lz-product-window:after{content:"";position:absolute;left:9%;right:9%;bottom:-34px;height:42px;border-radius:50%;background:rgba(80,100,130,.2);filter:blur(18px)}
+.lz-window-bar{display:flex!important;align-items:center;justify-content:space-between;padding:15px 18px;border-bottom:1px solid rgba(132,154,180,.18);font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:10px;letter-spacing:.14em;color:#5a6b7e}
+.lz-product-grid-preview{display:grid!important;grid-template-columns:1.1fr .75fr!important;gap:14px!important;padding:18px!important}
+.lz-preview-main,.lz-preview-shot,.lz-preview-list{border-radius:18px!important;background:rgba(255,255,255,.58)!important;border:1px solid rgba(255,255,255,.82)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.9)}
+.lz-preview-main{min-height:250px!important;padding:22px!important}.lz-preview-main small{font-family:"IBM Plex Mono";font-size:10px;letter-spacing:.16em;color:#7890aa}.lz-preview-main strong{display:block;margin-top:38px;font-size:30px;line-height:1;font-weight:900;color:#15212e}.lz-preview-main p{font-size:14px;line-height:1.45;color:#617187}
+.lz-preview-shot{aspect-ratio:9/16!important;display:grid;place-items:end center;padding:16px;background:linear-gradient(160deg,#1d2a38,#54677d)!important;color:#fff!important}.lz-preview-shot span{font-family:"IBM Plex Mono";font-size:11px;letter-spacing:.2em}
+.lz-preview-list{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:12px}.lz-preview-list span{padding:14px 10px;border-radius:14px;background:rgba(238,246,255,.8);font-size:12px;font-weight:900;color:#33465e;text-align:center}
+.lz-window-sheen{position:absolute;inset:0;background:linear-gradient(120deg,transparent 12%,rgba(255,255,255,.52) 36%,transparent 58%);mix-blend-mode:screen;pointer-events:none}
+.lz-floating-panel{position:absolute;display:grid;gap:3px;padding:14px 16px;border-radius:18px;background:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.9);box-shadow:0 18px 48px rgba(40,60,82,.14);backdrop-filter:blur(18px)}.lz-floating-panel b{font-size:24px}.lz-floating-panel span{font-size:10px;font-family:"IBM Plex Mono";letter-spacing:.16em;text-transform:uppercase;color:#6a7d92}.lz-float-a{left:0;top:78px}.lz-float-b{right:10px;bottom:76px}
+.lz-metrics-band{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:min(980px,100%);margin:10px auto 0}.lz-metrics-band span{padding:18px;border-radius:20px;background:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.82);box-shadow:0 16px 42px rgba(44,61,82,.08)}.lz-metrics-band b{display:block;font-size:26px}.lz-metrics-band em{display:block;margin-top:4px;font-style:normal;font-family:"IBM Plex Mono";font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#6d7e92}
+.lz-showcase,.lz-spotlight,.lz-work,.lz-steps{position:relative!important;max-width:1200px!important;margin:0 auto!important;padding:clamp(70px,9vw,124px) clamp(18px,4vw,48px)!important;background:transparent!important}
+.lz-showcase-head h2,.lz-spotlight h2,.lz-work-head h2,.lz-earn-title{margin:14px 0 0!important;font-family:"Inter Tight",Inter,sans-serif!important;font-size:clamp(38px,5.4vw,76px)!important;line-height:.96!important;font-weight:900!important;letter-spacing:0!important;color:#17212b!important}
+.lz-browser-frame{margin-top:30px;border-radius:28px;background:rgba(255,255,255,.58);border:1px solid rgba(255,255,255,.88);box-shadow:0 28px 80px rgba(43,64,88,.14);overflow:hidden;backdrop-filter:blur(18px)}
+.lz-browser-bar{display:flex;align-items:center;gap:8px;padding:16px 18px;border-bottom:1px solid rgba(124,146,172,.18)}.lz-browser-bar span{width:10px;height:10px;border-radius:50%;background:#b8cbe0}.lz-browser-bar b{margin-left:12px;font-family:"IBM Plex Mono";font-size:11px;color:#64778d}
+.lz-browser-body{display:grid;grid-template-columns:170px 1fr;min-height:440px}.lz-rail{display:grid;align-content:start;gap:10px;padding:18px;border-right:1px solid rgba(124,146,172,.16)}.lz-rail span{padding:12px;border-radius:14px;background:rgba(240,247,255,.74);font-size:12px;font-weight:900;color:#44566d}
+.lz-bento-canvas{display:grid;grid-template-columns:1.2fr .8fr .8fr;gap:14px;padding:18px}.lz-bento-canvas article{border-radius:20px;border:1px solid rgba(255,255,255,.84);background:rgba(255,255,255,.56);box-shadow:inset 0 1px 0 rgba(255,255,255,.9)}.lz-bento-wide{grid-column:span 2;padding:24px}.lz-bento-wide small{font-family:"IBM Plex Mono";letter-spacing:.18em;color:#7890aa}.lz-bento-wide strong{display:block;margin-top:52px;font-size:34px;line-height:1;font-weight:900;color:#17212b}.lz-media-tile{display:flex;align-items:end;min-height:180px;padding:16px;background:linear-gradient(145deg,#162230,#60758c)!important;color:#fff}.lz-media-tile.is-alt{background:linear-gradient(145deg,#283043,#9a91c8)!important}.lz-export-queue{grid-column:span 2;padding:20px}.lz-export-queue b{display:block;margin-bottom:18px}.lz-export-queue span{display:block;margin:11px 0;font-size:12px;font-weight:800;color:#40536a}.lz-export-queue i{display:block;height:7px;margin:7px 0;border-radius:999px;background:linear-gradient(90deg,#83acd2,#a79ce0)}
+.lz-spotlight{display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:center}.lz-spotlight p:not(.lz-kicker){font-size:17px;line-height:1.55;color:#66778b}.lz-spotlight-panel{min-height:280px;border-radius:26px;padding:26px;background:linear-gradient(150deg,rgba(255,255,255,.7),rgba(232,242,255,.42));border:1px solid rgba(255,255,255,.88);box-shadow:0 26px 74px rgba(44,64,88,.13);display:grid;align-content:end}.lz-spotlight-panel span{font-family:"IBM Plex Mono";letter-spacing:.16em;text-transform:uppercase;color:#71849a}.lz-spotlight-panel b{font-size:44px;line-height:1}.lz-spotlight-panel i{height:9px;width:72%;margin-top:20px;border-radius:999px;background:linear-gradient(90deg,#92b9df,#a99ee4)}
+.lz-grid{list-style:none;margin:34px 0 0;padding:0;display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:16px}.lz-card{position:relative;min-height:280px;padding:24px;border-radius:22px;background:rgba(255,255,255,.56);border:1px solid rgba(255,255,255,.86);box-shadow:0 20px 58px rgba(45,65,88,.1);overflow:hidden}.lz-card-1,.lz-card-2{grid-column:span 3}.lz-card-3{grid-column:span 2}.lz-card-4{grid-column:span 4}.lz-card-5{grid-column:span 4}.lz-card-6{grid-column:span 2}.lz-card span{font-family:"IBM Plex Mono";letter-spacing:.16em;color:#7890aa}.lz-card h3{margin:38px 0 0;font-size:32px;line-height:1;font-weight:900;color:#17212b}.lz-card p{font-size:15px;line-height:1.5;color:#62748a}.lz-card em{position:absolute;left:22px;bottom:18px;font-style:normal;font-family:"IBM Plex Mono";font-size:10px;letter-spacing:.18em;color:#6d8298}.lz-card-reveal{position:absolute;inset:auto 12px 12px 12px;min-height:92px;padding:16px;border-radius:18px;background:rgba(22,33,45,.88);color:#fff;font-size:13px;line-height:1.45;clip-path:inset(100% 0 0 0 round 18px);transition:clip-path .45s cubic-bezier(.16,1,.3,1)}.lz-card.is-on .lz-card-reveal,.lz-card:hover .lz-card-reveal{clip-path:inset(0 0 0 0 round 18px)}
+.lz.is-open .lz-steps{text-align:center!important}.lz-workflow-line{position:relative;display:grid;grid-template-columns:repeat(3,1fr);gap:0;width:75%;margin:34px auto -16px}.lz-workflow-line i{height:2px;background:linear-gradient(90deg,#9bbfe1,#aaa0df);position:relative}.lz-workflow-line i:after{content:"";position:absolute;right:-7px;top:-5px;width:12px;height:12px;border-top:2px solid #9eacd8;border-right:2px solid #9eacd8;transform:rotate(45deg);animation:lz-chevron 1.8s ease-in-out infinite}.lz.is-open .lz-steps ol{list-style:none;margin:0;padding:0;display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:16px}.lz.is-open .lz-steps li{position:relative;min-height:250px;padding:28px 20px 22px!important;border-radius:22px!important;background:rgba(255,255,255,.58)!important;border:1px solid rgba(255,255,255,.86)!important;box-shadow:0 20px 58px rgba(45,65,88,.1)!important}.lz-step-bars{position:absolute;left:20px;right:20px;bottom:18px;display:grid;gap:7px}.lz-step-bars i{display:block;height:7px;border-radius:999px;background:linear-gradient(90deg,#8bb7dc,#aea3e4)}
+@keyframes lz-chevron{0%,100%{opacity:.35;transform:translateX(0) rotate(45deg)}50%{opacity:1;transform:translateX(8px) rotate(45deg)}}
+@media(max-width:1080px){.lz-chrome-nav{display:none}.lz.is-open .lz-chrome{grid-template-columns:auto 1fr auto auto auto!important}.lz.is-open .lz-hero{grid-template-columns:1fr!important;text-align:center!important}.lz.is-open .lz-hero-copy{text-align:center!important;margin:0 auto!important}.lz.is-open .lz-hero-actions,.lz-trust-row{justify-content:center!important}.lz.is-open .lz-glass{min-height:auto!important}.lz-product-window{transform:none}.lz-spotlight,.lz-browser-body{grid-template-columns:1fr}.lz-rail{display:none}.lz-bento-canvas{grid-template-columns:1fr 1fr}.lz-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.lz-card{grid-column:auto!important}.lz.is-open .lz-steps ol{grid-template-columns:repeat(2,minmax(0,1fr))!important}.lz-workflow-line{display:none}}
+@media(max-width:800px){.lz.is-open .lz-chrome-clock,.lz.is-open .lz-chrome-xy{display:none!important}.lz.is-open .lz-chrome{grid-template-columns:auto 1fr auto!important}.lz-chrome-brand{display:none}.lz.is-open .lz-hero{padding-left:16px!important;padding-right:16px!important}.lz.is-open .lz-hero h1{font-size:clamp(44px,15vw,66px)!important}.lz-product-grid-preview,.lz-preview-list,.lz-bento-canvas,.lz-metrics-band,.lz-grid,.lz.is-open .lz-steps ol{grid-template-columns:1fr!important}.lz-showcase,.lz-spotlight,.lz-work,.lz-steps{padding-left:16px!important;padding-right:16px!important}.lz-card{min-height:260px}.lz-card-reveal{clip-path:inset(0 0 0 0 round 18px);position:relative;inset:auto;margin-top:18px}.lz-floating-panel{position:relative;left:auto;right:auto;top:auto;bottom:auto;margin:12px auto}.lz-browser-bar b{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
 `;

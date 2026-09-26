@@ -15,7 +15,7 @@ import './App.css';
 
 function getRoutePath() {
   const path = window.location.pathname;
-  if (path === '/get-in') return '/get-in';
+  if (path === '/get-in') return '/inside';
   if (path === '/pricing') return '/pricing';
   if (path === '/paywall') return '/paywall';
   if (path === '/inside') return '/inside';
