@@ -15,6 +15,16 @@ export interface Env {
    * real traffic on missing infrastructure — see README for the binding to add.
    */
   API_RATE_LIMIT?: KVNamespace;
+
+  /**
+   * Optional. When set, Business Connect searches Google Places (ratings,
+   * reviews, photos) instead of the free OpenStreetMap provider.
+   */
+  GOOGLE_PLACES_API_KEY?: string;
+
+  /** Optional. Gmail OAuth client for Business Connect email (not live yet). */
+  GMAIL_CLIENT_ID?: string;
+  GMAIL_CLIENT_SECRET?: string;
 }
 
 export function json(data: unknown, status = 200, extraHeaders?: Record<string, string>): Response {

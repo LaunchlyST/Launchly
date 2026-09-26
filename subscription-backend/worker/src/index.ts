@@ -15,6 +15,7 @@ import { handleCreatorSearchApi } from "./creatorSearchApi";
 import { handleCreatorApiSearch } from "./creatorApiSearch";
 import { handleCreatorApiDebug } from "./creatorApiDebug";
 import { handleStatus } from "./statusApi";
+import { handleBusinessConnect, isBusinessRoute } from "./business/businessRoutes";
 
 export type { Env };
 
@@ -91,6 +92,11 @@ export default {
       // ---- In-app search (session-authenticated, not a Bearer API key) ----
       if (url.pathname === "/api/creator-api/search" && request.method === "GET") {
         return await handleCreatorApiSearch(request, env);
+      }
+
+      // ---- Business Connect (session-authenticated) ----
+      if (isBusinessRoute(url.pathname)) {
+        return await handleBusinessConnect(request, env);
       }
 
       return new Response("Not Found", { status: 404, headers: corsHeaders });

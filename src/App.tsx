@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Sparkles, Settings, LogOut, Bot } from 'lucide-react';
+import { Sparkles, Settings, LogOut, Bot, Building2 } from 'lucide-react';
 import { SettingsPage } from './pages/settings/SettingsPage';
 import { GeneratorPage } from './pages/inside/GeneratorPage';
 import { BotsPage } from './pages/bots/BotsPage';
+import { BusinessConnectPage } from './pages/business/BusinessConnectPage';
 import { MonitorControlPage } from './pages/monitor/MonitorControlPage';
 import { MonitorControlIcon } from './pages/monitor/MonitorControlIcon';
 import { SubscriptionGate } from './subscription/SubscriptionGate';
@@ -26,6 +27,7 @@ const PAGES = {
   paywall: '/paywall',
   inside: '/dashboard',
   bots: '/bots',
+  businessConnect: '/business-connect',
   monitorControl: '/monitor-control',
   settings: '/settings',
 } as const;
@@ -36,6 +38,7 @@ const TITLES: Record<string, string> = {
   [PAGES.paywall]: 'Paywall — Launchly',
   [PAGES.inside]: 'Dashboard — Launchly',
   [PAGES.bots]: 'Bots — Launchly',
+  [PAGES.businessConnect]: 'Business Connect — Launchly',
   [PAGES.monitorControl]: 'Monitor Control — Launchly',
   [PAGES.settings]: 'Settings — Launchly',
   '/': 'Launchly',
@@ -56,6 +59,7 @@ function getRoutePath() {
   if (path === PAGES.paywall || path === '/pricing') return PAGES.paywall;
   if (path === PAGES.inside || path === '/inside') return PAGES.inside;
   if (path === PAGES.bots) return PAGES.bots;
+  if (path === PAGES.businessConnect) return PAGES.businessConnect;
   if (path === PAGES.monitorControl) return PAGES.monitorControl;
   if (path === PAGES.settings) return PAGES.settings;
   return '/';
@@ -70,6 +74,7 @@ export function App() {
   const user = useAuthStore((s) => s.user);
   const authLoading = useAuthStore((s) => s.loading);
   const signOut = useAuthStore((s) => s.signOut);
+  const accessToken = useAuthStore((s) => s.session?.access_token ?? null);
   const [loggingOut, setLoggingOut] = useState(false);
 
   const [route, setRoute] = useState(getRoutePath);
@@ -219,6 +224,15 @@ export function App() {
               <Bot size={20} />
             </button>
           </Tooltip>
+          <Tooltip text="Business Connect">
+            <button
+              className="app__rail-btn"
+              onClick={() => navigate(PAGES.businessConnect)}
+              aria-label="Business Connect"
+            >
+              <Building2 size={20} />
+            </button>
+          </Tooltip>
           <div className="app__rail-spacer" />
           <Tooltip text="Sign out">
             <button
@@ -283,6 +297,15 @@ export function App() {
                 <Bot size={20} />
               </button>
             </Tooltip>
+            <Tooltip text="Business Connect">
+              <button
+                className="app__rail-btn"
+                onClick={() => navigate(PAGES.businessConnect)}
+                aria-label="Business Connect"
+              >
+                <Building2 size={20} />
+              </button>
+            </Tooltip>
             <Tooltip text="Monitor Control">
               <button className="app__rail-btn is-active" aria-label="Monitor Control">
                 <MonitorControlIcon size={20} />
@@ -317,6 +340,70 @@ export function App() {
           </aside>
           <main className="app__main">
             <MonitorControlPage />
+          </main>
+        </div>
+      </SubscriptionGate>
+    );
+  }
+
+  /* Business Connect: local business discovery + outreach, same shell and gate. */
+  if (route === PAGES.businessConnect) {
+    if (!user) {
+      return (
+        <div className="app app--auth">
+          <main className="app__main">
+            {authView === 'login' ? (
+              <Login onSwitchToSignUp={() => setAuthView('signup')} />
+            ) : (
+              <SignUp onSwitchToLogin={() => setAuthView('login')} />
+            )}
+          </main>
+        </div>
+      );
+    }
+
+    return (
+      <SubscriptionGate>
+        <div className="app">
+          <aside className="app__rail">
+            <div className="app__brand" title="Launchly">
+              <Sparkles size={22} strokeWidth={2.2} />
+            </div>
+            <div className="app__rail-divider" />
+            <Tooltip text="Create">
+              <button className="app__rail-btn" onClick={() => navigate(PAGES.inside)} aria-label="Create">
+                <Sparkles size={20} />
+              </button>
+            </Tooltip>
+            <Tooltip text="Bots">
+              <button className="app__rail-btn" onClick={() => navigate(PAGES.bots)} aria-label="Bots">
+                <Bot size={20} />
+              </button>
+            </Tooltip>
+            <Tooltip text="Business Connect">
+              <button className="app__rail-btn is-active" aria-label="Business Connect">
+                <Building2 size={20} />
+              </button>
+            </Tooltip>
+            <Tooltip text="Monitor Control">
+              <button className="app__rail-btn" onClick={() => navigate(PAGES.monitorControl)} aria-label="Monitor Control">
+                <MonitorControlIcon size={20} />
+              </button>
+            </Tooltip>
+            <div className="app__rail-spacer" />
+            <Tooltip text="Settings — manage API keys">
+              <button className="app__rail-btn" onClick={() => navigate(PAGES.settings)} aria-label="Settings">
+                <Settings size={20} />
+              </button>
+            </Tooltip>
+            <Tooltip text="Sign out">
+              <button className="app__rail-btn" onClick={handleLogout} disabled={loggingOut} aria-label="Sign Out">
+                <LogOut size={20} />
+              </button>
+            </Tooltip>
+          </aside>
+          <main className="app__main">
+            <BusinessConnectPage token={accessToken ?? ''} />
           </main>
         </div>
       </SubscriptionGate>
@@ -360,6 +447,15 @@ export function App() {
             <Tooltip text="Bots">
               <button className="app__rail-btn is-active" aria-label="Bots">
                 <Bot size={20} />
+              </button>
+            </Tooltip>
+            <Tooltip text="Business Connect">
+              <button
+                className="app__rail-btn"
+                onClick={() => navigate(PAGES.businessConnect)}
+                aria-label="Business Connect"
+              >
+                <Building2 size={20} />
               </button>
             </Tooltip>
             <Tooltip text="Monitor Control">
@@ -452,6 +548,15 @@ export function App() {
                 <Bot size={20} />
               </button>
             </Tooltip>
+            <Tooltip text="Business Connect">
+              <button
+                className="app__rail-btn"
+                onClick={() => navigate(PAGES.businessConnect)}
+                aria-label="Business Connect"
+              >
+                <Building2 size={20} />
+              </button>
+            </Tooltip>
             <Tooltip text="Monitor Control">
               <button
                 className="app__rail-btn"
@@ -537,6 +642,15 @@ export function App() {
                 aria-label="Bots"
               >
                 <Bot size={20} />
+              </button>
+            </Tooltip>
+            <Tooltip text="Business Connect">
+              <button
+                className="app__rail-btn"
+                onClick={() => navigate(PAGES.businessConnect)}
+                aria-label="Business Connect"
+              >
+                <Building2 size={20} />
               </button>
             </Tooltip>
             <Tooltip text="Monitor Control">

@@ -197,3 +197,28 @@ two implementations to keep in sync.
 place that decides whether a user's Search Creator API subscription is
 currently valid — every route above calls it rather than re-implementing
 the check.
+
+## Business Connect
+
+Local business discovery + outreach at `/business-connect`. Worker code lives in
+`worker/src/business/`; the schema is `supabase/migrations/005_create_business_connect_tables.sql`.
+
+- **Data provider:** OpenStreetMap (Nominatim + Overpass) by default — free, no key.
+  OSM has no ratings, reviews or photos, so those show as "Unavailable".
+  Set `GOOGLE_PLACES_API_KEY` (`npx wrangler secret put GOOGLE_PLACES_API_KEY`) to
+  switch to Google Places, which adds them (paid per request; results are cached).
+- **Social links / emails:** only from provider data or the business's own website
+  (links, `mailto:`, JSON-LD `sameAs`). Never guessed from a name.
+- **Estimated ad budget / needs:** deterministic rules in `adBudget.ts` and
+  `businessNeeds.ts`. Always labelled as estimates.
+- **Previews:** a site is framed only when its own `X-Frame-Options` / CSP allow it;
+  otherwise a native preview is shown. TikTok uses the existing public collector.
+- **Email:** sending is refused until a mailbox is connected (Gmail OAuth not live yet);
+  drafts, notes and follow-ups are saved per user.
+
+Routes (all require a signed-in Supabase session, rate limited 40/min/user):
+`GET /api/businesses/search`, `GET /api/businesses/saved`, `GET /api/businesses/:id`,
+`GET /api/businesses/:id/social`, `GET /api/businesses/:id/preview?platform=`,
+`POST /api/businesses/:id/save`, `GET|POST /api/businesses/:id/notes`,
+`GET|POST /api/businesses/:id/outreach`, `GET /api/email/status`,
+`GET /api/businesses/photo` (public image proxy, Google provider only).
