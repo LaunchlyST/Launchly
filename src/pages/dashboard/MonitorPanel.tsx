@@ -47,7 +47,6 @@ export function MonitorPanel() {
       setConnected(true);
       setPaused(false);
       setZoom(1);
-      say('Screen connected.');
     } catch (e) {
       say(e instanceof Error && e.name === 'NotAllowedError' ? 'Screen sharing was cancelled.' : 'Could not start screen sharing.');
     }
@@ -133,8 +132,7 @@ export function MonitorPanel() {
     if (/^zoom out/.test(cmd)) return setZoom((z) => Math.max(1, z - 0.5));
     if (/^(reset zoom|zoom reset)/.test(cmd)) return setZoom(1);
     if (/^(stop|disconnect|end)/.test(cmd)) {
-      stop();
-      return say('Disconnected.');
+      return stop();
     }
     say(`Unknown command. ${HELP}`);
   }
@@ -148,7 +146,7 @@ export function MonitorPanel() {
         <div className="mon-head__right">
           <span className={`mon-status mon-status--${status.toLowerCase()}`}>{status}</span>
           {connected && (
-            <button type="button" className="mon-textbtn" onClick={() => { stop(); say('Disconnected.'); }}>
+            <button type="button" className="mon-textbtn" onClick={stop}>
               Stop
             </button>
           )}
@@ -165,7 +163,14 @@ export function MonitorPanel() {
             </button>
           </div>
         )}
-        {connected && <span className="mon-cursor" aria-label="AI mouse connected" />}
+        {connected && (
+          <div className="mon-ai-mouse" aria-label="AI mouse">
+            <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 2.5 19.5 12l-6.6 1.6 3.9 6.9-2.6 1.5-3.9-6.9L5.4 19.6z" fill="#2563eb" stroke="#fff" strokeWidth="1.4" strokeLinejoin="round" />
+            </svg>
+            <span>AI</span>
+          </div>
+        )}
       </div>
 
       <section className="mon-chat" aria-label="Messages">
