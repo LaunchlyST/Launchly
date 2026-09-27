@@ -20,7 +20,7 @@ import type {
  * { ok: false, reason: 'not_configured' } — the UI shows that honestly.
  */
 
-const WORKER_URL: string = (import.meta.env.VITE_WORKER_URL || 'http://localhost:8787').replace(/\/+$/, '');
+import { WORKER_URL } from '../../../lib/workerUrl';
 
 async function call<T>(path: string, token: string | null, init: RequestInit = {}): Promise<ApiResult<T>> {
   if (!token) return { ok: false, reason: 'unauthorized', message: 'Sign in to use Monitor projects.' };

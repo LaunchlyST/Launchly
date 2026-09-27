@@ -1,3 +1,4 @@
+import { WORKER_URL } from '../../lib/workerUrl';
 import { supabase } from '../../lib/supabase';
 import { creatorMarkets, normalizeCreatorQuery, validCreatorQuery, type CreatorRegion, type CreatorSearchResult, type CreatorProfile, type CreatorProduct, type CreatorVideo as ApiVideo, type CreatorSearchResponse, type CreatorResponse, type Pagination } from '../../../shared/creator-contract';
 export type Market = CreatorRegion;
@@ -80,7 +81,7 @@ export class CreatorRequestError extends Error {
 export async function creatorRequest<T>(path: string, parameters: Record<string, string>, signal: AbortSignal): Promise<{ data: T; stale: boolean }> {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) throw new CreatorRequestError('UNAUTHORIZED', 'Sign in to search creators.');
-    const url = new URL('/api/launchly/creators/' + path, import.meta.env.VITE_WORKER_URL || window.location.origin);
+    const url = new URL('/api/launchly/creators/' + path, WORKER_URL);
     url.search = new URLSearchParams(parameters).toString();
     const response = await fetch(url, { signal, headers: { Accept: 'application/json', Authorization: 'Bearer ' + session.access_token }, cache: 'no-store' });
     const result = await response.json() as CreatorResponse<T>;

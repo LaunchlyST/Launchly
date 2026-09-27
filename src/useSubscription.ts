@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuthStore } from "./auth-store";
 
-export const WORKER_URL = import.meta.env.VITE_WORKER_URL || "http://localhost:8787";
+export { WORKER_URL } from "./lib/workerUrl";
+import { WORKER_URL } from "./lib/workerUrl";
 
 export interface SubscriptionStatus {
   subscription_status: "active" | "inactive" | "cancelled" | "past_due";
