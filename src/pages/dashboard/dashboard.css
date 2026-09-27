@@ -1231,3 +1231,4 @@
 .sidebar-bottom>.settings-nav-item{display:flex;align-items:center;gap:10px;width:100%;margin:0 0 10px;padding:10px 12px;border:0;border-radius:9px;background:none;font:inherit;font-size:13px;color:#51627a;cursor:pointer;text-align:left}
 .sidebar-bottom>.settings-nav-item:hover{background:#f2f5fa;color:#1c2a3d}
 .sidebar-bottom>.settings-nav-item.active{background:#eaf0ff;color:#255ddb}
+.research-section-items .nav-soon{margin-left:auto;font-style:normal;font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#8a94a6;background:#f1f3f6;border-radius:5px;padding:2px 6px}
