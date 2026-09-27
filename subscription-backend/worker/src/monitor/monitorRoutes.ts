@@ -126,7 +126,7 @@ export async function handleMonitor(request: Request, env: MonitorEnv, fetchImpl
     return ok({
       online: true,
       capabilities: {
-        github: !!(env.GITHUB_CLIENT_ID && env.GITHUB_CLIENT_SECRET),
+        github: false, // OAuth and repository workspace routes are not implemented yet.
         gitUrl: false,
         localBridge: false,
         agent: false,

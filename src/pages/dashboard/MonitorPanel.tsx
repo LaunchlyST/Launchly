@@ -1,11 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowUp, Camera, Circle, LoaderCircle, Maximize2, MessageSquare, Mic, Monitor, MonitorUp, RotateCcw, Settings2, Square, X } from 'lucide-react';
+import { ArrowUp, Camera, Circle, LoaderCircle, Maximize2, MessageSquare, Mic, Monitor, MonitorUp, RotateCcw, Settings2, Plus, Square, X } from 'lucide-react';
 import { useMonitorWorkspace } from './monitor/useMonitorWorkspace';
 import { monitorApi } from './monitor/monitorApi';
 import { ProjectSelector } from './monitor/ProjectSelector';
-import { ModelSelector } from './monitor/ModelSelector';
 import { ProjectConnectionModal } from './monitor/ProjectConnectionModal';
-import { AIProviderModal } from './monitor/AIProviderModal';
+import { CodingConnectionModal } from './monitor/CodingConnectionModal';
 import { MonitorPermissions } from './monitor/MonitorPermissions';
 import { AgentActivity, ChangeSummary } from './monitor/AgentActivity';
 import type { AgentTask } from './monitor/types';
@@ -137,7 +136,10 @@ export function MonitorPanel() {
   const Speech = typeof window !== 'undefined' ? getSpeechRecognition() : null;
   const connected = conn === 'connected';
   /** Chat works with a shared screen, a connected project, or both. */
-  const chatReady = connected || !!ws.project;
+  const selectedProvider = ws.selection.mode === 'auto' ? null : ws.selection.provider;
+  const aiReady = !!selectedProvider && ws.providers.some(p => p.provider === selectedProvider && p.connected);
+  const projectReady = !!ws.project && aiReady && !!ws.backend?.capabilities.agent;
+  const chatReady = connected || projectReady;
 
   useEffect(() => {
     listRef.current?.scrollTo?.({ top: listRef.current.scrollHeight, behavior: 'smooth' });
@@ -178,9 +180,11 @@ export function MonitorPanel() {
     setConn('connecting');
     try {
       const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: { displaySurface: 'monitor', frameRate: 30 } as MediaTrackConstraints,
+        video: { displaySurface: 'window', frameRate: 30 } as MediaTrackConstraints,
+        selfBrowserSurface: 'exclude',
+        preferCurrentTab: false,
         audio: false,
-      });
+      } as DisplayMediaStreamOptions);
       const track = stream.getVideoTracks()[0];
       // The browser's own "Stop sharing" bar ends the track — mirror it at once.
       track?.addEventListener('ended', disconnect);
@@ -282,8 +286,12 @@ export function MonitorPanel() {
         setZoom(1);
         return 'Zoom reset.';
       case 'fullscreen':
-        screenRef.current?.requestFullscreen?.().catch(() => {});
-        return 'Fullscreen on. Press Esc to exit.';
+        setZoom(1);
+        setPointer(null);
+        if (!screenRef.current?.requestFullscreen) return 'Fullscreen is not available in this browser.';
+        if (streamRef.current?.getVideoTracks()[0]?.getSettings?.().displaySurface === 'monitor') return 'To avoid capturing this preview repeatedly, share a separate Edge window before opening fullscreen.';
+        screenRef.current.requestFullscreen().catch(() => add('assistant', 'Fullscreen could not start. Try the Fullscreen button again.'));
+        return 'Opening fullscreen. Press Esc to exit.';
       case 'disconnect':
         return '';
     }
@@ -379,6 +387,7 @@ export function MonitorPanel() {
 
   /** Send a coding request to the Monitor backend agent and follow its progress. */
   async function runAgent(prompt: string) {
+    if (!projectReady) { add('assistant', 'Connect a project and AI with an available coding runtime before sending a coding task.'); return; }
     const project = ws.project!;
     const task: AgentTask = {
       id: `local-${nextId}`,
@@ -436,14 +445,14 @@ export function MonitorPanel() {
     update(msgId, { task: r.ok ? { ...task, changes: null, activity: [...task.activity, { id: 'undo', tool: 'git_status', label: 'Restored the checkpoint', status: 'done' }] } : { ...task, error: r.message } });
   }
 
-  /** Map a point in the shared frame to the on-screen box (object-fit: cover + zoom). */
+  /** Map a point in the shared frame to the on-screen box (object-fit: contain + zoom). */
   function pointerStyle(): React.CSSProperties | undefined {
     const v = videoRef.current;
     const box = screenRef.current;
     if (!pointer || !v?.videoWidth || !box) return undefined;
     const W = box.clientWidth;
     const H = box.clientHeight;
-    const s = Math.max(W / v.videoWidth, H / v.videoHeight) * zoom;
+    const s = Math.min(W / v.videoWidth, H / v.videoHeight) * zoom;
     const left = (W - v.videoWidth * s) / 2 + pointer.x * v.videoWidth * s;
     const top = (H - v.videoHeight * s) / 2 + pointer.y * v.videoHeight * s;
     return { left, top };
@@ -640,14 +649,10 @@ export function MonitorPanel() {
                   ws.setProject(null);
                 }}
               />
-              <ModelSelector
-                selection={ws.selection}
-                onChange={ws.setSelection}
-                providers={ws.providers}
-                models={ws.models}
-                onConnectProvider={() => setDialog('ai')}
-                onManageKeys={() => setDialog('ai')}
-              />
+              <button type="button" className="mt-btn" onClick={() => setDialog('ai')}>
+                {aiReady ? <i className="mt-dot mt-dot--synced" /> : <Plus size={13} />}
+                <span className="mt-btn__text">{aiReady ? (selectedProvider === 'openai' ? 'OpenAI API' : 'Anthropic API') : 'Connect AI'}</span>
+              </button>
               <button type="button" className="mt-btn mt-btn--icon" onClick={() => setDialog('perms')} aria-label="Monitor permissions" title="Monitor permissions">
                 <Settings2 size={13} />
               </button>
@@ -708,7 +713,7 @@ export function MonitorPanel() {
           }}
         />
       )}
-      {dialog === 'ai' && <AIProviderModal token={ws.token} providers={ws.providers} onClose={() => setDialog(null)} onChanged={ws.refresh} />}
+      {dialog === 'ai' && <CodingConnectionModal token={ws.token} providers={ws.providers} onClose={() => setDialog(null)} onChanged={ws.refresh} onSelect={provider => ws.setSelection({ mode: 'latest', provider })} />}
       {dialog === 'perms' && <MonitorPermissions value={ws.permissions} onChange={ws.setPermissions} onClose={() => setDialog(null)} />}
     </div>
   );

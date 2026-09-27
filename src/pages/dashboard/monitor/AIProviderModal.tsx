@@ -10,6 +10,7 @@ interface Props {
   initialProvider?: ProviderId;
   onClose: () => void;
   onChanged: () => void;
+  onConnected?: (provider: ProviderId) => void;
 }
 
 /**
@@ -17,7 +18,7 @@ interface Props {
  * encrypted. It is never saved in the browser and never sent back — the UI
  * only ever sees { connected, keyLast4 }.
  */
-export function AIProviderModal({ token, providers, initialProvider = 'anthropic', onClose, onChanged }: Props) {
+export function AIProviderModal({ token, providers, initialProvider = 'anthropic', onClose, onChanged, onConnected }: Props) {
   const [provider, setProvider] = useState<ProviderId>(initialProvider);
   const [key, setKey] = useState('');
   const [state, setState] = useState<{ kind: 'idle' | 'testing' | 'saving' | 'ok' | 'error'; text?: string }>({ kind: 'idle' });
@@ -36,6 +37,7 @@ export function AIProviderModal({ token, providers, initialProvider = 'anthropic
     setKey('');
     setState({ kind: 'ok', text: `Connected · key ending ${r.data.keyLast4}` });
     onChanged();
+    onConnected?.(provider);
   }
   async function remove() {
     const r = await monitorApi.removeProvider(token, provider);
@@ -48,7 +50,7 @@ export function AIProviderModal({ token, providers, initialProvider = 'anthropic
   return (
     <Modal title="Connect AI" subtitle="Use your own provider key. It’s stored encrypted on the server and never shown again." onClose={onClose}>
       <div className="mm-seg" role="tablist">
-        {PROVIDERS.map((p) => {
+        {PROVIDERS.filter(p => p.id !== 'xai').map((p) => {
           const on = (providers ?? []).some((c) => c.provider === p.id && c.connected);
           return (
             <button key={p.id} type="button" role="tab" aria-selected={provider === p.id} className={provider === p.id ? 'is-on' : ''} onClick={() => { setProvider(p.id); setKey(''); setState({ kind: 'idle' }); }}>
