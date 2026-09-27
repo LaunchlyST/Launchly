@@ -1339,3 +1339,9 @@
 .sidebar-bottom>.settings-nav-item{display:flex;align-items:center;gap:10px;width:100%;margin:0 0 10px;padding:10px 12px;border:0;border-radius:9px;background:none;font:inherit;font-size:13px;color:#51627a;cursor:pointer;text-align:left}
 .sidebar-bottom>.settings-nav-item:hover{background:#f2f5fa;color:#1c2a3d}
 .sidebar-bottom>.settings-nav-item.active{background:#eaf0ff;color:#255ddb}
+/* AI mouse v2: dark arrow with a soft blue halo, no label */
+.mon-ai-mouse{display:block;width:22px;height:22px;filter:drop-shadow(0 1px 2px #0007)}
+.mon-ai-mouse span:not(.mon-ai-mouse__halo){display:none}
+.mon-ai-mouse svg{position:relative;display:block}
+.mon-ai-mouse__halo{position:absolute;left:-7px;top:-7px;width:22px;height:22px;border-radius:50%;background:radial-gradient(circle,#3b82f666 0%,#3b82f600 70%);animation:mon-halo 1.8s ease-out infinite}
+@keyframes mon-halo{0%{transform:scale(.6);opacity:1}100%{transform:scale(1.8);opacity:0}}
