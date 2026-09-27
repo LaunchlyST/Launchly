@@ -126,3 +126,27 @@ jobs:
           VITE_FEEDBACK_EMAIL: ${{ vars.VITE_FEEDBACK_EMAIL }}
           VITE_BUG_URL: ${{ vars.VITE_BUG_URL }}
           VITE_CHANGELOG_URL: ${{ vars.VITE_CHANGELOG_URL }}
+
+      # The backend (subscription + Monitor + Local businesses API) is a
+      # separate Worker. Publish it with the same Cloudflare login. Its own
+      # secrets (SUPABASE_*, STRIPE_*, MONITOR_ENCRYPTION_KEY…) live on that
+      # Worker in Cloudflare and are not touched here.
+      - name: Install backend dependencies
+        working-directory: subscription-backend/worker
+        run: npm install --no-audit --no-fund --legacy-peer-deps
+
+      - name: Deploy backend worker
+        working-directory: subscription-backend/worker
+        run: npx wrangler@4.129.0 deploy -c wrangler.toml
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      # Never prints the value — only whether the site is pointed at itself
+      # (which makes every /api call return the site's HTML).
+      - name: Check VITE_WORKER_URL
+        run: |
+          u="${{ secrets.VITE_WORKER_URL }}"
+          if [ -z "$u" ]; then echo "::warning::VITE_WORKER_URL is not set"; 
+          elif echo "$u" | grep -q "launchly.pazeruga.workers.dev"; then echo "::warning::VITE_WORKER_URL points at the website, not the backend worker";
+          else echo "VITE_WORKER_URL is set to a different host than the website."; fi
