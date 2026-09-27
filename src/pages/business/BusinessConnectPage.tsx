@@ -146,7 +146,7 @@ export function BusinessConnectPage({ token, api = businessApi }: Props) {
   };
 
   useEffect(() => {
-    document.title = 'Business Connect — Launchly';
+    document.title = 'Local businesses — Launchly';
   }, []);
 
   const cityList = CITY_SUGGESTIONS[params.country] ?? [];
@@ -156,7 +156,7 @@ export function BusinessConnectPage({ token, api = businessApi }: Props) {
       <div className="bc-left">
         <header className="bc-header">
           <p className="bc-eyebrow">Local business discovery</p>
-          <h1>Business Connect</h1>
+          <h1>Local businesses</h1>
           <p className="bc-subtitle">Find local businesses, explore their online presence, and reach out — all in one place.</p>
         </header>
 
