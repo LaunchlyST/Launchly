@@ -165,10 +165,10 @@ export function MonitorPanel() {
         )}
         {connected && (
           <div className="mon-ai-mouse" aria-label="AI mouse">
-            <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M4 2.5 19.5 12l-6.6 1.6 3.9 6.9-2.6 1.5-3.9-6.9L5.4 19.6z" fill="#2563eb" stroke="#fff" strokeWidth="1.4" strokeLinejoin="round" />
+            <span className="mon-ai-mouse__halo" />
+            <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
+              <path d="M3.5 2.2c-.5-.2-1 .3-.8.8l5.6 16.1c.2.6 1 .6 1.2 0l2.1-6 6-2.1c.6-.2.6-1 0-1.2z" fill="#0f172a" stroke="#fff" strokeWidth="1.6" strokeLinejoin="round" />
             </svg>
-            <span>AI</span>
           </div>
         )}
       </div>
