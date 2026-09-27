@@ -84,3 +84,16 @@ import { SubscriptionGate } from "./subscription-backend/react";
 | `customer.subscription.updated` | Sync status (active/past_due/cancelled) |
 | `customer.subscription.deleted` | Mark cancelled |
 | `invoice.payment_failed` | Mark past_due |
+
+## Monitor — projects & AI providers
+
+Routes under `/api/monitor/*` (worker/src/monitor/monitorRoutes.ts), all require a signed-in user:
+`GET status`, `GET models`, `GET providers`, `POST providers/:p/test`, `POST providers/:p`,
+`DELETE providers/:p`. GitHub, git-URL import, Monitor Bridge and the project agent answer
+`NOT_CONFIGURED` until built — the UI shows that instead of faking success.
+
+Setup:
+- Run `supabase/migrations/005_create_monitor_provider_keys.sql`.
+- `npx wrangler secret put MONITOR_ENCRYPTION_KEY` — base64 of 32 random bytes
+  (`node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`).
+- Optional `MONITOR_LATEST_MODELS` JSON to move what "Latest" means per provider.
