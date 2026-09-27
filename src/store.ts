@@ -21,6 +21,8 @@ export interface GenerationUsage {
 interface AppStore {
   openaiKey: string;
   grokKey: string;
+  claudeKey: string;
+  setClaudeKey: (key: string) => void;
   setOpenaiKey: (key: string) => void;
   setGrokKey: (key: string) => void;
   clearKeys: () => void;
@@ -54,9 +56,11 @@ export const useStore = create<AppStore>()(
     (set) => ({
       openaiKey: '',
       grokKey: '',
+      claudeKey: '',
+      setClaudeKey: (key) => set({ claudeKey: key }),
       setOpenaiKey: (key) => set({ openaiKey: key }),
       setGrokKey: (key) => set({ grokKey: key }),
-      clearKeys: () => set({ openaiKey: '', grokKey: '' }),
+      clearKeys: () => set({ openaiKey: '', grokKey: '', claudeKey: '' }),
 
       selectedModel: 'chatgpt',
       selectedType: 'image',
@@ -90,6 +94,7 @@ export const useStore = create<AppStore>()(
         set({
           openaiKey: '',
           grokKey: '',
+          claudeKey: '',
           selectedModel: 'chatgpt',
           selectedType: 'image',
           selectedStyle: 'realistic',
