@@ -1,0 +1,18 @@
+@import url('https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap');
+
+.wf{display:flex;flex-direction:column;gap:18px;height:calc(100vh - 84px);min-height:480px;max-width:1440px;margin:0 auto;font-family:Inter,system-ui,sans-serif}
+.wf-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0}
+.wf-head h1{margin:0;font:650 28px/1.1 Inter,system-ui,sans-serif;letter-spacing:-.028em;color:#0b1220}
+.wf-pill{display:inline-flex;align-items:center;height:30px;padding:0 13px;border-radius:999px;border:1px solid #e7e9ee;background:#fff;box-shadow:0 1px 2px #1018280a;font:500 13px Inter,system-ui,sans-serif;color:#475467}
+
+.wf-arcade{flex:1;min-height:0;padding:18px;border-radius:22px;background:#000;box-shadow:0 2px 4px #0000001a,0 24px 48px -24px #00000073}
+.wf-arcade__court{position:relative;height:100%;border:1.5px solid #ffffffd9;border-radius:10px;overflow:hidden}
+.wf-arcade__game{position:absolute;inset:0;width:100%;height:100%;display:block}
+.wf-arcade__copy{position:relative;z-index:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none;padding:24px}
+.wf-arcade__big{margin:0;font:700 clamp(64px,11vw,150px)/1 Silkscreen,'Courier New',monospace;letter-spacing:.02em;color:#f3f6fb;text-shadow:0 0 6px #ffffffb3,0 0 22px #ffffff59}
+.wf-arcade__text{margin:18px 0 22px;font:600 clamp(14px,1.4vw,18px)/1.45 Inter,system-ui,sans-serif;color:#f3f6fb}
+.wf-arcade__btn{pointer-events:auto;height:34px;padding:0 20px;border:0;border-radius:999px;background:#f3f6fb;color:#0b1220;font:700 13px Inter,system-ui,sans-serif;cursor:pointer;transition:background .15s,transform .08s}
+.wf-arcade__btn:hover{background:#fff}
+.wf-arcade__btn:active{transform:translateY(1px)}
+.wf-arcade__btn:focus-visible{outline:2px solid #3b82f6;outline-offset:3px}
+@media(max-width:860px){.wf{height:auto}.wf-arcade{height:440px;padding:12px}}
