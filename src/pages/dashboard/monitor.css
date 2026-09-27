@@ -97,3 +97,11 @@
 }
 @media (prefers-reduced-motion:reduce){.mv-cursor,.mv-rec i,.mv-pill--connecting i,.mv-typing i{animation:none}}
 .mv-thread{padding-top:14px;-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 18px);mask-image:linear-gradient(to bottom,transparent 0,#000 18px)}
+/* chat panel: same frame as the screen, composer docked at the bottom */
+.mv-chat{display:flex;flex-direction:column}
+.mv-chat .mv-thread{height:300px;max-height:none;overflow-y:auto;padding:18px 18px 10px;gap:10px;background:#fbfbfc;-webkit-mask-image:none;mask-image:none}
+.mv-thread__empty{margin:auto;font-size:13px;color:var(--ink-3);text-align:center}
+.mv-chat .mv-composer{border:0;border-top:1px solid var(--line-2);border-radius:0;box-shadow:none;padding:14px 14px 12px 18px;background:#fff}
+.mv-chat .mv-composer:focus-within{box-shadow:inset 0 0 0 2px #2563eb14}
+.mv-chat .mv-composer.is-disabled{background:#fff}
+.mv-tool--text{width:auto;padding:0 10px;font:500 12.5px Inter,system-ui,sans-serif}
