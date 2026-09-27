@@ -103,3 +103,9 @@
 @media (max-height:700px){.mv{gap:12px}.mv-sub{display:none}.mv-empty__icon{width:64px;height:64px;margin-bottom:14px}.mv-empty p{margin-bottom:16px}}
 @media (prefers-reduced-motion:reduce){.mv-cursor,.mv-badge--rec i,.mv-pill--connecting i,.mv-typing i{animation:none}}
 .mv-field textarea:focus,.mv-field textarea:focus-visible{outline:none!important;box-shadow:none!important}
+/* fill the whole screen area; cursor visible on dark/light; freeze while typing */
+.mv-screen video{object-fit:cover}
+.mv-screen:fullscreen video{object-fit:contain}
+.mv-cursor{z-index:2;filter:drop-shadow(0 1px 2px #0009) drop-shadow(0 0 1px #0006)}
+.mv-cursor.is-still{animation-play-state:paused}
+.mv-cursor.is-pointing{animation:none;transition:left .6s cubic-bezier(.3,0,.2,1),top .6s cubic-bezier(.3,0,.2,1)}
