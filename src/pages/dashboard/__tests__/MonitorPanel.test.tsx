@@ -225,6 +225,9 @@ describe('Monitor projects & models', () => {
   it('Connect project lists the three options and never fakes GitHub', async () => {
     render(<MonitorPanel />);
     fireEvent.click(screen.getByText('Connect project'));
+    expect(screen.getByRole('dialog', { name: 'Choose project' })).toBeTruthy();
+    expect(screen.getByText('No projects yet')).toBeTruthy();
+    fireEvent.click(screen.getByText('Connect a project'));
     expect(screen.getByRole('dialog', { name: 'Connect a project' })).toBeTruthy();
     expect(screen.getByText('Connect a repository')).toBeTruthy();
     expect(screen.getByText('Connect a folder on this computer')).toBeTruthy();
@@ -297,6 +300,7 @@ describe('Monitor projects & models', () => {
       if (u.endsWith('/models')) return ok({ models: [], latest: {} });
       if (u.includes('/github/repos')) return ok([{ id: 1, fullName: 'matas/launchly', private: true, defaultBranch: 'main', updatedAt: null }]);
       if (u.includes('/github/branches')) return ok(['main', 'dev']);
+      if (u.endsWith('/projects') && !init?.method) return ok([]);
       if (u.endsWith('/projects') && init?.method === 'POST') return ok({ id: 'p1', source: 'github', name: 'launchly', repository: 'matas/launchly', branch: 'main', status: 'synced' });
       if (u.endsWith('/agent/tasks')) return ok({ taskId: 't1' });
       if (u.includes('/agent/tasks/t1')) return ok(task);
@@ -305,15 +309,16 @@ describe('Monitor projects & models', () => {
     render(<MonitorPanel />);
     await waitFor(() => expect(document.querySelector('.mv-pill')!.textContent).toBe('Online'));
     fireEvent.click(screen.getByText('Connect project'));
+    fireEvent.click(screen.getByText('Connect a project'));
     fireEvent.click(screen.getByText('GitHub'));
     fireEvent.click(await screen.findByText('matas/launchly'));
     fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
-    await waitFor(() => expect(document.querySelector('.mv-composer')!.textContent).toContain('launchly / main'));
+    await waitFor(() => expect(document.querySelector('.mv-composer')!.textContent).toContain('launchlyGitHubmain'));
     expect((screen.getByLabelText('Message') as HTMLTextAreaElement).disabled).toBe(true);
     fireEvent.click(screen.getByText('Connect AI'));
     fireEvent.click(await screen.findByRole('button', { name: 'Use OpenAI API' }));
     expect(await screen.findByText('Ask for a change in launchly.')).toBeTruthy();
-    expect(document.querySelector('.mv-composer')!.textContent).toContain('launchly / main');
+    expect(document.querySelector('.mv-composer')!.textContent).toContain('launchlyGitHubmain');
 
     sendMessage('Remove the blue background behind the cursor');
     expect(await screen.findByText('Found monitor.css', {}, { timeout: 3000 })).toBeTruthy();

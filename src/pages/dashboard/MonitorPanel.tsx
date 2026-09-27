@@ -138,7 +138,7 @@ export function MonitorPanel() {
   /** Chat works with a shared screen, a connected project, or both. */
   const selectedProvider = ws.selection.mode === 'auto' ? null : ws.selection.provider;
   const aiReady = !!selectedProvider && ws.providers.some(p => p.provider === selectedProvider && p.connected);
-  const projectReady = !!ws.project && aiReady && !!ws.backend?.capabilities.agent;
+  const projectReady = !!ws.project && ws.project.status === 'synced' && aiReady && !!ws.backend?.capabilities.agent;
   const chatReady = connected || projectReady;
 
   useEffect(() => {
@@ -605,7 +605,7 @@ export function MonitorPanel() {
                 <span className="mv-thread__icon">
                   <MessageSquare size={20} strokeWidth={1.7} />
                 </span>
-                {!chatReady && <strong>What should we build?</strong>}
+                <strong>{ws.project ? `What should we build in ${ws.project.name}?` : 'What should we build?'}</strong>
                 <p>{!chatReady ? 'Connect a project or share your screen to get started.' : connected ? 'Ask me to take a screenshot, record, zoom or go fullscreen.' : `Ask for a change in ${ws.project!.name}.`}</p>
                 {connected && (
                   <div className="mv-suggest">
@@ -649,11 +649,8 @@ export function MonitorPanel() {
             }}
           >
             <div className="mv-compose-project">
-              <ProjectSelector project={ws.project} onConnect={() => setDialog('project')}
-                onDisconnect={async () => {
-                  if (ws.project) await monitorApi.disconnectProject(ws.token, ws.project.id);
-                  ws.setProject(null);
-                }} />
+              <ProjectSelector project={ws.project} projects={ws.projects} loading={ws.projectsLoading} error={ws.projectsError}
+                onRefresh={ws.refreshProjects} onSelect={p => { ws.setProject(p); setMessages([]); }} onConnect={() => setDialog('project')} />
             </div>
             <textarea ref={inputRef} value={input}
               onChange={(e) => setInput(e.target.value.slice(0, MAX_CHARS))}
@@ -664,7 +661,7 @@ export function MonitorPanel() {
               disabled={!chatReady} rows={2} aria-label="Message" />
             <div className="mv-compose-tools">
               <div className="mv-compose-left">
-                <button type="button" className="mv-compose-icon" aria-label="Add project" title="Connect project" onClick={() => setDialog('project')}><Plus size={16} /></button>
+                <button type="button" className="mv-compose-icon" aria-label="Add project" title="Connect project" onClick={() => inputRef.current?.closest('form')?.querySelector<HTMLButtonElement>('.mp-context > button')?.click()}><Plus size={16} /></button>
                 <button type="button" className="mv-compose-text" onClick={() => setDialog('perms')} aria-label="Monitor permissions" title="Manage project permissions">
                   {ws.permissions.readFiles && ws.permissions.searchFiles && ws.permissions.editFiles && ws.permissions.createFiles && ws.permissions.runDevCommands ? 'Full access' : 'Limited access'} <ChevronDown size={12} />
                 </button>
@@ -694,7 +691,7 @@ export function MonitorPanel() {
           backend={ws.backend}
           onClose={() => setDialog(null)}
           onConnected={(p) => {
-            ws.setProject(p);
+            ws.rememberProject(p);
             setDialog(null);
           }}
         />

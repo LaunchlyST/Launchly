@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuthStore } from '../../../auth-store';
 import { monitorApi } from './monitorApi';
 import {
@@ -32,6 +32,33 @@ export function useMonitorWorkspace() {
   const [models, setModels] = useState<ModelInfo[]>([]);
   const [latest, setLatest] = useState<Partial<Record<ProviderId, string | null>>>({});
   const [project, setProject] = useState<ConnectedProject | null>(null);
+  const [projects, setProjects] = useState<ConnectedProject[]>([]);
+  const [projectsLoading, setProjectsLoading] = useState(false);
+  const [projectsError, setProjectsError] = useState('');
+  const projectRequest = useRef(0);
+  const refreshProjects = useCallback(async () => {
+    const request = ++projectRequest.current;
+    if (!token) { setProjects([]); setProject(null); setProjectsError(''); setProjectsLoading(false); return; }
+    setProjectsLoading(true);
+    setProjectsError('');
+    const result = await monitorApi.projects(token);
+    if (request !== projectRequest.current) return;
+    setProjectsLoading(false);
+    if (!result.ok || !Array.isArray(result.data)) {
+      setProjectsError(result.message || 'Could not load saved projects.');
+      setProjects([]);
+      setProject(null);
+      return;
+    }
+    const saved = result.data.filter(p => p && typeof p.id === 'string' && typeof p.name === 'string' && typeof p.branch === 'string' && typeof p.repository === 'string' && ['github', 'local', 'git-url'].includes(p.source) && ['synced', 'syncing', 'error'].includes(p.status));
+    setProjects(saved);
+    setProject(current => saved.find(p => p.id === current?.id) || null);
+  }, [token]);
+  useEffect(() => {
+    setProject(null); setProjects([]);
+    refreshProjects();
+    return () => { ++projectRequest.current; };
+  }, [refreshProjects]);
   const [{ selection, permissions }, setPrefs] = useState(loadPrefs);
 
   useEffect(() => {
@@ -68,6 +95,15 @@ export function useMonitorWorkspace() {
     latest,
     project,
     setProject,
+    projects,
+    projectsLoading,
+    projectsError,
+    refreshProjects,
+    rememberProject: (p: ConnectedProject) => {
+      // Only called after the authenticated connection endpoint succeeds.
+      setProject(p);
+      setProjects(items => [p, ...items.filter(item => item.id !== p.id)]);
+    },
     selection,
     setSelection: (s: ModelSelection) => setPrefs((p) => ({ ...p, selection: s })),
     permissions,

@@ -72,6 +72,7 @@ export const monitorApi = {
     call<ProviderConnection>(`/api/monitor/providers/${provider}`, t, { method: 'DELETE' }),
 
   // Projects
+  projects: (t: string | null) => call<ConnectedProject[]>('/api/monitor/projects', t),
   githubStart: (t: string | null) => call<{ authorizeUrl: string }>('/api/monitor/github/authorize', t, json({})),
   githubRepos: (t: string | null, q = '') => call<GitHubRepo[]>(`/api/monitor/github/repos?q=${encodeURIComponent(q)}`, t),
   githubBranches: (t: string | null, repo: string) => call<string[]>(`/api/monitor/github/branches?repo=${encodeURIComponent(repo)}`, t),

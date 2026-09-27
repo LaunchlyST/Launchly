@@ -113,3 +113,19 @@ em.add{color:#12753f}em.del{color:#b42318}
 .mt-menu--end{left:auto;right:0}
 .mt-pop--model{flex-shrink:0}
 .mt-bar>.mt-btn,.mt-bar>.mt-pop:not(.mt-pop--model){min-width:0;flex-shrink:1}
+
+.mp-context{position:relative;min-width:0}
+.mp-context .mt-btn small{font-size:10px;color:#89919e;font-weight:400}
+.mp-picker{position:absolute;bottom:calc(100% + 18px);left:0;z-index:40;width:min(300px,calc(100vw - 125px));padding:6px;background:#fff;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 8px 28px #1018281a}
+.mp-search{display:flex;align-items:center;gap:8px;padding:8px;color:#89919e}
+.mp-search input{width:100%;min-width:0;border:0;outline:0;background:transparent;font:12px Inter,system-ui,sans-serif;color:#202733}
+.mp-list{max-height:220px;overflow:auto}
+.mp-list p{padding:10px 8px;margin:0;color:#89919e;font-size:12px}
+.mp-list p button{border:0;background:none;color:#344054;text-decoration:underline;cursor:pointer}
+.mp-option{display:flex;align-items:center;gap:9px;width:100%;padding:9px 8px;border:0;border-radius:6px;background:transparent;color:#344054;text-align:left;font:12px Inter,system-ui,sans-serif;cursor:pointer}
+.mp-option:hover,.mp-option[aria-pressed=true]{background:#f5f6f7}
+.mp-option span{flex:1;min-width:0}
+.mp-option strong,.mp-option small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mp-option strong{font-weight:500}
+.mp-option small{margin-top:3px;font-size:10px;color:#89919e}
+.mp-add{border-top:1px solid #eef0f2;border-radius:0;margin-top:4px}

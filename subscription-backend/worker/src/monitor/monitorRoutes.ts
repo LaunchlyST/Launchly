@@ -203,6 +203,14 @@ export async function handleMonitor(request: Request, env: MonitorEnv, fetchImpl
     return ok({ models, latest: resolved });
   }
 
+  if (path === '/projects' && request.method === 'GET') {
+    const { data, error } = await db!.from('monitor_projects')
+      .select('id, source, name, repository, branch, status')
+      .eq('user_id', userId).order('created_at', { ascending: false });
+    if (error) return fail('NOT_CONFIGURED', 'Saved projects are not available. The project service needs to be configured.', 501);
+    return ok(data ?? []);
+  }
+
   // Declared but not built yet: never pretend.
   if (/^\/(github|projects|agent)(\/|$)/.test(path)) {
     return fail('NOT_CONFIGURED', path.startsWith('/github') ? 'GitHub connection isn’t set up on the server yet.' : 'The project agent isn’t available on the server yet.', 501);

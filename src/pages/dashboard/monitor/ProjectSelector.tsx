@@ -1,50 +1,52 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ChevronDown, FolderOpen } from 'lucide-react';
+import { Check, FolderOpen, GitBranch, Plus, Search } from 'lucide-react';
 import type { ConnectedProject } from './types';
 
-/** "+ Connect project" or "● launchly / main ▾" with a small menu. */
-export function ProjectSelector({ project, onConnect, onDisconnect }: { project: ConnectedProject | null; onConnect: () => void; onDisconnect: () => void }) {
+const sourceLabel = { github: 'GitHub', local: 'Local', 'git-url': 'Git' };
+
+export function ProjectSelector({ project, projects, loading, error, onSelect, onConnect, onRefresh }: {
+  project: ConnectedProject | null;
+  projects: ConnectedProject[];
+  loading: boolean;
+  error: string;
+  onSelect: (project: ConnectedProject) => void;
+  onConnect: () => void;
+  onRefresh: () => void;
+}) {
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
   const ref = useRef<HTMLDivElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const search = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (!open) return;
-    const close = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && setOpen(false);
+    search.current?.focus();
+    const close = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };
+    const escape = (e: KeyboardEvent) => { if (e.key === 'Escape') { setOpen(false); trigger.current?.focus(); } };
     document.addEventListener('mousedown', close);
-    return () => document.removeEventListener('mousedown', close);
+    document.addEventListener('keydown', escape);
+    return () => { document.removeEventListener('mousedown', close); document.removeEventListener('keydown', escape); };
   }, [open]);
-
-  if (!project)
-    return (
-      <button type="button" className="mt-btn" onClick={onConnect}>
-        <FolderOpen size={14} /> <span className="mt-btn__text">Connect project</span>
-      </button>
-    );
-  return (
-    <div className="mt-pop" ref={ref}>
-      <button type="button" className="mt-btn" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)} title={`${project.repository} · ${project.status}`}>
-        <i className={`mt-dot mt-dot--${project.status}`} />
-        <span className="mt-btn__text">
-          {project.name} <span className="mt-sep">/</span> {project.branch}
-        </span>
-        <ChevronDown size={12} />
-      </button>
-      {open && (
-        <div className="mt-menu" role="menu">
-          <div className="mt-menu__info">
-            <strong>{project.repository}</strong>
-            <small>
-              {project.branch} · {project.status === 'synced' ? 'Synced' : project.status === 'syncing' ? 'Syncing…' : 'Sync error'}
-            </small>
-          </div>
-          <div className="mt-menu__sep" />
-          <button type="button" className="mt-item" onClick={() => { setOpen(false); onConnect(); }}>
-            <span className="mt-item__check" />Switch project
-          </button>
-          <button type="button" className="mt-item" onClick={() => { setOpen(false); onDisconnect(); }}>
-            <span className="mt-item__check" />Disconnect
-          </button>
-        </div>
-      )}
-    </div>
-  );
+  const list = projects.filter(p => `${p.name} ${p.repository} ${p.branch}`.toLowerCase().includes(query.toLowerCase().trim()));
+  return <div className="mp-context" ref={ref}>
+    <button type="button" className="mt-btn" ref={trigger} aria-haspopup="dialog" aria-expanded={open}
+      onClick={() => { if (!open) { setQuery(''); onRefresh(); } setOpen(!open); }}>
+      <FolderOpen size={14} /> <span className="mt-btn__text">{project?.name || 'Connect project'}</span>
+      {project && <><small>{sourceLabel[project.source]}</small><GitBranch size={12} /><span className="mt-btn__text">{project.branch}</span></>}
+    </button>
+    {open && <div className="mp-picker" role="dialog" aria-label="Choose project">
+      <label className="mp-search"><Search size={14} /><input ref={search} aria-label="Search projects" placeholder="Search projects" value={query} onChange={e => setQuery(e.target.value)} /></label>
+      <div className="mp-list">
+        {loading && <p role="status">Loading projects…</p>}
+        {error && <p role="alert">{error} <button type="button" onClick={onRefresh}>Retry</button></p>}
+        {!loading && !error && !projects.length && <p>No projects yet</p>}
+        {!loading && !!projects.length && !list.length && <p>No matching projects</p>}
+        {list.map(p => <button type="button" className="mp-option" key={p.id} aria-pressed={project?.id === p.id}
+          onClick={() => { onSelect(p); setOpen(false); trigger.current?.focus(); }}>
+          <FolderOpen size={14} /><span><strong>{p.name}</strong><small>{sourceLabel[p.source]} · {p.branch}</small></span>{project?.id === p.id && <Check size={13} />}
+        </button>)}
+      </div>
+      <button type="button" className="mp-option mp-add" onClick={() => { setOpen(false); onConnect(); }}><Plus size={14} />{projects.length ? 'Connect another project' : 'Connect a project'}</button>
+    </div>}
+  </div>;
 }
