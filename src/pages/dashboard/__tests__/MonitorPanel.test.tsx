@@ -218,7 +218,7 @@ describe('Monitor projects & models', () => {
     expect(screen.getByText('Connect AI')).toBeTruthy();
     expect(screen.getByLabelText('Monitor permissions')).toBeTruthy();
     expect(document.querySelector('.mv-pill')!.textContent).toBe('Offline');
-    expect(screen.getByText('Connect a screen or project to start.')).toBeTruthy();
+    expect(screen.getByText('Connect a project or share your screen to get started.')).toBeTruthy();
     expect((screen.getByLabelText('Message') as HTMLTextAreaElement).disabled).toBe(true);
   });
 
@@ -254,7 +254,7 @@ describe('Monitor projects & models', () => {
     expect(screen.getByText('Integration not available')).toBeTruthy();
     expect(screen.queryByText('Codex · Connected')).toBeNull();
     fireEvent.click(await screen.findByRole('button', { name: 'Use Anthropic API' }));
-    expect(document.querySelector('.mt-bar')!.textContent).toContain('Anthropic API');
+    expect(document.querySelector('.mv-composer')!.textContent).toContain('Anthropic API');
   });
 
   it('AI provider modal never shows a stored key and reports server errors honestly', async () => {
@@ -308,12 +308,12 @@ describe('Monitor projects & models', () => {
     fireEvent.click(screen.getByText('GitHub'));
     fireEvent.click(await screen.findByText('matas/launchly'));
     fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
-    await waitFor(() => expect(document.querySelector('.mt-bar')!.textContent).toContain('launchly / main'));
+    await waitFor(() => expect(document.querySelector('.mv-composer')!.textContent).toContain('launchly / main'));
     expect((screen.getByLabelText('Message') as HTMLTextAreaElement).disabled).toBe(true);
     fireEvent.click(screen.getByText('Connect AI'));
     fireEvent.click(await screen.findByRole('button', { name: 'Use OpenAI API' }));
     expect(await screen.findByText('Ask for a change in launchly.')).toBeTruthy();
-    expect(document.querySelector('.mt-bar')!.textContent).toContain('launchly / main');
+    expect(document.querySelector('.mv-composer')!.textContent).toContain('launchly / main');
 
     sendMessage('Remove the blue background behind the cursor');
     expect(await screen.findByText('Found monitor.css', {}, { timeout: 3000 })).toBeTruthy();

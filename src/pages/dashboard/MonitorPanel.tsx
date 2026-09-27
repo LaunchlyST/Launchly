@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowUp, Camera, Circle, LoaderCircle, Maximize2, MessageSquare, Mic, Monitor, MonitorUp, RotateCcw, Settings2, Plus, Square, X } from 'lucide-react';
+import { ArrowUp, Camera, Circle, LoaderCircle, Maximize2, MessageSquare, Mic, Monitor, MonitorUp, RotateCcw, ChevronDown, Plus, Square, X } from 'lucide-react';
 import { useMonitorWorkspace } from './monitor/useMonitorWorkspace';
 import { monitorApi } from './monitor/monitorApi';
 import { ProjectSelector } from './monitor/ProjectSelector';
@@ -140,6 +140,13 @@ export function MonitorPanel() {
   const aiReady = !!selectedProvider && ws.providers.some(p => p.provider === selectedProvider && p.connected);
   const projectReady = !!ws.project && aiReady && !!ws.backend?.capabilities.agent;
   const chatReady = connected || projectReady;
+
+  useEffect(() => {
+    const field = inputRef.current;
+    if (!field) return;
+    field.style.height = 'auto';
+    field.style.height = `${Math.min(160, field.scrollHeight)}px`;
+  }, [input]);
 
   useEffect(() => {
     listRef.current?.scrollTo?.({ top: listRef.current.scrollHeight, behavior: 'smooth' });
@@ -598,7 +605,8 @@ export function MonitorPanel() {
                 <span className="mv-thread__icon">
                   <MessageSquare size={20} strokeWidth={1.7} />
                 </span>
-                <p>{!chatReady ? 'Connect a screen or project to start.' : connected ? 'Ask me to take a screenshot, record, zoom or go fullscreen.' : `Ask for a change in ${ws.project!.name}.`}</p>
+                {!chatReady && <strong>What should we build?</strong>}
+                <p>{!chatReady ? 'Connect a project or share your screen to get started.' : connected ? 'Ask me to take a screenshot, record, zoom or go fullscreen.' : `Ask for a change in ${ws.project!.name}.`}</p>
                 {connected && (
                   <div className="mv-suggest">
                     {['Take a screenshot', 'Start recording', 'Zoom in'].map((q) => (
@@ -640,62 +648,40 @@ export function MonitorPanel() {
               send();
             }}
           >
-            <div className="mt-bar">
-              <ProjectSelector
-                project={ws.project}
-                onConnect={() => setDialog('project')}
+            <div className="mv-compose-project">
+              <ProjectSelector project={ws.project} onConnect={() => setDialog('project')}
                 onDisconnect={async () => {
                   if (ws.project) await monitorApi.disconnectProject(ws.token, ws.project.id);
                   ws.setProject(null);
-                }}
-              />
-              <button type="button" className="mt-btn" onClick={() => setDialog('ai')}>
-                {aiReady ? <i className="mt-dot mt-dot--synced" /> : <Plus size={13} />}
-                <span className="mt-btn__text">{aiReady ? (selectedProvider === 'openai' ? 'OpenAI API' : 'Anthropic API') : 'Connect AI'}</span>
-              </button>
-              <button type="button" className="mt-btn mt-btn--icon" onClick={() => setDialog('perms')} aria-label="Monitor permissions" title="Monitor permissions">
-                <Settings2 size={13} />
-              </button>
+                }} />
             </div>
-            <div className="mv-box">
-              <textarea
-                ref={inputRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value.slice(0, MAX_CHARS))}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    send();
-                  }
-                }}
-                placeholder={chatReady ? (ws.project && !connected ? 'Ask for a change…' : 'Ask anything…') : 'Connect a screen or project to start'}
-                disabled={!chatReady}
-                rows={2}
-                aria-label="Message"
-              />
-              <div className="mv-box__row">
-                {Speech ? (
-                  <button
-                    type="button"
-                    className={`mv-voice ${listening ? 'is-on' : ''}`}
-                    disabled={!chatReady || busy}
-                    onClick={toggleVoice}
-                    aria-label={listening ? 'Stop listening' : 'Voice'}
-                  >
-                    {listening ? <X size={13} /> : <Mic size={13} />}
-                    <span>{listening ? 'Listening' : 'Voice'}</span>
-                  </button>
-                ) : (
-                  <span />
-                )}
-                <div className="mv-box__right">
-                  <span className="mv-count">
-                    {input.length}/{MAX_CHARS}
-                  </span>
-                  <button type="submit" className="mv-send" disabled={!chatReady || busy || !input.trim()} aria-label="Send">
-                    {busy ? <LoaderCircle size={15} className="spin" /> : <ArrowUp size={15} strokeWidth={2.4} />}
-                  </button>
-                </div>
+            <textarea ref={inputRef} value={input}
+              onChange={(e) => setInput(e.target.value.slice(0, MAX_CHARS))}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+              }}
+              placeholder="Ask Monitor to build or change something..."
+              disabled={!chatReady} rows={2} aria-label="Message" />
+            <div className="mv-compose-tools">
+              <div className="mv-compose-left">
+                <button type="button" className="mv-compose-icon" aria-label="Add project" title="Connect project" onClick={() => setDialog('project')}><Plus size={16} /></button>
+                <button type="button" className="mv-compose-text" onClick={() => setDialog('perms')} aria-label="Monitor permissions" title="Manage project permissions">
+                  {ws.permissions.readFiles && ws.permissions.searchFiles && ws.permissions.editFiles && ws.permissions.createFiles && ws.permissions.runDevCommands ? 'Full access' : 'Limited access'} <ChevronDown size={12} />
+                </button>
+              </div>
+              <div className="mv-compose-right">
+                {input.length >= MAX_CHARS * .9 && <span className="mv-count">{input.length}/{MAX_CHARS}</span>}
+                <button type="button" className="mv-compose-text mv-compose-ai" onClick={() => setDialog('ai')}>
+                  {aiReady ? (selectedProvider === 'openai' ? 'OpenAI API' : 'Anthropic API') : 'Connect AI'} <ChevronDown size={12} />
+                </button>
+                <button type="button" className={`mv-compose-icon ${listening ? 'is-listening' : ''}`}
+                  disabled={!Speech || !chatReady || busy} onClick={toggleVoice}
+                  aria-label={listening ? 'Stop listening' : 'Voice'} title={Speech ? 'Voice' : 'Voice is unavailable in this browser'}>
+                  {listening ? <X size={16} /> : <Mic size={16} />}
+                </button>
+                <button type="submit" className="mv-send" disabled={!chatReady || busy || !input.trim()} aria-label="Send">
+                  {busy ? <LoaderCircle size={15} className="spin" /> : <ArrowUp size={15} strokeWidth={2.4} />}
+                </button>
               </div>
             </div>
           </form>

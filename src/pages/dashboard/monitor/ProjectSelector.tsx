@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ChevronDown, Plus } from 'lucide-react';
+import { ChevronDown, FolderOpen } from 'lucide-react';
 import type { ConnectedProject } from './types';
 
 /** "+ Connect project" or "● launchly / main ▾" with a small menu. */
@@ -16,7 +16,7 @@ export function ProjectSelector({ project, onConnect, onDisconnect }: { project:
   if (!project)
     return (
       <button type="button" className="mt-btn" onClick={onConnect}>
-        <Plus size={13} /> <span className="mt-btn__text">Connect project</span>
+        <FolderOpen size={14} /> <span className="mt-btn__text">Connect project</span>
       </button>
     );
   return (

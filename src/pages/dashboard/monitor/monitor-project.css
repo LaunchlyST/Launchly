@@ -109,7 +109,7 @@ em.add{color:#12753f}em.del{color:#b42318}
 .mv .mv-card.mv-card--chat{overflow:visible}
 .mv .mv-card--chat .mv-card__head{border-radius:18px 18px 0 0}
 .mv-card--chat .mv-thread{border-radius:0}
-.mv .mv-card--chat .mv-composer{border-radius:0 0 18px 18px}
+.mv .mv-card--chat .mv-composer{border-radius:15px}
 .mt-menu--end{left:auto;right:0}
 .mt-pop--model{flex-shrink:0}
 .mt-bar>.mt-btn,.mt-bar>.mt-pop:not(.mt-pop--model){min-width:0;flex-shrink:1}
