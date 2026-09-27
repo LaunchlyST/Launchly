@@ -1,314 +1,190 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { KeyRound, LoaderCircle, Mic, MicOff, Monitor, MousePointer2, Octagon, Send } from 'lucide-react';
-import { useStore } from '../../store';
+import { Monitor, Octagon, Send } from 'lucide-react';
 
 /**
- * Automation → Monitor.
- *
- * Connect shares a screen/window through the browser's own permission prompt
- * (getDisplayMedia). The AI sees a frame of what you share, answers your
- * request, and points at the spot on screen with the AI cursor.
- *
- * Honest limit: a web page cannot move your real mouse or type on your PC —
- * that needs a desktop helper app. The AI cursor is drawn over the preview
- * only, and Stop ends sharing, listening and any running request at once.
+ * Monitor: share your whole screen into the box, then type a command under
+ * it. Commands run right here in the browser — no AI model or API key.
  */
 
-type Msg = { role: 'user' | 'ai'; text: string };
+type Line = { from: 'you' | 'system'; text: string };
 
-interface SpeechRec {
-  lang: string;
-  interimResults: boolean;
-  continuous: boolean;
-  start(): void;
-  stop(): void;
-  onresult: ((e: any) => void) | null;
-  onend: (() => void) | null;
-  onerror: ((e: any) => void) | null;
-}
+const HELP =
+  'Commands: screenshot · record · stop recording · pause · resume · fullscreen · zoom in · zoom out · reset zoom · stop · help';
 
-function getSpeechRecognition(): (new () => SpeechRec) | null {
-  const w = window as any;
-  return w.SpeechRecognition || w.webkitSpeechRecognition || null;
-}
-
-async function askVision(apiKey: string, image: string, question: string, signal: AbortSignal) {
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    signal,
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      response_format: { type: 'json_object' },
-      messages: [
-        {
-          role: 'system',
-          content:
-            'You are a screen assistant. You see a screenshot of the user\'s screen. Answer their request briefly and practically. ' +
-            'If a specific place on screen is relevant (a button, field, link), return its position as fractions of the image width/height. ' +
-            'Reply as JSON: {"answer": string, "point": {"x": number, "y": number} | null}. Only describe what is actually visible.',
-        },
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: question },
-            { type: 'image_url', image_url: { url: image, detail: 'low' } },
-          ],
-        },
-      ],
-    }),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => null);
-    throw new Error(err?.error?.message || `OpenAI error ${res.status}`);
-  }
-  const data = await res.json();
-  const parsed = JSON.parse(data.choices?.[0]?.message?.content || '{}');
-  const p = parsed.point;
-  const point = p && typeof p.x === 'number' && typeof p.y === 'number' && p.x >= 0 && p.x <= 1 && p.y >= 0 && p.y <= 1 ? { x: p.x, y: p.y } : null;
-  return { answer: String(parsed.answer || 'No answer.'), point };
-}
-
-export function MonitorPanel({ onSettings }: { onSettings: () => void }) {
-  const openaiKey = useStore((s) => s.openaiKey);
+export function MonitorPanel() {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const boxRef = useRef<HTMLDivElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const recRef = useRef<SpeechRec | null>(null);
-  const requestRef = useRef<AbortController | null>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
   const [connected, setConnected] = useState(false);
-  const [error, setError] = useState('');
+  const [recording, setRecording] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const [zoom, setZoom] = useState(1);
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState<Msg[]>([]);
-  const [busy, setBusy] = useState(false);
-  const [listening, setListening] = useState(false);
-  const [speak, setSpeak] = useState(true);
-  const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null);
+  const [log, setLog] = useState<Line[]>([]);
   const canShare = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getDisplayMedia;
-  const Speech = getSpeechRecognition();
 
-  useEffect(() => () => stopAll(), []);
+  useEffect(() => () => stop(), []);
+
+  const say = (text: string) => setLog((l) => [...l.slice(-7), { from: 'system', text }]);
 
   async function connect() {
-    setError('');
     try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 10 }, audio: false });
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: { displaySurface: 'monitor', frameRate: 30 } as MediaTrackConstraints,
+        audio: false,
+      });
       streamRef.current = stream;
-      stream.getVideoTracks()[0]?.addEventListener('ended', () => stopAll());
+      stream.getVideoTracks()[0]?.addEventListener('ended', () => stop());
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         await videoRef.current.play().catch(() => {});
       }
       setConnected(true);
+      setPaused(false);
+      setZoom(1);
+      say('Connected. Type "help" to see what I can do.');
     } catch (e) {
-      setError(e instanceof Error && e.name === 'NotAllowedError' ? 'Screen sharing was cancelled.' : 'Could not start screen sharing.');
+      say(e instanceof Error && e.name === 'NotAllowedError' ? 'Screen sharing was cancelled.' : 'Could not start screen sharing.');
     }
   }
 
-  function stopAll() {
-    requestRef.current?.abort();
-    requestRef.current = null;
-    recRef.current?.stop();
-    recRef.current = null;
+  function stop() {
+    if (recorderRef.current?.state === 'recording') recorderRef.current.stop();
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
     if (videoRef.current) videoRef.current.srcObject = null;
-    window.speechSynthesis?.cancel();
     setConnected(false);
-    setListening(false);
-    setBusy(false);
-    setCursor(null);
+    setRecording(false);
+    setPaused(false);
   }
 
-  function frame(): string | null {
+  function download(blob: Blob, name: string) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  function screenshot() {
     const v = videoRef.current;
-    if (!v || !v.videoWidth) return null;
-    const scale = Math.min(1, 1280 / v.videoWidth);
+    if (!v?.videoWidth) return say('Nothing to capture yet.');
     const c = document.createElement('canvas');
-    c.width = Math.round(v.videoWidth * scale);
-    c.height = Math.round(v.videoHeight * scale);
-    c.getContext('2d')!.drawImage(v, 0, 0, c.width, c.height);
-    return c.toDataURL('image/jpeg', 0.7);
+    c.width = v.videoWidth;
+    c.height = v.videoHeight;
+    c.getContext('2d')!.drawImage(v, 0, 0);
+    c.toBlob((b) => b && download(b, `launchly-screenshot-${Date.now()}.png`), 'image/png');
+    say('Screenshot saved to your downloads.');
   }
 
-  async function ask(text: string) {
-    const q = text.trim();
-    if (!q || busy) return;
-    const image = frame();
-    if (!image) {
-      setError('Connect a screen first so the AI can see it.');
-      return;
-    }
-    setMessages((m) => [...m, { role: 'user', text: q }]);
-    setInput('');
-    setBusy(true);
-    setError('');
-    const controller = new AbortController();
-    requestRef.current = controller;
-    const timer = setTimeout(() => controller.abort(), 45000);
-    try {
-      const { answer, point } = await askVision(openaiKey, image, q, controller.signal);
-      setMessages((m) => [...m, { role: 'ai', text: answer }]);
-      setCursor(point);
-      if (speak && 'speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        window.speechSynthesis.speak(new SpeechSynthesisUtterance(answer));
-      }
-    } catch (e) {
-      if (!controller.signal.aborted) setError(e instanceof Error ? e.message : 'Something went wrong.');
-    } finally {
-      clearTimeout(timer);
-      if (requestRef.current === controller) requestRef.current = null;
-      setBusy(false);
-    }
-  }
-
-  function toggleListen() {
-    if (!Speech) return;
-    if (listening) {
-      recRef.current?.stop();
-      return;
-    }
-    const rec = new Speech();
-    rec.lang = navigator.language || 'en-GB';
-    rec.interimResults = false;
-    rec.continuous = false;
-    rec.onresult = (e: any) => {
-      const said = Array.from(e.results as ArrayLike<any>).map((r: any) => r[0].transcript).join(' ');
-      if (said.trim()) ask(said);
+  function startRecording() {
+    if (!streamRef.current) return;
+    if (recording) return say('Already recording.');
+    if (typeof MediaRecorder === 'undefined') return say('Recording is not supported in this browser.');
+    chunksRef.current = [];
+    const rec = new MediaRecorder(streamRef.current, { mimeType: MediaRecorder.isTypeSupported('video/webm') ? 'video/webm' : '' });
+    rec.ondataavailable = (e) => e.data.size && chunksRef.current.push(e.data);
+    rec.onstop = () => {
+      download(new Blob(chunksRef.current, { type: 'video/webm' }), `launchly-recording-${Date.now()}.webm`);
+      setRecording(false);
     };
-    rec.onend = () => setListening(false);
-    rec.onerror = () => setListening(false);
-    recRef.current = rec;
-    setListening(true);
     rec.start();
+    recorderRef.current = rec;
+    setRecording(true);
+    say('Recording started. Type "stop recording" to save it.');
   }
 
-  const active = connected || busy || listening;
+  function run(raw: string) {
+    const cmd = raw.trim().toLowerCase();
+    if (!cmd) return;
+    setLog((l) => [...l.slice(-7), { from: 'you', text: raw.trim() }]);
+    setInput('');
+    if (cmd === 'help' || cmd === '?') return say(HELP);
+    if (!connected) return say('Press Connect first.');
+    if (/^(screenshot|capture|snap)/.test(cmd)) return screenshot();
+    if (/^stop record/.test(cmd)) {
+      if (!recording) return say('Not recording.');
+      recorderRef.current?.stop();
+      return say('Recording saved to your downloads.');
+    }
+    if (/^record/.test(cmd)) return startRecording();
+    if (/^(pause|freeze)/.test(cmd)) {
+      videoRef.current?.pause();
+      setPaused(true);
+      return say('Paused.');
+    }
+    if (/^(resume|play|unfreeze)/.test(cmd)) {
+      videoRef.current?.play();
+      setPaused(false);
+      return say('Live again.');
+    }
+    if (/^full ?screen/.test(cmd)) {
+      boxRef.current?.requestFullscreen?.().catch(() => say('Fullscreen was blocked by the browser.'));
+      return;
+    }
+    if (/^zoom in/.test(cmd)) return setZoom((z) => Math.min(3, +(z + 0.5).toFixed(1)));
+    if (/^zoom out/.test(cmd)) return setZoom((z) => Math.max(1, +(z - 0.5).toFixed(1)));
+    if (/^(reset zoom|zoom reset)/.test(cmd)) return setZoom(1);
+    if (/^(stop|disconnect|end)/.test(cmd)) {
+      stop();
+      return say('Stopped.');
+    }
+    say(`I don't know "${raw.trim()}". ${HELP}`);
+  }
 
   return (
-    <>
-      <div className="research-page-heading">
-        <div>
-          <span className="eyebrow">Automation</span>
-          <h1>Monitor</h1>
-          <p>Share your screen, then ask the AI what to do — by typing or talking.</p>
-        </div>
+    <div className="monitor-simple">
+      <div className="monitor-simple__head">
+        <h1>Monitor</h1>
+        {connected && (
+          <button className="monitor-stop" onClick={() => { stop(); say('Stopped.'); }}>
+            <Octagon size={16} /> Stop
+          </button>
+        )}
       </div>
 
-      {!openaiKey && (
-        <div className="research-notice">
-          <KeyRound size={15} /> Add your OpenAI key in Settings so the AI can see your screen.
-          <button onClick={onSettings}>Open Settings</button>
+      <div ref={boxRef} className="monitor-box">
+        <video ref={videoRef} muted playsInline hidden={!connected} style={{ transform: `scale(${zoom})` }} />
+        {!connected && (
+          <div className="monitor-connect">
+            <span>
+              <Monitor size={28} strokeWidth={1.5} />
+            </span>
+            <button className="research-primary" onClick={connect} disabled={!canShare}>
+              {canShare ? 'Connect' : 'Screen sharing not supported in this browser'}
+            </button>
+          </div>
+        )}
+        {connected && (recording || paused) && (
+          <span className="monitor-badge">{recording ? '● REC' : 'Paused'}</span>
+        )}
+      </div>
+
+      <form
+        className="monitor-bar"
+        onSubmit={(e) => {
+          e.preventDefault();
+          run(input);
+        }}
+      >
+        <input value={input} onChange={(e) => setInput(e.target.value)} placeholder='Type a command, e.g. "screenshot" or "record"' maxLength={200} />
+        <button className="research-primary" disabled={!input.trim()} aria-label="Send">
+          <Send size={16} />
+        </button>
+      </form>
+
+      {log.length > 0 && (
+        <div className="monitor-log">
+          {log.map((l, i) => (
+            <p key={i} className={l.from === 'you' ? 'is-you' : ''}>
+              {l.text}
+            </p>
+          ))}
         </div>
       )}
-
-      <div className="monitor-layout">
-        <section className="research-panel monitor-screen-panel">
-          <div className="panel-heading">
-            <div>
-              <h2>Your screen</h2>
-              <p>{connected ? 'Live — only you and the AI can see this.' : 'Nothing is shared until you press Connect.'}</p>
-            </div>
-            <span className={`monitor-status ${connected ? 'is-live' : ''}`}>
-              <i /> {connected ? 'Connected' : 'Not connected'}
-            </span>
-          </div>
-
-          <div className="monitor-screen">
-            <video ref={videoRef} muted playsInline hidden={!connected} />
-            {!connected && (
-              <div className="monitor-connect">
-                <span>
-                  <Monitor size={28} strokeWidth={1.5} />
-                </span>
-                <h3>Connect your screen</h3>
-                <p>Choose a window, tab or your whole screen in the browser prompt.</p>
-                <button className="research-primary" onClick={connect} disabled={!canShare}>
-                  {canShare ? 'Connect' : 'Screen sharing not supported in this browser'}
-                </button>
-              </div>
-            )}
-            {connected && cursor && (
-              <div className="monitor-ai-cursor" style={{ left: `${cursor.x * 100}%`, top: `${cursor.y * 100}%` }} aria-label="AI cursor">
-                <MousePointer2 size={22} fill="currentColor" />
-                <span>AI</span>
-              </div>
-            )}
-          </div>
-
-          <div className="monitor-ask">
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                ask(input);
-              }}
-            >
-              <input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder={connected ? 'Ask the AI what to do on this screen…' : 'Connect your screen first'}
-                disabled={!connected || !openaiKey}
-                maxLength={500}
-              />
-              {Speech && (
-                <button
-                  type="button"
-                  className={`monitor-icon-btn ${listening ? 'is-on' : ''}`}
-                  onClick={toggleListen}
-                  disabled={!connected || !openaiKey}
-                  aria-label={listening ? 'Stop listening' : 'Talk to the AI'}
-                  title={listening ? 'Listening… click to stop' : 'Talk to the AI'}
-                >
-                  {listening ? <MicOff size={17} /> : <Mic size={17} />}
-                </button>
-              )}
-              <button className="research-primary" disabled={!connected || !openaiKey || busy || !input.trim()}>
-                {busy ? <LoaderCircle className="spin" size={16} /> : <Send size={16} />} Ask
-              </button>
-            </form>
-            <label className="monitor-speak">
-              <input type="checkbox" checked={speak} onChange={(e) => setSpeak(e.target.checked)} /> Read answers aloud
-            </label>
-          </div>
-          {error && (
-            <div className="research-notice" role="alert">
-              {error}
-            </div>
-          )}
-        </section>
-
-        <aside className="research-panel monitor-side">
-          <div className="monitor-ai-mouse">
-            <span className={`monitor-ai-mouse__icon ${active ? 'is-active' : ''}`}>
-              <MousePointer2 size={20} fill="currentColor" />
-            </span>
-            <div>
-              <strong>AI mouse</strong>
-              <small>{busy ? 'Looking at your screen…' : listening ? 'Listening…' : cursor ? 'Pointing on your screen' : connected ? 'Waiting for your request' : 'Idle'}</small>
-            </div>
-          </div>
-          <button className="monitor-stop" onClick={stopAll} disabled={!active}>
-            <Octagon size={18} /> Stop
-          </button>
-          <p className="monitor-note">Stop ends screen sharing, listening and any running AI request immediately.</p>
-
-          <div className="monitor-chat">
-            {messages.length === 0 ? (
-              <p className="monitor-note">Your conversation with the AI appears here.</p>
-            ) : (
-              messages.map((m, i) => (
-                <div key={i} className={`monitor-msg monitor-msg--${m.role}`}>
-                  <small>{m.role === 'ai' ? 'AI' : 'You'}</small>
-                  <p>{m.text}</p>
-                </div>
-              ))
-            )}
-          </div>
-          <p className="monitor-note">
-            The AI can see and point, but a website can’t move your real mouse or type on your PC. Full control needs the Launchly desktop app.
-          </p>
-        </aside>
-      </div>
-    </>
+    </div>
   );
 }
