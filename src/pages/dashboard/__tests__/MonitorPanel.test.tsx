@@ -306,4 +306,16 @@ describe('Monitor projects & models', () => {
     expect(screen.getByText('-.halo{background:blue}')).toBeTruthy();
     expect(screen.getByText('+.halo{display:none}')).toBeTruthy();
   });
+
+  it('does not crash when the backend URL returns the website HTML instead of JSON', async () => {
+    auth.token = 'tok';
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('<!doctype html><html></html>', { status: 200, headers: { 'Content-Type': 'text/html' } })));
+    render(<MonitorPanel />);
+    await new Promise((r) => setTimeout(r, 50));
+    expect(document.querySelector('.mv-pill')!.textContent).toBe('Offline');
+    fireEvent.click(screen.getByText('AI: Auto'));
+    expect(screen.getByText('No AI providers connected yet.')).toBeTruthy();
+    fireEvent.click(screen.getByText('+ Connect AI provider'));
+    expect(screen.getByRole('dialog', { name: 'Connect AI' })).toBeTruthy();
+  });
 });

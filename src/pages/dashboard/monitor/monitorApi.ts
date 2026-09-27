@@ -39,7 +39,15 @@ async function call<T>(path: string, token: string | null, init: RequestInit = {
   } catch {
     /* non-JSON (e.g. old worker without these routes) */
   }
-  if (res.ok && body?.success !== false) return { ok: true, data: (body?.data ?? body) as T };
+  if (res.ok && body?.success !== false) {
+    const data = body?.data ?? body;
+    // A 200 that isn't our JSON (e.g. the website's HTML) means the Monitor
+    // service isn't behind this URL — never treat that as real data.
+    if (data === null || data === undefined || typeof data !== 'object') {
+      return { ok: false, reason: 'not_configured', message: 'The Monitor service isn’t available at this address.' };
+    }
+    return { ok: true, data: data as T };
+  }
   const code: string | undefined = body?.error?.code;
   if (res.status === 404 || res.status === 501 || code === 'NOT_CONFIGURED') {
     return { ok: false, reason: 'not_configured', message: body?.error?.message || 'This isn’t set up on the server yet.' };
