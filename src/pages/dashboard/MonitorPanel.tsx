@@ -1,5 +1,15 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowUp, Camera, Circle, LoaderCircle, Maximize2, MessageSquare, Mic, Monitor, MonitorUp, RotateCcw, Square, X } from 'lucide-react';
+import { ArrowUp, Camera, Circle, LoaderCircle, Maximize2, MessageSquare, Mic, Monitor, MonitorUp, RotateCcw, Settings2, Square, X } from 'lucide-react';
+import { useMonitorWorkspace } from './monitor/useMonitorWorkspace';
+import { monitorApi } from './monitor/monitorApi';
+import { ProjectSelector } from './monitor/ProjectSelector';
+import { ModelSelector } from './monitor/ModelSelector';
+import { ProjectConnectionModal } from './monitor/ProjectConnectionModal';
+import { AIProviderModal } from './monitor/AIProviderModal';
+import { MonitorPermissions } from './monitor/MonitorPermissions';
+import { AgentActivity, ChangeSummary } from './monitor/AgentActivity';
+import type { AgentTask } from './monitor/types';
+import './monitor/monitor-project.css';
 import { useStore } from '../../store';
 import './monitor.css';
 import { describeArea, extractTarget, locate, readScreen, summariseText } from './screenReader';
@@ -20,7 +30,7 @@ import { describeArea, extractTarget, locate, readScreen, summariseText } from '
 
 type Conn = 'idle' | 'connecting' | 'connected';
 type Role = 'you' | 'assistant';
-type Msg = { id: number; role: Role; text: string; status?: 'pending' | 'error' };
+type Msg = { id: number; role: Role; text: string; status?: 'pending' | 'error'; task?: AgentTask };
 
 export type Intent =
   | 'screenshot'
@@ -98,6 +108,8 @@ const MAX_CHARS = 1000;
 
 export function MonitorPanel() {
   const openaiKey = useStore((s) => s.openaiKey);
+  const ws = useMonitorWorkspace();
+  const [dialog, setDialog] = useState<null | 'project' | 'ai' | 'perms'>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const screenRef = useRef<HTMLDivElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -124,6 +136,8 @@ export function MonitorPanel() {
   const canShare = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getDisplayMedia;
   const Speech = typeof window !== 'undefined' ? getSpeechRecognition() : null;
   const connected = conn === 'connected';
+  /** Chat works with a shared screen, a connected project, or both. */
+  const chatReady = connected || !!ws.project;
 
   useEffect(() => {
     listRef.current?.scrollTo?.({ top: listRef.current.scrollHeight, behavior: 'smooth' });
@@ -277,13 +291,15 @@ export function MonitorPanel() {
 
   async function send(raw?: string) {
     const text = (raw ?? input).trim();
-    if (!text || busy || !connected) return;
+    if (!text || busy || !chatReady) return;
     setInput('');
     setPointer(null);
     add('you', text);
 
-    const intent = interpret(text);
+    const intent = connected ? interpret(text) : null;
     if (intent === 'disconnect') return disconnect();
+    // Project connected and this isn't a screen command or a "where is…" question → project agent.
+    if (ws.project && !intent && !(connected && extractTarget(text))) return runAgent(text);
     if (intent) {
       add('assistant', runIntent(intent));
       return;
@@ -361,6 +377,65 @@ export function MonitorPanel() {
     }
   }
 
+  /** Send a coding request to the Monitor backend agent and follow its progress. */
+  async function runAgent(prompt: string) {
+    const project = ws.project!;
+    const task: AgentTask = {
+      id: `local-${nextId}`,
+      prompt,
+      status: 'working',
+      activity: [{ id: 'u', tool: 'understand', label: 'Understanding request…', status: 'running' }],
+      changes: null,
+      error: null,
+    };
+    const id = add('assistant', '', undefined);
+    update(id, { task });
+    setBusy(true);
+    const controller = new AbortController();
+    requestRef.current = controller;
+    const setTask = (t: AgentTask) => requestRef.current === controller && update(id, { task: t });
+    try {
+      const started = await monitorApi.runTask(ws.token, { projectId: project.id, prompt, model: ws.selection, permissions: ws.permissions });
+      if (!started.ok) {
+        setTask({
+          ...task,
+          status: 'error',
+          activity: [{ ...task.activity[0], status: 'error' }],
+          error: started.reason === 'not_configured' ? 'The project agent isn’t available on the server yet.' : started.message,
+        });
+        return;
+      }
+      // Follow the server-side task until it finishes or needs approval.
+      for (let i = 0; i < 600 && requestRef.current === controller; i++) {
+        await new Promise((r) => setTimeout(r, 1000));
+        const r = await monitorApi.getTask(ws.token, started.data.taskId);
+        if (!r.ok) {
+          setTask({ ...task, status: 'error', error: r.message });
+          return;
+        }
+        setTask(r.data);
+        if (r.data.status !== 'working') return;
+      }
+    } finally {
+      if (requestRef.current === controller) {
+        requestRef.current = null;
+        setBusy(false);
+      }
+    }
+  }
+
+  async function applyChanges(msgId: number, task: AgentTask) {
+    if (!task.changes) return;
+    const r = await monitorApi.applyChanges(ws.token, task.changes.id);
+    update(msgId, { task: r.ok ? { ...task, changes: r.data } : { ...task, error: r.message } });
+  }
+
+  async function undoChanges(msgId: number, task: AgentTask) {
+    if (!task.changes) return;
+    const r = await monitorApi.undo(ws.token, task.changes.checkpointId);
+    update(msgId, { task: r.ok ? { ...task, changes: null, activity: [...task.activity, { id: 'undo', tool: 'git_status', label: 'Restored the checkpoint', status: 'done' }] } : { ...task, error: r.message } });
+  }
+
   /** Map a point in the shared frame to the on-screen box (object-fit: cover + zoom). */
   function pointerStyle(): React.CSSProperties | undefined {
     const v = videoRef.current;
@@ -375,7 +450,7 @@ export function MonitorPanel() {
   }
 
   function toggleVoice() {
-    if (!Speech || !connected) return;
+    if (!Speech || !chatReady) return;
     if (listening) return recognitionRef.current?.stop();
     const rec = new Speech();
     rec.lang = navigator.language || 'en-GB';
@@ -398,11 +473,11 @@ export function MonitorPanel() {
       <header className="mv-head">
         <div>
           <h1 className="mv-title">Monitor</h1>
-          <p className="mv-sub">Share a screen and control it by typing or talking.</p>
+          <p className="mv-sub">Share your screen or connect a project and control it by typing or talking.</p>
         </div>
-        <span className={`mv-pill mv-pill--${status.toLowerCase()}`} role="status">
+        <span className={`mv-pill ${ws.online ? 'mv-pill--live' : ''}`} title={ws.online ? 'Monitor service is available' : 'Monitor service isn’t reachable'}>
           <i />
-          {status}
+          {ws.online ? 'Online' : 'Offline'}
         </span>
       </header>
 
@@ -412,6 +487,7 @@ export function MonitorPanel() {
           <header className="mv-card__head">
             <span className="mv-card__title">
               <Monitor size={16} strokeWidth={1.9} /> Screen
+              <span className="mv-visually-hidden" role="status">{status}</span>
               {connected && (
                 <span className="mv-card__meta" data-testid="connection-label">
                   <i className="mv-live-dot" /> Connected <span className="mv-sep">·</span> {source}
@@ -490,7 +566,7 @@ export function MonitorPanel() {
         </section>
 
         {/* ---------------- Chat ---------------- */}
-        <section className={`mv-card mv-card--chat ${connected ? '' : 'is-disabled'}`}>
+        <section className={`mv-card mv-card--chat ${chatReady ? '' : 'is-disabled'}`}>
           <header className="mv-card__head">
             <span className="mv-card__title">
               <MessageSquare size={16} strokeWidth={1.9} /> Chat
@@ -499,7 +575,7 @@ export function MonitorPanel() {
               type="button"
               className="mv-tool"
               onClick={() => setMessages([])}
-              disabled={!connected || messages.length === 0}
+              disabled={!chatReady || messages.length === 0}
               title="Clear chat"
               aria-label="Clear chat"
             >
@@ -508,12 +584,12 @@ export function MonitorPanel() {
           </header>
 
           <div className="mv-thread" ref={listRef} aria-live="polite">
-            {!connected || messages.length === 0 ? (
+            {!chatReady || messages.length === 0 ? (
               <div className="mv-thread__empty">
                 <span className="mv-thread__icon">
                   <MessageSquare size={20} strokeWidth={1.7} />
                 </span>
-                <p>{connected ? 'Ask me to take a screenshot, record, zoom or go fullscreen.' : 'Messages appear here once a screen is connected.'}</p>
+                <p>{!chatReady ? 'Connect a screen or project to start.' : connected ? 'Ask me to take a screenshot, record, zoom or go fullscreen.' : `Ask for a change in ${ws.project!.name}.`}</p>
                 {connected && (
                   <div className="mv-suggest">
                     {['Take a screenshot', 'Start recording', 'Zoom in'].map((q) => (
@@ -527,7 +603,14 @@ export function MonitorPanel() {
             ) : (
               messages.map((m) => (
                 <div key={m.id} className={`mv-msg mv-msg--${m.role} ${m.status ? `is-${m.status}` : ''}`}>
-                  {m.status === 'pending' ? (
+                  {m.task ? (
+                    <>
+                      <AgentActivity task={m.task} />
+                      {m.task.changes && (
+                        <ChangeSummary changes={m.task.changes} busy={busy} onApply={() => applyChanges(m.id, m.task!)} onUndo={() => undoChanges(m.id, m.task!)} />
+                      )}
+                    </>
+                  ) : m.status === 'pending' ? (
                     <span className="mv-typing" aria-label="Assistant is thinking">
                       <i />
                       <i />
@@ -548,19 +631,28 @@ export function MonitorPanel() {
               send();
             }}
           >
-            {Speech && (
-              <button
-                type="button"
-                className={`mv-voice ${listening ? 'is-on' : ''}`}
-                disabled={!connected || busy}
-                onClick={toggleVoice}
-                aria-label={listening ? 'Stop listening' : 'Voice'}
-              >
-                {listening ? <X size={14} /> : <Mic size={14} />}
-                <span>{listening ? 'Listening' : 'Voice'}</span>
+            <div className="mt-bar">
+              <ProjectSelector
+                project={ws.project}
+                onConnect={() => setDialog('project')}
+                onDisconnect={async () => {
+                  if (ws.project) await monitorApi.disconnectProject(ws.token, ws.project.id);
+                  ws.setProject(null);
+                }}
+              />
+              <ModelSelector
+                selection={ws.selection}
+                onChange={ws.setSelection}
+                providers={ws.providers}
+                models={ws.models}
+                onConnectProvider={() => setDialog('ai')}
+                onManageKeys={() => setDialog('ai')}
+              />
+              <button type="button" className="mt-btn mt-btn--icon" onClick={() => setDialog('perms')} aria-label="Monitor permissions" title="Monitor permissions">
+                <Settings2 size={13} />
               </button>
-            )}
-            <div className="mv-field">
+            </div>
+            <div className="mv-box">
               <textarea
                 ref={inputRef}
                 value={input}
@@ -571,21 +663,53 @@ export function MonitorPanel() {
                     send();
                   }
                 }}
-                placeholder={connected ? 'Ask anything…' : 'Connect a screen to chat'}
-                disabled={!connected}
-                rows={1}
+                placeholder={chatReady ? (ws.project && !connected ? 'Ask for a change…' : 'Ask anything…') : 'Connect a screen or project to start'}
+                disabled={!chatReady}
+                rows={2}
                 aria-label="Message"
               />
-              <span className="mv-count">
-                {input.length}/{MAX_CHARS}
-              </span>
-              <button type="submit" className="mv-send" disabled={!connected || busy || !input.trim()} aria-label="Send">
-                {busy ? <LoaderCircle size={15} className="spin" /> : <ArrowUp size={15} strokeWidth={2.4} />}
-              </button>
+              <div className="mv-box__row">
+                {Speech ? (
+                  <button
+                    type="button"
+                    className={`mv-voice ${listening ? 'is-on' : ''}`}
+                    disabled={!chatReady || busy}
+                    onClick={toggleVoice}
+                    aria-label={listening ? 'Stop listening' : 'Voice'}
+                  >
+                    {listening ? <X size={13} /> : <Mic size={13} />}
+                    <span>{listening ? 'Listening' : 'Voice'}</span>
+                  </button>
+                ) : (
+                  <span />
+                )}
+                <div className="mv-box__right">
+                  <span className="mv-count">
+                    {input.length}/{MAX_CHARS}
+                  </span>
+                  <button type="submit" className="mv-send" disabled={!chatReady || busy || !input.trim()} aria-label="Send">
+                    {busy ? <LoaderCircle size={15} className="spin" /> : <ArrowUp size={15} strokeWidth={2.4} />}
+                  </button>
+                </div>
+              </div>
             </div>
           </form>
         </section>
       </div>
+
+      {dialog === 'project' && (
+        <ProjectConnectionModal
+          token={ws.token}
+          backend={ws.backend}
+          onClose={() => setDialog(null)}
+          onConnected={(p) => {
+            ws.setProject(p);
+            setDialog(null);
+          }}
+        />
+      )}
+      {dialog === 'ai' && <AIProviderModal token={ws.token} providers={ws.providers} onClose={() => setDialog(null)} onChanged={ws.refresh} />}
+      {dialog === 'perms' && <MonitorPermissions value={ws.permissions} onChange={ws.setPermissions} onClose={() => setDialog(null)} />}
     </div>
   );
 }

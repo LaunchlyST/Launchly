@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+const auth = vi.hoisted(() => ({ token: null as string | null }));
+vi.mock('../../../auth-store', () => ({
+  useAuthStore: (sel: (s: any) => any) => sel({ session: auth.token ? { access_token: auth.token } : null, user: null }),
+}));
+
 vi.mock('../screenReader', async (orig) => {
   const real: any = await orig();
   return {
@@ -186,5 +191,119 @@ describe('screenReader helpers', () => {
     expect(hit.text).toBe('Winning products');
     expect(describeArea(hit.x, hit.y)).toBe('top right');
     expect(locate(r, 'billing')).toBeNull();
+  });
+});
+
+describe('Monitor projects & models', () => {
+  afterEach(() => {
+    auth.token = null;
+    localStorage.clear();
+    vi.unstubAllGlobals();
+  });
+
+  it('shows the toolbar, stays Offline without a backend and asks to connect something', () => {
+    render(<MonitorPanel />);
+    expect(screen.getByText('Connect project')).toBeTruthy();
+    expect(screen.getByText('AI: Auto')).toBeTruthy();
+    expect(screen.getByLabelText('Monitor permissions')).toBeTruthy();
+    expect(document.querySelector('.mv-pill')!.textContent).toBe('Offline');
+    expect(screen.getByText('Connect a screen or project to start.')).toBeTruthy();
+    expect((screen.getByLabelText('Message') as HTMLTextAreaElement).disabled).toBe(true);
+  });
+
+  it('Connect project lists the three options and never fakes GitHub', async () => {
+    render(<MonitorPanel />);
+    fireEvent.click(screen.getByText('Connect project'));
+    expect(screen.getByRole('dialog', { name: 'Connect a project' })).toBeTruthy();
+    expect(screen.getByText('Connect a repository')).toBeTruthy();
+    expect(screen.getByText('Connect a folder on this computer')).toBeTruthy();
+    expect(screen.getByText('Import using a repository URL')).toBeTruthy();
+    fireEvent.click(screen.getByText('GitHub'));
+    expect(screen.getByText(/GitHub connection isn’t set up on the server yet/)).toBeTruthy();
+  });
+
+  it('model menu: Auto default, providers only after they are really connected', async () => {
+    auth.token = 'tok';
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      const u = String(url);
+      const body = u.endsWith('/status')
+        ? { success: true, data: { online: true, capabilities: { github: true, gitUrl: true, localBridge: false, agent: true, providerKeys: true } } }
+        : u.endsWith('/providers')
+          ? { success: true, data: [{ provider: 'anthropic', connected: true, keyLast4: '82XQ' }] }
+          : { success: true, data: { models: [{ provider: 'anthropic', modelId: 'm-1', displayName: 'Model One', family: 'claude', capabilities: ['coding'], recommended: true, available: true }], latest: { anthropic: 'm-1' } } };
+      return new Response(JSON.stringify(body), { status: 200 });
+    }));
+    render(<MonitorPanel />);
+    await waitFor(() => expect(document.querySelector('.mv-pill')!.textContent).toBe('Online'));
+    fireEvent.click(screen.getByText('AI: Auto'));
+    expect(screen.getByText('Latest recommended')).toBeTruthy();
+    expect(await screen.findByText('Claude — Latest')).toBeTruthy();
+    expect(screen.queryByText('OpenAI — Latest')).toBeNull();
+    fireEvent.click(screen.getByText('Choose exact model'));
+    fireEvent.click(screen.getByText('Model One'));
+    expect(screen.getByText('Model One')).toBeTruthy();
+  });
+
+  it('AI provider modal never shows a stored key and reports server errors honestly', async () => {
+    render(<MonitorPanel />);
+    fireEvent.click(screen.getByText('AI: Auto'));
+    fireEvent.click(screen.getByText('+ Connect AI provider'));
+    expect(screen.getByRole('dialog', { name: 'Connect AI' })).toBeTruthy();
+    fireEvent.change(screen.getByPlaceholderText('sk-ant-…'), { target: { value: 'sk-ant-secret' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+    expect(await screen.findByText('Sign in to use Monitor projects.')).toBeTruthy();
+    expect(localStorage.getItem('launchly.monitor.prefs') ?? '').not.toContain('sk-ant');
+  });
+
+  it('permissions default to ask-before-applying with push/deploy off', () => {
+    render(<MonitorPanel />);
+    fireEvent.click(screen.getByLabelText('Monitor permissions'));
+    expect((screen.getByLabelText('Ask before applying') as HTMLInputElement).checked).toBe(true);
+    expect((screen.getByLabelText('Push changes automatically') as HTMLInputElement).checked).toBe(false);
+    expect((screen.getByLabelText('Deploy automatically') as HTMLInputElement).checked).toBe(false);
+    expect((screen.getByLabelText('Read project files') as HTMLInputElement).checked).toBe(true);
+  });
+
+  it('project mode: connect a repo, ask for a change, see activity, changes and the diff', async () => {
+    auth.token = 'tok';
+    const task = {
+      id: 't1', prompt: 'x', status: 'awaiting-approval', error: null,
+      activity: [
+        { id: '1', tool: 'search_files', label: 'Searching project', status: 'done' },
+        { id: '2', tool: 'read_file', label: 'Found monitor.css', status: 'done' },
+        { id: '3', tool: 'run_build', label: 'Running checks', status: 'done' },
+      ],
+      changes: { id: 'c1', applied: false, checkpointId: 'k1', checks: [{ name: 'build', passed: true }],
+        files: [{ path: 'src/monitor.css', added: 1, removed: 1, patch: '@@ -1 +1 @@\n-.halo{background:blue}\n+.halo{display:none}' }] },
+    };
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
+      const u = String(url);
+      const ok = (data: unknown) => new Response(JSON.stringify({ success: true, data }), { status: 200 });
+      if (u.endsWith('/status')) return ok({ online: true, capabilities: { github: true, gitUrl: true, localBridge: false, agent: true, providerKeys: true } });
+      if (u.endsWith('/providers')) return ok([]);
+      if (u.endsWith('/models')) return ok({ models: [], latest: {} });
+      if (u.includes('/github/repos')) return ok([{ id: 1, fullName: 'matas/launchly', private: true, defaultBranch: 'main', updatedAt: null }]);
+      if (u.includes('/github/branches')) return ok(['main', 'dev']);
+      if (u.endsWith('/projects') && init?.method === 'POST') return ok({ id: 'p1', source: 'github', name: 'launchly', repository: 'matas/launchly', branch: 'main', status: 'synced' });
+      if (u.endsWith('/agent/tasks')) return ok({ taskId: 't1' });
+      if (u.includes('/agent/tasks/t1')) return ok(task);
+      return new Response('{}', { status: 404 });
+    }));
+    render(<MonitorPanel />);
+    await waitFor(() => expect(document.querySelector('.mv-pill')!.textContent).toBe('Online'));
+    fireEvent.click(screen.getByText('Connect project'));
+    fireEvent.click(screen.getByText('GitHub'));
+    fireEvent.click(await screen.findByText('matas/launchly'));
+    fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+    expect(await screen.findByText('Ask for a change in launchly.')).toBeTruthy();
+    expect(document.querySelector('.mt-bar')!.textContent).toContain('launchly / main');
+
+    sendMessage('Remove the blue background behind the cursor');
+    expect(await screen.findByText('Found monitor.css', {}, { timeout: 3000 })).toBeTruthy();
+    expect(screen.getByText('Changes ready')).toBeTruthy();
+    expect(screen.getByText(/1 file changed · Build passed/)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'View changes' }));
+    expect(screen.getByText('-.halo{background:blue}')).toBeTruthy();
+    expect(screen.getByText('+.halo{display:none}')).toBeTruthy();
   });
 });

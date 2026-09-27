@@ -4,6 +4,7 @@ import { handleCreator } from './creator';
 import type { CreatorProviderEnv } from './services/creator-provider';
 import { creatorPlanFields, isLaunchlyCreatorPrice } from './services/creator-plan';
 import { handleBusinessConnect, isBusinessRoute } from './business/businessRoutes';
+import { handleMonitor, isMonitorRoute } from './monitor/monitorRoutes';
 
 export interface Env extends CreatorProviderEnv {
   CREATOR_DEBUG?: string;
@@ -19,11 +20,16 @@ export interface Env extends CreatorProviderEnv {
   GMAIL_CLIENT_SECRET?: string;
   /** Optional KV for per-user rate limits. */
   API_RATE_LIMIT?: KVNamespace;
+  /** Monitor: base64 32-byte key for encrypting users' AI provider keys. */
+  MONITOR_ENCRYPTION_KEY?: string;
+  MONITOR_LATEST_MODELS?: string;
+  GITHUB_CLIENT_ID?: string;
+  GITHUB_CLIENT_SECRET?: string;
 }
 
 const corsHeaders: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
@@ -37,6 +43,10 @@ export default {
 
     if (url.pathname.startsWith('/api/launchly/creators/')) {
       return handleCreator(request, env, corsHeaders);
+    }
+
+    if (isMonitorRoute(url.pathname)) {
+      return handleMonitor(request, env);
     }
 
     if (isBusinessRoute(url.pathname)) {
