@@ -27,12 +27,10 @@ export function SettingsPage({ onSignOut }: SettingsPageProps) {
 
   return (
     <div className="stg-page">
-      <header className="stg-page-header">
-        <span className="stg-eyebrow">Workspace settings</span>
-        <h1 className="stg-page-title">Settings</h1>
-        <p className="stg-page-subtitle">
-          Manage your Launchly account, AI providers and workspace preferences.
-        </p>
+      <header className="stg-crumbs">
+        <h1>Settings</h1>
+        <span aria-hidden>›</span>
+        <span>{SETTINGS_SECTIONS.find((s) => s.id === active)?.label}</span>
       </header>
 
       <div className="stg-layout">
