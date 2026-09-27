@@ -1336,3 +1336,6 @@
 .mon-ai-mouse{position:absolute;left:55%;top:50%;transition:left .6s,top .6s;display:flex;align-items:flex-start;pointer-events:none;filter:drop-shadow(0 2px 4px #0006);animation:mon-ai-move 9s ease-in-out infinite}
 .mon-ai-mouse span{margin:18px 0 0 -4px;font:700 10px Inter,system-ui,sans-serif;color:#fff;background:#2563eb;border-radius:4px;padding:1px 5px}
 @keyframes mon-ai-move{0%,100%{left:55%;top:50%}25%{left:30%;top:28%}50%{left:72%;top:36%}75%{left:40%;top:70%}}
+.sidebar-bottom>.settings-nav-item{display:flex;align-items:center;gap:10px;width:100%;margin:0 0 10px;padding:10px 12px;border:0;border-radius:9px;background:none;font:inherit;font-size:13px;color:#51627a;cursor:pointer;text-align:left}
+.sidebar-bottom>.settings-nav-item:hover{background:#f2f5fa;color:#1c2a3d}
+.sidebar-bottom>.settings-nav-item.active{background:#eaf0ff;color:#255ddb}
