@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Monitor, Octagon, Send } from 'lucide-react';
+import { Monitor, MousePointer2, Octagon, Send } from 'lucide-react';
 
 /**
  * Monitor: share your whole screen into the box, then type a command under
@@ -23,11 +23,15 @@ export function MonitorPanel() {
   const [zoom, setZoom] = useState(1);
   const [input, setInput] = useState('');
   const [log, setLog] = useState<Line[]>([]);
+  const chatRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    chatRef.current?.scrollTo({ top: chatRef.current.scrollHeight });
+  }, [log]);
   const canShare = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getDisplayMedia;
 
   useEffect(() => () => stop(), []);
 
-  const say = (text: string) => setLog((l) => [...l.slice(-7), { from: 'system', text }]);
+  const say = (text: string) => setLog((l) => [...l.slice(-50), { from: 'system', text }]);
 
   async function connect() {
     try {
@@ -100,7 +104,7 @@ export function MonitorPanel() {
   function run(raw: string) {
     const cmd = raw.trim().toLowerCase();
     if (!cmd) return;
-    setLog((l) => [...l.slice(-7), { from: 'you', text: raw.trim() }]);
+    setLog((l) => [...l.slice(-50), { from: 'you', text: raw.trim() }]);
     setInput('');
     if (cmd === 'help' || cmd === '?') return say(HELP);
     if (!connected) return say('Press Connect first.');
@@ -158,33 +162,42 @@ export function MonitorPanel() {
             </button>
           </div>
         )}
+        {connected && (
+          <div className="monitor-ai-mouse-overlay" aria-label="AI mouse connected">
+            <MousePointer2 size={22} fill="currentColor" />
+            <span>AI mouse</span>
+          </div>
+        )}
         {connected && (recording || paused) && (
           <span className="monitor-badge">{recording ? '● REC' : 'Paused'}</span>
         )}
       </div>
 
-      <form
-        className="monitor-bar"
-        onSubmit={(e) => {
-          e.preventDefault();
-          run(input);
-        }}
-      >
-        <input value={input} onChange={(e) => setInput(e.target.value)} placeholder='Type a command, e.g. "screenshot" or "record"' maxLength={200} />
-        <button className="research-primary" disabled={!input.trim()} aria-label="Send">
-          <Send size={16} />
-        </button>
-      </form>
-
-      {log.length > 0 && (
-        <div className="monitor-log">
-          {log.map((l, i) => (
-            <p key={i} className={l.from === 'you' ? 'is-you' : ''}>
-              {l.text}
-            </p>
-          ))}
+      <section className="monitor-chat-card" aria-label="Chat">
+        <div className="monitor-chat-card__messages" ref={chatRef}>
+          {log.length === 0 ? (
+            <p className="monitor-chat-card__empty">Messages appear here. Type "help" to see what I can do.</p>
+          ) : (
+            log.map((l, i) => (
+              <div key={i} className={`monitor-chat-msg ${l.from === 'you' ? 'is-you' : ''}`}>
+                <p>{l.text}</p>
+              </div>
+            ))
+          )}
         </div>
-      )}
+        <form
+          className="monitor-chat-card__send"
+          onSubmit={(e) => {
+            e.preventDefault();
+            run(input);
+          }}
+        >
+          <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Send a message…" maxLength={200} aria-label="Message" />
+          <button className="research-primary" disabled={!input.trim()}>
+            <Send size={15} /> Send
+          </button>
+        </form>
+      </section>
     </div>
   );
 }
