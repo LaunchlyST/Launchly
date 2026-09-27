@@ -440,24 +440,36 @@ export function MonitorPanel() {
         </div>
       </section>
 
-      {connected && messages.length > 0 && (
-        <div className="mv-thread" ref={listRef} aria-live="polite">
-          {messages.map((m) => (
-            <div key={m.id} className={`mv-msg mv-msg--${m.role} ${m.status ? `is-${m.status}` : ''}`}>
-              {m.status === 'pending' ? (
-                <span className="mv-typing" aria-label="Assistant is thinking">
-                  <i />
-                  <i />
-                  <i />
-                </span>
-              ) : (
-                m.text
-              )}
-            </div>
-          ))}
+      <section className="mv-panel mv-chat">
+        <div className="mv-toolbar">
+          <span className="mv-source">Chat</span>
+          {connected && messages.length > 0 && (
+            <button type="button" className="mv-tool mv-tool--text" onClick={() => setMessages([])}>
+              Clear
+            </button>
+          )}
         </div>
-      )}
-
+        <div className="mv-thread" ref={listRef} aria-live="polite">
+          {!connected || messages.length === 0 ? (
+            <p className="mv-thread__empty">
+              {connected ? 'Ask me to take a screenshot, record, zoom or go fullscreen.' : 'Messages appear here once a screen is connected.'}
+            </p>
+          ) : (
+            messages.map((m) => (
+              <div key={m.id} className={`mv-msg mv-msg--${m.role} ${m.status ? `is-${m.status}` : ''}`}>
+                {m.status === 'pending' ? (
+                  <span className="mv-typing" aria-label="Assistant is thinking">
+                    <i />
+                    <i />
+                    <i />
+                  </span>
+                ) : (
+                  m.text
+                )}
+              </div>
+            ))
+          )}
+        </div>
       <form
         className={`mv-composer ${connected ? '' : 'is-disabled'}`}
         onSubmit={(e) => {
@@ -501,6 +513,7 @@ export function MonitorPanel() {
           </div>
         </div>
       </form>
+      </section>
     </div>
   );
 }
