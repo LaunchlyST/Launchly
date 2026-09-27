@@ -21,7 +21,7 @@ export function AIProviderModal({ token, providers, initialProvider = 'anthropic
   const [provider, setProvider] = useState<ProviderId>(initialProvider);
   const [key, setKey] = useState('');
   const [state, setState] = useState<{ kind: 'idle' | 'testing' | 'saving' | 'ok' | 'error'; text?: string }>({ kind: 'idle' });
-  const current = providers.find((p) => p.provider === provider);
+  const current = (providers ?? []).find((p) => p.provider === provider);
   const meta = PROVIDERS.find((p) => p.id === provider)!;
 
   async function test() {
@@ -49,7 +49,7 @@ export function AIProviderModal({ token, providers, initialProvider = 'anthropic
     <Modal title="Connect AI" subtitle="Use your own provider key. It’s stored encrypted on the server and never shown again." onClose={onClose}>
       <div className="mm-seg" role="tablist">
         {PROVIDERS.map((p) => {
-          const on = providers.some((c) => c.provider === p.id && c.connected);
+          const on = (providers ?? []).some((c) => c.provider === p.id && c.connected);
           return (
             <button key={p.id} type="button" role="tab" aria-selected={provider === p.id} className={provider === p.id ? 'is-on' : ''} onClick={() => { setProvider(p.id); setKey(''); setState({ kind: 'idle' }); }}>
               {p.name}

@@ -44,13 +44,14 @@ export function useMonitorWorkspace() {
 
   const refresh = useCallback(async () => {
     const s = await monitorApi.status(token);
-    setBackend(s.ok ? s.data : null);
-    if (!s.ok) return;
+    const status = s.ok && s.data && typeof s.data.online === 'boolean' ? s.data : null;
+    setBackend(status);
+    if (!status) return;
     const [p, m] = await Promise.all([monitorApi.providers(token), monitorApi.models(token)]);
-    if (p.ok) setProviders(p.data);
-    if (m.ok) {
-      setModels(m.data.models);
-      setLatest(m.data.latest);
+    if (p.ok && Array.isArray(p.data)) setProviders(p.data);
+    if (m.ok && m.data) {
+      setModels(Array.isArray(m.data.models) ? m.data.models : []);
+      setLatest(m.data.latest && typeof m.data.latest === 'object' ? m.data.latest : {});
     }
   }, [token]);
 

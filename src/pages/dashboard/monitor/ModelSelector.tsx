@@ -30,7 +30,7 @@ export function ModelSelector({ selection, onChange, providers, models, onConnec
     };
   }, [open]);
 
-  const connected = PROVIDERS.filter((p) => providers.some((c) => c.provider === p.id && c.connected));
+  const connected = PROVIDERS.filter((p) => (providers ?? []).some((c) => c.provider === p.id && c.connected));
   const pick = (s: ModelSelection) => {
     onChange(s);
     setOpen(false);
