@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowUp, Camera, Circle, LoaderCircle, Maximize2, Mic, MonitorUp, Square, X } from 'lucide-react';
+import { ArrowUp, Camera, Circle, LoaderCircle, Maximize2, MessageSquare, Mic, Monitor, MonitorUp, RotateCcw, Square, X } from 'lucide-react';
 import { useStore } from '../../store';
 import './monitor.css';
 
@@ -364,156 +364,186 @@ export function MonitorPanel() {
         </span>
       </header>
 
-      <section className={`mv-panel ${connected ? 'is-live' : ''}`}>
-        <div className="mv-toolbar">
-          <span className="mv-source" data-testid="connection-label">
-            {connected ? (
-              <>
-                <i className="mv-source__dot" /> Connected <span className="mv-sep">/</span> {source}
-              </>
-            ) : conn === 'connecting' ? (
-              'Connecting…'
-            ) : (
-              'Not connected'
-            )}
-          </span>
-          {connected && (
+      <div className="mv-grid">
+        {/* ---------------- Screen ---------------- */}
+        <section className={`mv-card mv-card--screen ${connected ? 'is-live' : ''}`}>
+          <header className="mv-card__head">
+            <span className="mv-card__title">
+              <Monitor size={16} strokeWidth={1.9} /> Screen
+              {connected && (
+                <span className="mv-card__meta" data-testid="connection-label">
+                  <i className="mv-live-dot" /> Connected <span className="mv-sep">·</span> {source}
+                </span>
+              )}
+              {!connected && (
+                <span className="mv-card__meta mv-card__meta--muted" data-testid="connection-label">
+                  {conn === 'connecting' ? 'Connecting…' : 'Not connected'}
+                </span>
+              )}
+            </span>
             <div className="mv-tools">
-              <button type="button" className="mv-tool" onClick={() => send('Take a screenshot')} disabled={busy} title="Screenshot" aria-label="Screenshot">
-                <Camera size={15} />
+              {connected && (
+                <>
+                  <button type="button" className="mv-tool" onClick={() => send('Take a screenshot')} disabled={busy} title="Screenshot" aria-label="Screenshot">
+                    <Camera size={15} />
+                  </button>
+                  <button
+                    type="button"
+                    className={`mv-tool ${recording ? 'is-rec' : ''}`}
+                    onClick={() => send(recording ? 'Stop recording' : 'Start recording')}
+                    disabled={busy}
+                    title={recording ? 'Stop recording' : 'Record'}
+                    aria-label={recording ? 'Stop recording' : 'Record'}
+                  >
+                    <Circle size={13} fill={recording ? 'currentColor' : 'none'} />
+                  </button>
+                </>
+              )}
+              <button type="button" className="mv-tool" onClick={() => connected && send('fullscreen')} disabled={!connected} title="Fullscreen" aria-label="Fullscreen">
+                <Maximize2 size={15} />
               </button>
-              <button
-                type="button"
-                className={`mv-tool ${recording ? 'is-rec' : ''}`}
-                onClick={() => send(recording ? 'Stop recording' : 'Start recording')}
-                disabled={busy}
-                title={recording ? 'Stop recording' : 'Record'}
-                aria-label={recording ? 'Stop recording' : 'Record'}
-              >
-                <Circle size={13} fill={recording ? 'currentColor' : 'none'} />
-              </button>
-              <button type="button" className="mv-tool" onClick={() => send('fullscreen')} title="Fullscreen" aria-label="Fullscreen">
-                <Maximize2 size={14} />
-              </button>
-              <span className="mv-tools__div" />
-              <button type="button" className="mv-btn mv-btn--danger" onClick={disconnect}>
-                <Square size={9} fill="currentColor" /> Stop sharing
-              </button>
-            </div>
-          )}
-        </div>
-
-        <div ref={screenRef} className="mv-screen">
-          <video ref={videoRef} muted playsInline hidden={!connected} style={{ transform: `scale(${zoom})` }} />
-          {!connected && (
-            <div className="mv-empty">
-              <span className="mv-empty__icon">
-                {conn === 'connecting' ? <LoaderCircle size={22} className="spin" /> : <MonitorUp size={22} strokeWidth={1.6} />}
-              </span>
-              <h2>{conn === 'connecting' ? 'Choose what to share' : 'Share your screen'}</h2>
-              <p>
-                {conn === 'connecting'
-                  ? 'Pick a screen or window in your browser’s prompt.'
-                  : 'Your screen appears here live. Nothing is saved unless you ask for a screenshot or recording.'}
-              </p>
-              {conn !== 'connecting' && (
-                <button type="button" className="mv-btn mv-btn--primary" onClick={connect} disabled={!canShare}>
-                  {canShare ? 'Connect screen' : 'Not supported in this browser'}
+              {connected && (
+                <button type="button" className="mv-stop" onClick={disconnect}>
+                  <Square size={8} fill="currentColor" /> Stop sharing
                 </button>
               )}
-              {connectError && <p className="mv-empty__error">{connectError}</p>}
             </div>
-          )}
-          {connected && (
-            <div className="mv-cursor" aria-hidden="true">
-              <svg width="22" height="22" viewBox="0 0 22 22">
-                <path d="M3.5 2.2c-.5-.2-1 .3-.8.8l5.6 16.1c.2.6 1 .6 1.2 0l2.1-6 6-2.1c.6-.2.6-1 0-1.2z" fill="#0f172a" stroke="#fff" strokeWidth="1.6" strokeLinejoin="round" />
-              </svg>
-            </div>
-          )}
-          {connected && recording && (
-            <span className="mv-rec">
-              <i /> Recording
-            </span>
-          )}
-          {connected && paused && <span className="mv-paused">Paused</span>}
-        </div>
-      </section>
+          </header>
 
-      <section className="mv-panel mv-chat">
-        <div className="mv-toolbar">
-          <span className="mv-source">Chat</span>
-          {connected && messages.length > 0 && (
-            <button type="button" className="mv-tool mv-tool--text" onClick={() => setMessages([])}>
-              Clear
+          <div ref={screenRef} className="mv-screen">
+            <video ref={videoRef} muted playsInline hidden={!connected} style={{ transform: `scale(${zoom})` }} />
+            {!connected && (
+              <div className="mv-empty">
+                <span className="mv-empty__icon">
+                  {conn === 'connecting' ? <LoaderCircle size={26} className="spin" /> : <MonitorUp size={28} strokeWidth={1.5} />}
+                </span>
+                <h2>{conn === 'connecting' ? 'Choose what to share' : 'Share your screen'}</h2>
+                <p>
+                  {conn === 'connecting'
+                    ? 'Pick a screen or window in your browser’s prompt.'
+                    : 'Your screen appears here live. Nothing is saved unless you ask for a screenshot or recording.'}
+                </p>
+                {conn !== 'connecting' && (
+                  <button type="button" className="mv-cta" onClick={connect} disabled={!canShare}>
+                    <MonitorUp size={16} strokeWidth={2} /> {canShare ? 'Connect screen' : 'Not supported in this browser'}
+                  </button>
+                )}
+                {connectError && <p className="mv-empty__error">{connectError}</p>}
+              </div>
+            )}
+            {connected && (
+              <div className="mv-cursor" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 22 22">
+                  <path d="M3.5 2.2c-.5-.2-1 .3-.8.8l5.6 16.1c.2.6 1 .6 1.2 0l2.1-6 6-2.1c.6-.2.6-1 0-1.2z" fill="#0f172a" stroke="#fff" strokeWidth="1.6" strokeLinejoin="round" />
+                </svg>
+              </div>
+            )}
+            {connected && recording && (
+              <span className="mv-badge mv-badge--rec">
+                <i /> Recording
+              </span>
+            )}
+            {connected && paused && <span className="mv-badge mv-badge--right">Paused</span>}
+          </div>
+        </section>
+
+        {/* ---------------- Chat ---------------- */}
+        <section className={`mv-card mv-card--chat ${connected ? '' : 'is-disabled'}`}>
+          <header className="mv-card__head">
+            <span className="mv-card__title">
+              <MessageSquare size={16} strokeWidth={1.9} /> Chat
+            </span>
+            <button
+              type="button"
+              className="mv-tool"
+              onClick={() => setMessages([])}
+              disabled={!connected || messages.length === 0}
+              title="Clear chat"
+              aria-label="Clear chat"
+            >
+              <RotateCcw size={14} />
             </button>
-          )}
-        </div>
-        <div className="mv-thread" ref={listRef} aria-live="polite">
-          {!connected || messages.length === 0 ? (
-            <p className="mv-thread__empty">
-              {connected ? 'Ask me to take a screenshot, record, zoom or go fullscreen.' : 'Messages appear here once a screen is connected.'}
-            </p>
-          ) : (
-            messages.map((m) => (
-              <div key={m.id} className={`mv-msg mv-msg--${m.role} ${m.status ? `is-${m.status}` : ''}`}>
-                {m.status === 'pending' ? (
-                  <span className="mv-typing" aria-label="Assistant is thinking">
-                    <i />
-                    <i />
-                    <i />
-                  </span>
-                ) : (
-                  m.text
+          </header>
+
+          <div className="mv-thread" ref={listRef} aria-live="polite">
+            {!connected || messages.length === 0 ? (
+              <div className="mv-thread__empty">
+                <span className="mv-thread__icon">
+                  <MessageSquare size={20} strokeWidth={1.7} />
+                </span>
+                <p>{connected ? 'Ask me to take a screenshot, record, zoom or go fullscreen.' : 'Messages appear here once a screen is connected.'}</p>
+                {connected && (
+                  <div className="mv-suggest">
+                    {['Take a screenshot', 'Start recording', 'Zoom in'].map((q) => (
+                      <button key={q} type="button" onClick={() => send(q)}>
+                        {q}
+                      </button>
+                    ))}
+                  </div>
                 )}
               </div>
-            ))
-          )}
-        </div>
-      <form
-        className={`mv-composer ${connected ? '' : 'is-disabled'}`}
-        onSubmit={(e) => {
-          e.preventDefault();
-          send();
-        }}
-      >
-        <textarea
-          ref={inputRef}
-          value={input}
-          onChange={(e) => setInput(e.target.value.slice(0, MAX_CHARS))}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
+            ) : (
+              messages.map((m) => (
+                <div key={m.id} className={`mv-msg mv-msg--${m.role} ${m.status ? `is-${m.status}` : ''}`}>
+                  {m.status === 'pending' ? (
+                    <span className="mv-typing" aria-label="Assistant is thinking">
+                      <i />
+                      <i />
+                      <i />
+                    </span>
+                  ) : (
+                    m.text
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+
+          <form
+            className="mv-composer"
+            onSubmit={(e) => {
               e.preventDefault();
               send();
-            }
-          }}
-          placeholder={connected ? 'Ask anything, e.g. “take a screenshot” or “zoom in”' : 'Connect a screen to start'}
-          disabled={!connected}
-          rows={2}
-          aria-label="Message"
-        />
-        <div className="mv-composer__row">
-          <div className="mv-composer__left">
+            }}
+          >
             {Speech && (
-              <button type="button" className={`mv-chip ${listening ? 'is-on' : ''}`} disabled={!connected || busy} onClick={toggleVoice}>
-                {listening ? <X size={13} /> : <Mic size={13} />} {listening ? 'Listening…' : 'Voice'}
+              <button
+                type="button"
+                className={`mv-voice ${listening ? 'is-on' : ''}`}
+                disabled={!connected || busy}
+                onClick={toggleVoice}
+                aria-label={listening ? 'Stop listening' : 'Voice'}
+              >
+                {listening ? <X size={14} /> : <Mic size={14} />}
+                <span>{listening ? 'Listening' : 'Voice'}</span>
               </button>
             )}
-            <button type="button" className="mv-chip" disabled={!connected || busy} onClick={() => send('help')}>
-              What can you do?
-            </button>
-          </div>
-          <div className="mv-composer__right">
-            <span className="mv-count">
-              {input.length}/{MAX_CHARS}
-            </span>
-            <button type="submit" className="mv-send" disabled={!connected || busy || !input.trim()} aria-label="Send">
-              {busy ? <LoaderCircle size={15} className="spin" /> : <ArrowUp size={15} strokeWidth={2.4} />}
-            </button>
-          </div>
-        </div>
-      </form>
-      </section>
+            <div className="mv-field">
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value.slice(0, MAX_CHARS))}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    send();
+                  }
+                }}
+                placeholder={connected ? 'Ask anything…' : 'Connect a screen to chat'}
+                disabled={!connected}
+                rows={1}
+                aria-label="Message"
+              />
+              <span className="mv-count">
+                {input.length}/{MAX_CHARS}
+              </span>
+              <button type="submit" className="mv-send" disabled={!connected || busy || !input.trim()} aria-label="Send">
+                {busy ? <LoaderCircle size={15} className="spin" /> : <ArrowUp size={15} strokeWidth={2.4} />}
+              </button>
+            </div>
+          </form>
+        </section>
+      </div>
     </div>
   );
 }
