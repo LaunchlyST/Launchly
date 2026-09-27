@@ -1333,3 +1333,6 @@
 .mon-chat__composer button:hover:not(:disabled){background:#f9fafb}
 .mon-chat__composer button:disabled{color:#c0c6cf;cursor:not-allowed}
 .mon-chat__composer input:focus,.mon-chat__composer input:focus-visible{outline:none!important;box-shadow:none!important;background:#fcfcfd}
+.mon-ai-mouse{position:absolute;left:55%;top:50%;transition:left .6s,top .6s;display:flex;align-items:flex-start;pointer-events:none;filter:drop-shadow(0 2px 4px #0006);animation:mon-ai-move 9s ease-in-out infinite}
+.mon-ai-mouse span{margin:18px 0 0 -4px;font:700 10px Inter,system-ui,sans-serif;color:#fff;background:#2563eb;border-radius:4px;padding:1px 5px}
+@keyframes mon-ai-move{0%,100%{left:55%;top:50%}25%{left:30%;top:28%}50%{left:72%;top:36%}75%{left:40%;top:70%}}
