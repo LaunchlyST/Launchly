@@ -1,4 +1,4 @@
-const WORKER_URL: string = (import.meta.env.VITE_WORKER_URL || 'http://localhost:8787').replace(/\/+$/, '');
+import { WORKER_URL } from '../../lib/workerUrl';
 
 /**
  * Frontend gateway to the worker's Business Connect routes. Every call is
