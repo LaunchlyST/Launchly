@@ -1,86 +1,53 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Sparkles, Settings, LogOut, Bot, Building2 } from 'lucide-react';
-import { SettingsPage } from './pages/settings/SettingsPage';
-import { GeneratorPage } from './pages/inside/GeneratorPage';
-import { BotsPage } from './pages/bots/BotsPage';
-import { BusinessConnectPage } from './pages/business/BusinessConnectPage';
-import { MonitorControlPage } from './pages/monitor/MonitorControlPage';
-import { MonitorControlIcon } from './pages/monitor/MonitorControlIcon';
-import { SubscriptionGate } from './subscription/SubscriptionGate';
-import { PaywallPage } from './pages/paywall/PaywallPage';
-import { AmbientScene } from './pages/inside/AmbientScene';
+import { SettingsPanel } from './settings/SettingsPanel';
 import { useSubscription } from './useSubscription';
-import { Loader, Tooltip } from './ui';
-import { useStore } from './store';
+
 import { useAuthStore } from './auth-store';
-import { supabaseConfigured } from './lib/supabase';
-import { Login } from './pages/get-in/Login';
-import { SignUp } from './pages/get-in/SignUp';
+import { FrontPage } from './pages/front-page/page';
+import { InsidePage } from './pages/inside/page';
+import { ResearchDashboard } from './pages/dashboard/page';
+import { PricingPage } from './pages/pricing/page';
+import { GetInPage } from './pages/get-in/page';
+import { OwnTrainModelPage } from './pages/own-train-model/page';
 import './App.css';
 
-/**
- * The pages, by name. The old paths stay as aliases so existing links — and
- * the Stripe success/cancel URLs configured in the worker — keep working.
- */
-const PAGES = {
-  getIn: '/get-in',
-  paywall: '/paywall',
-  inside: '/dashboard',
-  bots: '/bots',
-  businessConnect: '/business-connect',
-  monitorControl: '/monitor-control',
-  settings: '/settings',
-} as const;
 
-const TITLES: Record<string, string> = {
-  [PAGES.getIn]: 'Get in — Launchly',
-  '/signup': 'Get in — Launchly',
-  [PAGES.paywall]: 'Paywall — Launchly',
-  [PAGES.inside]: 'Dashboard — Launchly',
-  [PAGES.bots]: 'Bots — Launchly',
-  [PAGES.businessConnect]: 'Business Connect — Launchly',
-  [PAGES.monitorControl]: 'Monitor Control — Launchly',
-  [PAGES.settings]: 'Settings — Launchly',
-  '/': 'Launchly',
-};
 
 function getRoutePath() {
   const path = window.location.pathname;
-  if (path === '/signup') return '/signup';
-  if (path === PAGES.getIn) return PAGES.getIn;
-  /* A return from Stripe is always handled by the Paywall page, wherever the
-     worker's success/cancel URL happens to point. */
-  if (new URLSearchParams(window.location.search).has('subscription')) return PAGES.paywall;
-  /* '/pricing' and '/inside' are the old names, kept as aliases. A
-     '?section=settings' on either one is an even older link shape to the
-     same page — honored here so those links land on Settings instead of
-     silently opening the dashboard behind them. */
-  if (new URLSearchParams(window.location.search).get('section') === 'settings') return PAGES.settings;
-  if (path === PAGES.paywall || path === '/pricing') return PAGES.paywall;
-  if (path === PAGES.inside || path === '/inside') return PAGES.inside;
-  if (path === PAGES.bots) return PAGES.bots;
-  if (path === PAGES.businessConnect) return PAGES.businessConnect;
-  if (path === PAGES.monitorControl) return PAGES.monitorControl;
-  if (path === PAGES.settings) return PAGES.settings;
+  if (path === '/get-in') return '/get-in';
+  if (path === '/pricing') return '/pricing';
+  if (path === '/paywall') return '/paywall';
+  if (path === '/inside') return '/inside';
+  if (path === '/own-train-model') return '/own-train-model';
+  if (path === '/front-page') return '/front-page';
+  if (/^\/creator\/\d{1,30}$/.test(path)) return '/dashboard';
+  if (path === '/dashboard' || path === '/business-connect' || path === '/monitor') return '/dashboard';
   return '/';
 }
 
-export function App() {
-  const [authView, setAuthView] = useState<'login' | 'signup'>('login');
-  const openaiKey = useStore((s) => s.openaiKey);
-  const grokKey = useStore((s) => s.grokKey);
-  const hasAnyKey = openaiKey.length > 0 || grokKey.length > 0;
+function RedirectTo({ path }: { path: string }) {
+  useEffect(() => {
+    window.history.replaceState({}, '', path);
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  }, [path]);
 
+  return (
+    <div className="auth-loading">
+      <span className="auth-spinner auth-spinner--lg" />
+    </div>
+  );
+}
+
+export function App() {
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const user = useAuthStore((s) => s.user);
   const authLoading = useAuthStore((s) => s.loading);
-  const signOut = useAuthStore((s) => s.signOut);
-  const accessToken = useAuthStore((s) => s.session?.access_token ?? null);
-  const [loggingOut, setLoggingOut] = useState(false);
+
+
 
   const [route, setRoute] = useState(getRoutePath);
-
-  // Only used to hold the first paint until entitlement is known, so neither
-  // the editor nor the paywall flashes. The gate itself decides what renders.
+  // Subscription check for route protection
   const { loading: subLoading } = useSubscription();
 
   const handlePopState = useCallback(() => {
@@ -92,634 +59,101 @@ export function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, [handlePopState]);
 
-  /* Each page carries its own name, and an alias URL is rewritten to it so the
-     address bar agrees with the title. */
-  useEffect(() => {
-    document.title = TITLES[route] ?? 'Launchly';
-    const path = window.location.pathname;
-    if (path !== route && (path === '/pricing' || path === '/inside')) {
-      window.history.replaceState({}, '', route + window.location.search);
-    }
-  }, [route]);
-
-  const navigate = useCallback((path: string) => {
-    window.history.pushState({}, '', path);
-    setRoute(getRoutePath());
-  }, []);
-
-  const handleLogout = async () => {
-    setLoggingOut(true);
-    await signOut();
-    setLoggingOut(false);
-    navigate('/');
-  };
-
-  // Home route (/): declared here, above every early return, so the hook count
-  // is identical on every render. Placing it lower made React see a different
-  // number of hooks once the loading branch stopped returning early.
-  useEffect(() => {
-    if (!authLoading && user && route === '/') {
-      navigate(PAGES.inside);
-    }
-  }, [user, authLoading, route, navigate]);
-
   // Combined loading: auth loading OR subscription loading (when user exists)
   const isLoading = authLoading || (user && subLoading);
 
-  if (isLoading) {
+  // The public intro must remain available even when account services are slow.
+  const isFrontPage = route === '/' || route === '/front-page';
+  if (isLoading && !isFrontPage) {
     return (
       <div className="auth-loading">
-        <Loader size="lg" />
+        <span className="auth-spinner auth-spinner--lg" />
       </div>
     );
   }
 
-  /* Built without Supabase keys: nobody can sign in, so say that plainly
-     rather than showing a login form that cannot work. */
-  if (!supabaseConfigured) {
+  // Always show the marketing front page at /
+  if (route === '/') {
     return (
-      <div className="app app--auth">
+      <div className="app app--inside">
         <main className="app__main">
-          <div className="app__notice">
-            <h1>Sign-in is not available</h1>
-            <p>
-              This build of Launchly went out without its Supabase keys, so accounts
-              can&rsquo;t be created or used. Set <code>VITE_SUPABASE_URL</code> and{' '}
-              <code>VITE_SUPABASE_PUBLISHABLE_KEY</code> for the build, then deploy again.
-            </p>
-          </div>
+          <FrontPage />
         </main>
       </div>
     );
   }
 
-  /* Get in: log in or sign up, on /get-in, /signup and the home route. */
-  if (route === '/signup') {
+  if (route === '/pricing') {
     return (
-      <div className="app app--auth">
+      <div className="app app--inside">
         <main className="app__main">
-          <SignUp onSwitchToLogin={() => navigate(PAGES.getIn)} />
+          <PricingPage />
         </main>
       </div>
     );
   }
 
-  if (route === PAGES.getIn) {
-    if (user) {
-      return (
-        <div className="auth-loading">
-          <Loader size="lg" />
-        </div>
-      );
-    }
+  if (route === '/get-in') {
     return (
-      <div className="app app--auth">
+      <div className="app app--inside">
         <main className="app__main">
-          {authView === 'login' ? (
-            <Login onSwitchToSignUp={() => setAuthView('signup')} />
-          ) : (
-            <SignUp onSwitchToLogin={() => setAuthView('login')} />
-          )}
+          <GetInPage />
         </main>
       </div>
     );
   }
 
-  if (route === PAGES.paywall) {
-    if (!user) {
-      return (
-        <div className="app app--auth">
-          <main className="app__main">
-            {authView === 'login' ? (
-              <Login onSwitchToSignUp={() => setAuthView('signup')} />
-            ) : (
-              <SignUp onSwitchToLogin={() => setAuthView('login')} />
-            )}
-          </main>
-        </div>
-      );
-    }
+  if (route === '/inside') {
     return (
-      <div className="app">
-        <aside className="app__rail">
-          <div className="app__brand" title="Launchly">
-            <Sparkles size={22} strokeWidth={2.2} />
-          </div>
-          <div className="app__rail-divider" />
-          <Tooltip text="Create">
-            <button
-              className="app__rail-btn"
-              onClick={() => navigate(PAGES.inside)}
-              aria-label="Create"
-            >
-              <Sparkles size={20} />
-            </button>
-          </Tooltip>
-          <Tooltip text="Bots">
-            <button
-              className="app__rail-btn"
-              onClick={() => navigate(PAGES.bots)}
-              aria-label="Bots"
-            >
-              <Bot size={20} />
-            </button>
-          </Tooltip>
-          <Tooltip text="Business Connect">
-            <button
-              className="app__rail-btn"
-              onClick={() => navigate(PAGES.businessConnect)}
-              aria-label="Business Connect"
-            >
-              <Building2 size={20} />
-            </button>
-          </Tooltip>
-          <div className="app__rail-spacer" />
-          <Tooltip text="Sign out">
-            <button
-              className="app__rail-btn"
-              onClick={handleLogout}
-              disabled={loggingOut}
-              aria-label="Sign Out"
-            >
-              <LogOut size={20} />
-            </button>
-          </Tooltip>
-        </aside>
+      <div className="app app--inside">
         <main className="app__main">
-          <PaywallPage
-            onBackToEditor={() => navigate(PAGES.inside)}
-            onSubscribed={() => navigate(PAGES.inside)}
-          />
+          <InsidePage />
         </main>
       </div>
     );
   }
 
-  /* Monitor Control: same shell and gate as Bots and the editor. */
-  if (route === PAGES.monitorControl) {
-    if (!user) {
-      return (
-        <div className="app app--auth">
-          <main className="app__main">
-            {authView === 'login' ? (
-              <Login onSwitchToSignUp={() => setAuthView('signup')} />
-            ) : (
-              <SignUp onSwitchToLogin={() => setAuthView('login')} />
-            )}
-          </main>
-        </div>
-      );
-    }
-
+  if (route === '/own-train-model') {
     return (
-      <SubscriptionGate>
-        <div className="app">
-          <aside className="app__rail">
-            <div className="app__brand" title="Launchly">
-              <Sparkles size={22} strokeWidth={2.2} />
-            </div>
-            <div className="app__rail-divider" />
-            <Tooltip text="Create">
-              <button
-                className="app__rail-btn"
-                onClick={() => navigate(PAGES.inside)}
-                aria-label="Create"
-              >
-                <Sparkles size={20} />
-              </button>
-            </Tooltip>
-            <Tooltip text="Bots">
-              <button
-                className="app__rail-btn"
-                onClick={() => navigate(PAGES.bots)}
-                aria-label="Bots"
-              >
-                <Bot size={20} />
-              </button>
-            </Tooltip>
-            <Tooltip text="Business Connect">
-              <button
-                className="app__rail-btn"
-                onClick={() => navigate(PAGES.businessConnect)}
-                aria-label="Business Connect"
-              >
-                <Building2 size={20} />
-              </button>
-            </Tooltip>
-            <Tooltip text="Monitor Control">
-              <button className="app__rail-btn is-active" aria-label="Monitor Control">
-                <MonitorControlIcon size={20} />
-              </button>
-            </Tooltip>
-            <div className="app__rail-spacer" />
-            <Tooltip text="Settings — manage API keys">
-              <button
-                className="app__rail-btn"
-                onClick={() => navigate(PAGES.settings)}
-                aria-label="Settings"
-              >
-                <Settings size={20} />
-              </button>
-            </Tooltip>
-            <div className="app__rail-status">
-              <span
-                className={`app__rail-dot ${hasAnyKey ? 'is-active' : ''}`}
-                title={hasAnyKey ? 'Models connected' : 'No API keys connected'}
-              />
-            </div>
-            <Tooltip text="Sign out">
-              <button
-                className="app__rail-btn"
-                onClick={handleLogout}
-                disabled={loggingOut}
-                aria-label="Sign Out"
-              >
-                <LogOut size={20} />
-              </button>
-            </Tooltip>
-          </aside>
-          <main className="app__main">
-            <MonitorControlPage />
-          </main>
-        </div>
-      </SubscriptionGate>
+      <div className="app app--inside">
+        <main className="app__main">
+          <OwnTrainModelPage />
+        </main>
+      </div>
     );
   }
 
-  /* Business Connect: local business discovery + outreach, same shell and gate. */
-  if (route === PAGES.businessConnect) {
-    if (!user) {
-      return (
-        <div className="app app--auth">
-          <main className="app__main">
-            {authView === 'login' ? (
-              <Login onSwitchToSignUp={() => setAuthView('signup')} />
-            ) : (
-              <SignUp onSwitchToLogin={() => setAuthView('login')} />
-            )}
-          </main>
-        </div>
-      );
-    }
-
+  if (route === '/front-page') {
     return (
-      <SubscriptionGate>
-        <div className="app">
-          <aside className="app__rail">
-            <div className="app__brand" title="Launchly">
-              <Sparkles size={22} strokeWidth={2.2} />
-            </div>
-            <div className="app__rail-divider" />
-            <Tooltip text="Create">
-              <button className="app__rail-btn" onClick={() => navigate(PAGES.inside)} aria-label="Create">
-                <Sparkles size={20} />
-              </button>
-            </Tooltip>
-            <Tooltip text="Bots">
-              <button className="app__rail-btn" onClick={() => navigate(PAGES.bots)} aria-label="Bots">
-                <Bot size={20} />
-              </button>
-            </Tooltip>
-            <Tooltip text="Business Connect">
-              <button className="app__rail-btn is-active" aria-label="Business Connect">
-                <Building2 size={20} />
-              </button>
-            </Tooltip>
-            <Tooltip text="Monitor Control">
-              <button className="app__rail-btn" onClick={() => navigate(PAGES.monitorControl)} aria-label="Monitor Control">
-                <MonitorControlIcon size={20} />
-              </button>
-            </Tooltip>
-            <div className="app__rail-spacer" />
-            <Tooltip text="Settings — manage API keys">
-              <button className="app__rail-btn" onClick={() => navigate(PAGES.settings)} aria-label="Settings">
-                <Settings size={20} />
-              </button>
-            </Tooltip>
-            <Tooltip text="Sign out">
-              <button className="app__rail-btn" onClick={handleLogout} disabled={loggingOut} aria-label="Sign Out">
-                <LogOut size={20} />
-              </button>
-            </Tooltip>
-          </aside>
-          <main className="app__main">
-            <BusinessConnectPage token={accessToken ?? ''} />
-          </main>
-        </div>
-      </SubscriptionGate>
+      <div className="app app--inside">
+        <main className="app__main">
+          <FrontPage />
+        </main>
+      </div>
     );
   }
 
-  /* Bots: behind the same sign-in and subscription gate as the editor, and
-     wearing the same shell, so it reads as one more room in the app. */
-  if (route === PAGES.bots) {
-    if (!user) {
-      return (
-        <div className="app app--auth">
-          <main className="app__main">
-            {authView === 'login' ? (
-              <Login onSwitchToSignUp={() => setAuthView('signup')} />
-            ) : (
-              <SignUp onSwitchToLogin={() => setAuthView('login')} />
-            )}
-          </main>
-        </div>
-      );
-    }
-
+  if (route === '/paywall') {
     return (
-      <SubscriptionGate>
-        <div className="app">
-          <aside className="app__rail">
-            <div className="app__brand" title="Launchly">
-              <Sparkles size={22} strokeWidth={2.2} />
-            </div>
-            <div className="app__rail-divider" />
-            <Tooltip text="Create">
-              <button
-                className="app__rail-btn"
-                onClick={() => navigate(PAGES.inside)}
-                aria-label="Create"
-              >
-                <Sparkles size={20} />
-              </button>
-            </Tooltip>
-            <Tooltip text="Bots">
-              <button className="app__rail-btn is-active" aria-label="Bots">
-                <Bot size={20} />
-              </button>
-            </Tooltip>
-            <Tooltip text="Business Connect">
-              <button
-                className="app__rail-btn"
-                onClick={() => navigate(PAGES.businessConnect)}
-                aria-label="Business Connect"
-              >
-                <Building2 size={20} />
-              </button>
-            </Tooltip>
-            <Tooltip text="Monitor Control">
-              <button
-                className="app__rail-btn"
-                onClick={() => navigate(PAGES.monitorControl)}
-                aria-label="Monitor Control"
-              >
-                <MonitorControlIcon size={20} />
-              </button>
-            </Tooltip>
-            <div className="app__rail-spacer" />
-            <Tooltip text="Settings — manage API keys">
-              <button
-                className="app__rail-btn"
-                onClick={() => navigate(PAGES.settings)}
-                aria-label="Settings"
-              >
-                <Settings size={20} />
-              </button>
-            </Tooltip>
-            <div className="app__rail-status">
-              <span
-                className={`app__rail-dot ${hasAnyKey ? 'is-active' : ''}`}
-                title={hasAnyKey ? 'Models connected' : 'No API keys connected'}
-              />
-            </div>
-            <Tooltip text="Sign out">
-              <button
-                className="app__rail-btn"
-                onClick={handleLogout}
-                disabled={loggingOut}
-                aria-label="Sign Out"
-              >
-                <LogOut size={20} />
-              </button>
-            </Tooltip>
-          </aside>
-          <main className="app__main">
-            <BotsPage />
-          </main>
-        </div>
-      </SubscriptionGate>
+      <div className="app app--inside">
+        <main className="app__main">
+          <PricingPage />
+        </main>
+      </div>
     );
   }
 
-  if (route === PAGES.inside) {
-    if (!user) {
-      return (
-        <div className="app app--auth">
-          <main className="app__main">
-            {authView === 'login' ? (
-              <Login onSwitchToSignUp={() => setAuthView('signup')} />
-            ) : (
-              <SignUp onSwitchToLogin={() => setAuthView('login')} />
-            )}
-          </main>
-        </div>
-      );
-    }
-
-    // No route-level redirect here: an unpaid user stays on /dashboard and
-    // meets the paywall in place, over their own blurred editor.
-
-    /* The gate wraps the whole shell, not just the canvas: an unpaid user sees
-       the paywall alone, with no rail and no space reserved for one. The paid
-       tree inside is unchanged. */
-    return (
-      <SubscriptionGate>
-        <div className="app">
-          <aside className="app__rail">
-            <div className="app__brand" title="Launchly">
-              <Sparkles size={22} strokeWidth={2.2} />
-            </div>
-            <div className="app__rail-divider" />
-            <Tooltip text="Create">
-              <button
-                className="app__rail-btn is-active"
-                aria-label="Create"
-              >
-                <Sparkles size={20} />
-              </button>
-            </Tooltip>
-            <Tooltip text="Bots">
-              <button
-                className="app__rail-btn"
-                onClick={() => navigate(PAGES.bots)}
-                aria-label="Bots"
-              >
-                <Bot size={20} />
-              </button>
-            </Tooltip>
-            <Tooltip text="Business Connect">
-              <button
-                className="app__rail-btn"
-                onClick={() => navigate(PAGES.businessConnect)}
-                aria-label="Business Connect"
-              >
-                <Building2 size={20} />
-              </button>
-            </Tooltip>
-            <Tooltip text="Monitor Control">
-              <button
-                className="app__rail-btn"
-                onClick={() => navigate(PAGES.monitorControl)}
-                aria-label="Monitor Control"
-              >
-                <MonitorControlIcon size={20} />
-              </button>
-            </Tooltip>
-            <div className="app__rail-spacer" />
-            <Tooltip text="Settings — manage API keys">
-              <button
-                className="app__rail-btn"
-                onClick={() => navigate(PAGES.settings)}
-                aria-label="Settings"
-              >
-                <Settings size={20} />
-              </button>
-            </Tooltip>
-            <div className="app__rail-status">
-              <span
-                className={`app__rail-dot ${hasAnyKey ? 'is-active' : ''}`}
-                title={hasAnyKey ? 'Models connected' : 'No API keys connected'}
-              />
-            </div>
-            <Tooltip text="Sign out">
-              <button
-                className="app__rail-btn"
-                onClick={handleLogout}
-                disabled={loggingOut}
-                aria-label="Sign Out"
-              >
-                <LogOut size={20} />
-              </button>
-            </Tooltip>
-          </aside>
-          <main className="app__main">
-            <AmbientScene />
-            <GeneratorPage />
-          </main>
-        </div>
-      </SubscriptionGate>
-    );
+  if (route === '/dashboard') {
+    return <><ResearchDashboard onSettings={() => setSettingsOpen(true)} profileName={user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Your workspace'} /><SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} /></>;
   }
-
-  /* Settings: same shell and gate as the rest of the paid app. */
-  if (route === PAGES.settings) {
-    if (!user) {
-      return (
-        <div className="app app--auth">
-          <main className="app__main">
-            {authView === 'login' ? (
-              <Login onSwitchToSignUp={() => setAuthView('signup')} />
-            ) : (
-              <SignUp onSwitchToLogin={() => setAuthView('login')} />
-            )}
-          </main>
-        </div>
-      );
-    }
-
-    return (
-      <SubscriptionGate>
-        <div className="app">
-          <aside className="app__rail">
-            <div className="app__brand" title="Launchly">
-              <Sparkles size={22} strokeWidth={2.2} />
-            </div>
-            <div className="app__rail-divider" />
-            <Tooltip text="Create">
-              <button
-                className="app__rail-btn"
-                onClick={() => navigate(PAGES.inside)}
-                aria-label="Create"
-              >
-                <Sparkles size={20} />
-              </button>
-            </Tooltip>
-            <Tooltip text="Bots">
-              <button
-                className="app__rail-btn"
-                onClick={() => navigate(PAGES.bots)}
-                aria-label="Bots"
-              >
-                <Bot size={20} />
-              </button>
-            </Tooltip>
-            <Tooltip text="Business Connect">
-              <button
-                className="app__rail-btn"
-                onClick={() => navigate(PAGES.businessConnect)}
-                aria-label="Business Connect"
-              >
-                <Building2 size={20} />
-              </button>
-            </Tooltip>
-            <Tooltip text="Monitor Control">
-              <button
-                className="app__rail-btn"
-                onClick={() => navigate(PAGES.monitorControl)}
-                aria-label="Monitor Control"
-              >
-                <MonitorControlIcon size={20} />
-              </button>
-            </Tooltip>
-            <div className="app__rail-spacer" />
-            <Tooltip text="Settings — manage API keys">
-              <button className="app__rail-btn is-active" aria-label="Settings">
-                <Settings size={20} />
-              </button>
-            </Tooltip>
-            <div className="app__rail-status">
-              <span
-                className={`app__rail-dot ${hasAnyKey ? 'is-active' : ''}`}
-                title={hasAnyKey ? 'Models connected' : 'No API keys connected'}
-              />
-            </div>
-            <Tooltip text="Sign out">
-              <button
-                className="app__rail-btn"
-                onClick={handleLogout}
-                disabled={loggingOut}
-                aria-label="Sign Out"
-              >
-                <LogOut size={20} />
-              </button>
-            </Tooltip>
-          </aside>
-          <main className="app__main">
-            <SettingsPage onSignOut={handleLogout} />
-          </main>
-        </div>
-      </SubscriptionGate>
-    );
-  }
-
-  // Home route (/) — the redirect effect for this route is declared above, with
-  // the other hooks.
   if (!user) {
-    return (
-      <div className="app app--auth">
-        <main className="app__main">
-          {authView === 'login' ? (
-            <Login onSwitchToSignUp={() => setAuthView('signup')} />
-          ) : (
-            <SignUp onSwitchToLogin={() => setAuthView('login')} />
-          )}
-        </main>
-      </div>
-    );
+    return <RedirectTo path="/" />;
   }
 
-  /* Anything else lands on Get in rather than a spinner, so no URL is a dead
-     end for someone trying to reach the app. */
+  // Fallback (should not reach here)
   return (
-    <div className="app app--auth">
-      <main className="app__main">
-        {authView === 'login' ? (
-          <Login onSwitchToSignUp={() => setAuthView('signup')} />
-        ) : (
-          <SignUp onSwitchToLogin={() => setAuthView('login')} />
-        )}
-      </main>
+    <div className="auth-loading">
+      <span className="auth-spinner auth-spinner--lg" />
     </div>
   );
 }

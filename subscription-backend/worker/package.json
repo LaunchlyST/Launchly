@@ -1,11 +1,10 @@
 {
   "name": "launchly-subscription-worker",
   "private": true,
-  "type": "module",
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "test": "node --experimental-strip-types --test src/*.test.ts src/business/*.test.ts"
+    "test": "node --experimental-strip-types --test src/business/*.test.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.115.0",

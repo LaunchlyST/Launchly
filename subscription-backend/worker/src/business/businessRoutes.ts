@@ -1,7 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import type { Env } from '../types';
-import { getAuthenticatedUserId } from '../auth';
-import { searchCreators, CreatorSearchNotFoundError } from '../creatorSearchService';
+import { CreatorNotFoundError, collectTikTokProfile } from './tiktokPublicCollector.ts';
 import { handleBusinessRequest, type BusinessApiDeps } from './businessApi.ts';
 import { BusinessCache, RateLimiter, type DurableStore } from './businessCache.ts';
 import { getBusinessProvider, providerForId } from './businessDataProvider.ts';
@@ -10,6 +8,25 @@ import { inspectProfilePage, inspectWebsite } from './websiteInspector.ts';
 import { fetchWithTimeout } from './httpUtil.ts';
 
 export { isBusinessRoute } from './businessApi.ts';
+
+export interface BusinessEnv {
+  SUPABASE_URL: string;
+  SUPABASE_SERVICE_ROLE_KEY: string;
+  FRONTEND_URL: string;
+  GOOGLE_PLACES_API_KEY?: string;
+  GMAIL_CLIENT_ID?: string;
+  GMAIL_CLIENT_SECRET?: string;
+  API_RATE_LIMIT?: KVNamespace;
+}
+type Env = BusinessEnv;
+
+/** Verify the caller from their Supabase access token — never a client-sent userId. */
+async function getAuthenticatedUserId(request: Request, env: Env): Promise<string | null> {
+  const token = (request.headers.get('Authorization') || '').match(/^Bearer\s+(.+)$/i)?.[1]?.trim();
+  if (!token || !env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) return null;
+  const { data, error } = await createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY).auth.getUser(token);
+  return error || !data?.user ? null : data.user.id;
+}
 
 /** Production wiring for Business Connect. Module-level so the in-memory cache survives across requests in an isolate. */
 let memoCache: BusinessCache | null = null;
@@ -52,27 +69,21 @@ export async function handleBusinessConnect(request: Request, env: Env): Promise
     inspectWebsite: (url) => inspectWebsite(url, frontend),
     inspectProfilePage: (url) => inspectProfilePage(url, frontend),
     async lookupTikTok(username) {
-      // Same public-profile collector the Search Creator API uses.
+      // Reads the public TikTok profile page, as any signed-out visitor would.
       try {
-        const r = await searchCreators(env, { q: username });
-        const c: any = r.creator;
+        const p = await collectTikTokProfile(username);
         return {
-          username: c.username ?? username,
-          displayName: c.displayName ?? null,
-          avatar: c.avatar ?? null,
-          bio: c.bio ?? null,
-          followers: c.followers ?? null,
-          following: c.following ?? null,
-          likes: c.likes ?? null,
-          videos: (r.recentVideos ?? []).slice(0, 9).map((v: any) => ({
-            id: v.id ?? null,
-            cover: v.cover ?? null,
-            description: v.description ?? null,
-            views: v.views ?? null,
-          })),
+          username: p.username,
+          displayName: p.displayName,
+          avatar: p.avatar,
+          bio: p.bio,
+          followers: p.followers,
+          following: p.following,
+          likes: p.likes,
+          videos: p.videos.slice(0, 9).map((v) => ({ id: v.id, cover: v.cover, description: v.description, views: v.views })),
         };
       } catch (err) {
-        if (err instanceof CreatorSearchNotFoundError) return null;
+        if (err instanceof CreatorNotFoundError) return null;
         throw err;
       }
     },

@@ -1,4 +1,4 @@
-import { WORKER_URL } from '../../useSubscription';
+const WORKER_URL: string = (import.meta.env.VITE_WORKER_URL || 'http://localhost:8787').replace(/\/+$/, '');
 
 /**
  * Frontend gateway to the worker's Business Connect routes. Every call is

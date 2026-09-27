@@ -6,4 +6,5 @@ dist/
 .wrangler/
 .openjet/
 .env
-.env.local
+.dev.vars
+.dev.vars.*

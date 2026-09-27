@@ -10,29 +10,7 @@ FRONTEND_URL = "https://launchly.pazeruga.workers.dev"
 # STRIPE_WEBHOOK_SECRET
 # SUPABASE_URL
 # SUPABASE_SERVICE_ROLE_KEY
+# CREATOR_DATA_API_KEY
 
-# The Search Creator API's creator data is Launchly's own collector
-# (worker/src/tiktokPublicCollector.ts, reading public TikTok profile
-# pages) — no third-party API key needed for it.
-
-# STRIPE_PRICE_ID  — the main Launchly app subscription (£5/mo), already in
-# use. Set via `wrangler secret put STRIPE_PRICE_ID` (or a [vars] entry —
-# it's a public Stripe identifier, not a secret, but `secret put` works too
-# and needs no wrangler.toml edit or redeploy of source).
-
-# CREATOR_API_PRICE_ID  — the separate "Launchly Search Creator API" £5/mo
-# price. Create this Price in Stripe (see subscription-backend/README.md),
-# then set it with:
-#   npx wrangler secret put CREATOR_API_PRICE_ID
-# Required for POST /api/creator-api-subscription/checkout. Without it,
-# checkout returns a CREATOR_API_PRICE_NOT_CONFIGURED error rather than
-# falling back to any other price.
-
-# Optional — enables real per-key rate limiting on the public
-# GET /api/v1/creators/search endpoint (60 req/min/key). Without it the
-# endpoint still works, it just skips the rate-limit check.
-# Create with: wrangler kv:namespace create API_RATE_LIMIT
-# then uncomment and fill in the id below:
-# [[kv_namespaces]]
-# binding = "API_RATE_LIMIT"
-# id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+# Set via `wrangler var put STRIPE_PRICE_ID=price_xxx`
+# STRIPE_PRICE_ID

@@ -1,8 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 
-vi.mock('../../../useSubscription', () => ({ WORKER_URL: 'http://worker.test' }));
-
 import { BusinessConnectPage } from '../BusinessConnectPage';
 import type { Business, businessApi } from '../businessService';
 
