@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowUp, Camera, Circle, LoaderCircle, Maximize2, MessageSquare, Mic, Monitor, MonitorUp, RotateCcw, Square, X } from 'lucide-react';
 import { useStore } from '../../store';
 import './monitor.css';
+import { describeArea, extractTarget, locate, readScreen, summariseText } from './screenReader';
 
 /**
  * Monitor — share your screen into the display, then talk to the assistant
@@ -117,6 +118,8 @@ export function MonitorPanel() {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [busy, setBusy] = useState(false);
   const [listening, setListening] = useState(false);
+  /** Where the AI mouse is pointing, as fractions of the shared frame. */
+  const [pointer, setPointer] = useState<{ x: number; y: number } | null>(null);
 
   const canShare = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getDisplayMedia;
   const Speech = typeof window !== 'undefined' ? getSpeechRecognition() : null;
@@ -150,6 +153,7 @@ export function MonitorPanel() {
     setBusy(false);
     setListening(false);
     setMessages([]);
+    setPointer(null);
   }, []);
 
   useEffect(() => () => disconnect(), [disconnect]);
@@ -198,17 +202,6 @@ export function MonitorPanel() {
     a.download = name;
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
-
-  function currentFrame(maxWidth = 1600): string | null {
-    const v = videoRef.current;
-    if (!v?.videoWidth) return null;
-    const scale = Math.min(1, maxWidth / v.videoWidth);
-    const c = document.createElement('canvas');
-    c.width = Math.round(v.videoWidth * scale);
-    c.height = Math.round(v.videoHeight * scale);
-    c.getContext('2d')!.drawImage(v, 0, 0, c.width, c.height);
-    return c.toDataURL('image/png');
   }
 
   function screenshot(): string {
@@ -286,6 +279,7 @@ export function MonitorPanel() {
     const text = (raw ?? input).trim();
     if (!text || busy || !connected) return;
     setInput('');
+    setPointer(null);
     add('you', text);
 
     const intent = interpret(text);
@@ -295,27 +289,62 @@ export function MonitorPanel() {
       return;
     }
 
-    if (!openaiKey) {
-      add(
-        'assistant',
-        'I can’t answer open questions without an AI key. I can take screenshots, record, pause, zoom or go fullscreen — or add your OpenAI key in Settings → API Keys and I’ll answer questions about your screen too.'
-      );
-      return;
-    }
-
-    const image = currentFrame();
-    if (!image) {
+    const v = videoRef.current;
+    if (!v?.videoWidth) {
       add('assistant', 'I can’t see your screen yet. Give it a second and try again.', 'error');
       return;
     }
+
+    const target = extractTarget(text);
+    const wantsRead = /\b(what(?:'s| is) on (?:my|the) screen|read (?:my |the )?screen|what do you see|what can you see|describe)\b/i.test(text);
+    const wantsClick = /\b(click|press|tap)\b/i.test(text);
+
     const id = add('assistant', '', 'pending');
     setBusy(true);
     const controller = new AbortController();
     requestRef.current = controller;
+    const stillCurrent = () => requestRef.current === controller && !controller.signal.aborted;
     const timer = setTimeout(() => controller.abort(), 45000);
     try {
-      const answer = await askOpenAI(openaiKey, image, text, controller.signal);
-      if (requestRef.current === controller) update(id, { text: answer, status: undefined });
+      // 1) Read the screen on-device (no key, nothing uploaded).
+      const scale = Math.min(1, 1600 / v.videoWidth);
+      const c = document.createElement('canvas');
+      c.width = Math.round(v.videoWidth * scale);
+      c.height = Math.round(v.videoHeight * scale);
+      c.getContext('2d')!.drawImage(v, 0, 0, c.width, c.height);
+      const ocr = await readScreen(c);
+      if (!stillCurrent()) return;
+
+      if (target) {
+        const hit = locate(ocr, target);
+        if (hit) {
+          setPointer({ x: hit.x, y: hit.y });
+          update(id, {
+            text:
+              `Found “${hit.text}” at the ${describeArea(hit.x, hit.y)} of your screen — I’m pointing at it.` +
+              (wantsClick ? ' I can’t click on your computer from a website, so click where the pointer is.' : ''),
+            status: undefined,
+          });
+          return;
+        }
+        if (!openaiKey) {
+          update(id, { text: `I read your screen but couldn’t see “${target}”. Make sure it’s visible, or try the exact word shown on screen.`, status: undefined });
+          return;
+        }
+      } else if (wantsRead || !openaiKey) {
+        const summary = summariseText(ocr.text);
+        update(id, {
+          text: summary
+            ? (wantsRead ? 'Here’s what I can read on your screen: ' : 'I read your screen. I can point to anything you name — try “where is …”. Visible text: ') + summary
+            : 'I couldn’t read any text on your screen right now.',
+          status: undefined,
+        });
+        return;
+      }
+
+      // 2) Optional: with an OpenAI key, answer free-form questions about the screen.
+      const answer = await askOpenAI(openaiKey, c.toDataURL('image/png'), text, controller.signal);
+      if (stillCurrent()) update(id, { text: answer, status: undefined });
     } catch (e) {
       if (requestRef.current === controller) {
         update(id, {
@@ -330,6 +359,19 @@ export function MonitorPanel() {
         setBusy(false);
       }
     }
+  }
+
+  /** Map a point in the shared frame to the on-screen box (object-fit: cover + zoom). */
+  function pointerStyle(): React.CSSProperties | undefined {
+    const v = videoRef.current;
+    const box = screenRef.current;
+    if (!pointer || !v?.videoWidth || !box) return undefined;
+    const W = box.clientWidth;
+    const H = box.clientHeight;
+    const s = Math.max(W / v.videoWidth, H / v.videoHeight) * zoom;
+    const left = (W - v.videoWidth * s) / 2 + pointer.x * v.videoWidth * s;
+    const top = (H - v.videoHeight * s) / 2 + pointer.y * v.videoHeight * s;
+    return { left, top };
   }
 
   function toggleVoice() {
@@ -432,9 +474,9 @@ export function MonitorPanel() {
               </div>
             )}
             {connected && (
-              <div className="mv-cursor" aria-hidden="true">
+              <div className={`mv-cursor ${pointer ? 'is-pointing' : input.trim() || busy || listening ? 'is-still' : ''}`} style={pointerStyle()} aria-hidden="true">
                 <svg width="22" height="22" viewBox="0 0 22 22">
-                  <path d="M3.5 2.2c-.5-.2-1 .3-.8.8l5.6 16.1c.2.6 1 .6 1.2 0l2.1-6 6-2.1c.6-.2.6-1 0-1.2z" fill="#0f172a" stroke="#fff" strokeWidth="1.6" strokeLinejoin="round" />
+                  <path d="M3.5 2.2c-.5-.2-1 .3-.8.8l5.6 16.1c.2.6 1 .6 1.2 0l2.1-6 6-2.1c.6-.2.6-1 0-1.2z" fill="#2563eb" stroke="#fff" strokeWidth="1.8" strokeLinejoin="round" />
                 </svg>
               </div>
             )}

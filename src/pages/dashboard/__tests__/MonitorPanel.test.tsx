@@ -1,6 +1,22 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+vi.mock('../screenReader', async (orig) => {
+  const real: any = await orig();
+  return {
+    ...real,
+    readScreen: vi.fn(async () => ({
+      width: 1000,
+      height: 500,
+      text: 'Launchly Dashboard\nSettings\nWinning products',
+      words: [
+        { text: 'Launchly', x0: 10, y0: 10, x1: 90, y1: 30, confidence: 95 },
+        { text: 'Settings', x0: 880, y0: 20, x1: 960, y1: 40, confidence: 92 },
+      ],
+    })),
+  };
+});
 import { MonitorPanel, interpret } from '../MonitorPanel';
+import { extractTarget, locate, describeArea } from '../screenReader';
 import { useStore } from '../../../store';
 
 class FakeTrack extends EventTarget {
@@ -109,13 +125,21 @@ describe('Monitor connection state', () => {
 });
 
 describe('Monitor assistant', () => {
-  it('always replies: commands locally, open questions explain the missing key', async () => {
+  it('always replies without a key: commands locally, "where is" points at on-screen text', async () => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({ drawImage() {} } as any);
     render(<MonitorPanel />);
     await connect();
+    const video = document.querySelector('video')!;
+    Object.defineProperty(video, 'videoWidth', { value: 1000 });
+    Object.defineProperty(video, 'videoHeight', { value: 500 });
     sendMessage('zoom in');
     expect(screen.getByText('Zoomed in.')).toBeTruthy();
     sendMessage('where is the settings button');
-    expect(screen.getByText(/add your OpenAI key in Settings/)).toBeTruthy();
+    expect(await screen.findByText(/Found “Settings” at the top right/)).toBeTruthy();
+    sendMessage('what is on my screen');
+    expect(await screen.findByText(/Launchly Dashboard · Settings · Winning products/)).toBeTruthy();
+    sendMessage('where is billing');
+    expect(await screen.findByText(/couldn’t see “billing”/)).toBeTruthy();
   });
 
   it('with a key: shows a thinking state then the answer, or a clear error', async () => {
@@ -131,16 +155,36 @@ describe('Monitor assistant', () => {
     Object.defineProperty(video, 'videoWidth', { value: 1280 });
     Object.defineProperty(video, 'videoHeight', { value: 720 });
 
-    sendMessage('where is the settings button');
-    expect(screen.getByLabelText('Assistant is thinking')).toBeTruthy();
+    sendMessage('why is this chart going down');
+    await waitFor(() => expect(fetch).toHaveBeenCalled());
     await act(async () =>
       resolveFetch(new Response(JSON.stringify({ choices: [{ message: { content: 'Top right, the gear icon.' } }] }), { status: 200 }))
     );
     expect(await screen.findByText('Top right, the gear icon.')).toBeTruthy();
 
-    sendMessage('and the logout?');
+    sendMessage('explain this page to me');
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
     await act(async () => resolveFetch(new Response(JSON.stringify({ error: { message: 'Invalid API key.' } }), { status: 401 })));
     expect(await screen.findByText('Invalid API key.')).toBeTruthy();
     vi.unstubAllGlobals();
+  });
+});
+
+describe('screenReader helpers', () => {
+  it('pulls the target out of a question', () => {
+    expect(extractTarget('where is the Settings button?')).toBe('settings');
+    expect(extractTarget('can you click on winning products')).toBe('winning products');
+    expect(extractTarget('find Search Creator')).toBe('search creator');
+    expect(extractTarget('why is this red')).toBeNull();
+  });
+  it('locates multi-word targets and describes the area', () => {
+    const r = { width: 100, height: 100, text: '', words: [
+      { text: 'Winning', x0: 70, y0: 5, x1: 80, y1: 10, confidence: 90 },
+      { text: 'products', x0: 81, y0: 5, x1: 95, y1: 10, confidence: 90 },
+    ] };
+    const hit = locate(r, 'winning products')!;
+    expect(hit.text).toBe('Winning products');
+    expect(describeArea(hit.x, hit.y)).toBe('top right');
+    expect(locate(r, 'billing')).toBeNull();
   });
 });
