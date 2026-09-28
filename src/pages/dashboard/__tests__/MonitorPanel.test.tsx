@@ -224,9 +224,10 @@ describe('Monitor projects & models', () => {
 
   it('Connect project lists the three options and never fakes GitHub', async () => {
     render(<MonitorPanel />);
+    await act(async () => {});
     fireEvent.click(screen.getByText('Connect project'));
     expect(screen.getByRole('dialog', { name: 'Choose project' })).toBeTruthy();
-    expect(screen.getByText('No projects yet')).toBeTruthy();
+    await waitFor(() => expect(screen.getByText('No projects yet')).toBeTruthy());
     fireEvent.click(screen.getByText('Connect a project'));
     expect(screen.getByRole('dialog', { name: 'Connect a project' })).toBeTruthy();
     expect(screen.getByText('Connect a repository')).toBeTruthy();

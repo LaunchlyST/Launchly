@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowUp, Camera, Circle, LoaderCircle, Maximize2, MessageSquare, Mic, Monitor, MonitorUp, RotateCcw, ChevronDown, Plus, Square, X } from 'lucide-react';
 import { useMonitorWorkspace } from './monitor/useMonitorWorkspace';
+import { restoreLocalPermission } from './monitor/localProjects';
 import { monitorApi } from './monitor/monitorApi';
 import { ProjectSelector } from './monitor/ProjectSelector';
 import { ProjectConnectionModal } from './monitor/ProjectConnectionModal';
@@ -678,6 +679,8 @@ export function MonitorPanel() {
           >
             <div className="mv-compose-project">
               <ProjectSelector project={ws.project} projects={ws.projects} loading={ws.projectsLoading} error={ws.projectsError}
+                permission={ws.projectPermission}
+                onRestorePermission={async () => { if (ws.project) ws.setProjectPermission(await restoreLocalPermission(ws.project.id)); }}
                 onRefresh={ws.refreshProjects} onSelect={p => { ws.setProject(p); setMessages([]); }} onConnect={() => setDialog('project')} />
             </div>
             <textarea ref={inputRef} value={input}
