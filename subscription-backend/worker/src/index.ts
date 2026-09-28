@@ -5,6 +5,9 @@ import type { CreatorProviderEnv } from './services/creator-provider';
 import { creatorPlanFields, isLaunchlyCreatorPrice } from './services/creator-plan';
 import { handleBusinessConnect, isBusinessRoute } from './business/businessRoutes';
 import { handleMonitor, isMonitorRoute } from './monitor/monitorRoutes';
+import { DeviceSession } from './monitor/deviceSession';
+
+export { DeviceSession };
 
 export interface Env extends CreatorProviderEnv {
   CREATOR_DEBUG?: string;
@@ -25,6 +28,8 @@ export interface Env extends CreatorProviderEnv {
   MONITOR_LATEST_MODELS?: string;
   GITHUB_CLIENT_ID?: string;
   GITHUB_CLIENT_SECRET?: string;
+  /** One Durable Object per paired computer running the local agent. */
+  DEVICE_SESSION: DurableObjectNamespace;
 }
 
 const corsHeaders: Record<string, string> = {

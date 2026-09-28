@@ -80,6 +80,10 @@ export const monitorApi = {
     call<ConnectedProject>('/api/monitor/projects', t, json(body)),
   disconnectProject: (t: string | null, id: string) => call<{ id: string }>(`/api/monitor/projects/${encodeURIComponent(id)}`, t, { method: 'DELETE' }),
 
+  // Device (local agent running on the user's computer)
+  pairDevice: (t: string | null, name?: string) => call<{ deviceId: string; name: string; token: string }>('/api/monitor/device/pair', t, json({ name })),
+  deviceStatus: (t: string | null) => call<{ paired: boolean; online: boolean; name: string | null }>('/api/monitor/device/status', t),
+
   // Agent
   runTask: (
     t: string | null,

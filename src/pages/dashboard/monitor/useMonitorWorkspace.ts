@@ -110,6 +110,13 @@ export function useMonitorWorkspace() {
     }
   }, [selection, permissions]);
 
+  const [device, setDevice] = useState<{ paired: boolean; online: boolean; name: string | null }>({ paired: false, online: false, name: null });
+
+  const refreshDevice = useCallback(async () => {
+    const d = await monitorApi.deviceStatus(token);
+    if (d.ok && d.data) setDevice(d.data);
+  }, [token]);
+
   const refresh = useCallback(async () => {
     const s = await monitorApi.status(token);
     const status = s.ok && s.data && typeof s.data.online === 'boolean' ? s.data : null;
@@ -121,11 +128,19 @@ export function useMonitorWorkspace() {
       setModels(Array.isArray(m.data.models) ? m.data.models : []);
       setLatest(m.data.latest && typeof m.data.latest === 'object' ? m.data.latest : {});
     }
-  }, [token]);
+    if (status.capabilities.agent) refreshDevice();
+  }, [token, refreshDevice]);
 
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  // The agent's WebSocket can drop at any moment, so poll rather than trust a one-time check.
+  useEffect(() => {
+    if (!device.paired) return;
+    const id = setInterval(refreshDevice, 8000);
+    return () => clearInterval(id);
+  }, [device.paired, refreshDevice]);
 
   return {
     token,
@@ -151,6 +166,8 @@ export function useMonitorWorkspace() {
     setSelection: (s: ModelSelection) => setPrefs((p) => ({ ...p, selection: s })),
     permissions,
     setPermissions: (perm: MonitorPermissions) => setPrefs((p) => ({ ...p, permissions: perm })),
+    device,
+    refreshDevice,
     refresh,
   };
 }

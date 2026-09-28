@@ -6,6 +6,7 @@ import { monitorApi } from './monitor/monitorApi';
 import { ProjectSelector } from './monitor/ProjectSelector';
 import { ProjectConnectionModal } from './monitor/ProjectConnectionModal';
 import { CodingConnectionModal } from './monitor/CodingConnectionModal';
+import { DeviceConnectionModal } from './monitor/DeviceConnectionModal';
 import { MonitorPermissions } from './monitor/MonitorPermissions';
 import { AgentActivity, ChangeSummary } from './monitor/AgentActivity';
 import type { AgentTask } from './monitor/types';
@@ -109,7 +110,7 @@ const MAX_CHARS = 1000;
 export function MonitorPanel() {
   const openaiKey = useStore((s) => s.openaiKey);
   const ws = useMonitorWorkspace();
-  const [dialog, setDialog] = useState<null | 'project' | 'ai' | 'perms'>(null);
+  const [dialog, setDialog] = useState<null | 'project' | 'ai' | 'perms' | 'device'>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const screenRef = useRef<HTMLDivElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -423,6 +424,10 @@ export function MonitorPanel() {
 
   /** Send a coding request to the Monitor backend agent and follow its progress. */
   async function runAgent(prompt: string) {
+    if (!ws.project) { add('assistant', 'Connect a project first.'); return; }
+    if (!aiReady) { add('assistant', 'Connect AI first — pick a provider and save a key.'); return; }
+    if (!ws.backend?.capabilities.agent) { add('assistant', 'The project agent isn’t available on the server yet.'); return; }
+    if (!ws.device.online) { add('assistant', ws.device.paired ? 'Computer disconnected. Start the local agent on your computer to run this.' : 'Connect this computer first (the folder icon next to Full access) so the AI has somewhere real to run.'); return; }
     if (!projectReady) { add('assistant', 'Connect a project and AI with an available coding runtime before sending a coding task.'); return; }
     const project = ws.project!;
     const task: AgentTask = {
@@ -696,6 +701,9 @@ export function MonitorPanel() {
                 <button type="button" className="mv-compose-text" onClick={() => setDialog('perms')} aria-label="Monitor permissions" title="Manage project permissions">
                   {ws.permissions.readFiles && ws.permissions.searchFiles && ws.permissions.editFiles && ws.permissions.createFiles && ws.permissions.runDevCommands ? 'Full access' : 'Limited access'} <ChevronDown size={12} />
                 </button>
+                <button type="button" className="mv-compose-text" onClick={() => setDialog('device')} aria-label="Computer connection" title="The computer the AI actually edits">
+                  <Circle size={7} fill={ws.device.online ? '#12b76a' : '#98a2b3'} stroke="none" /> {ws.device.online ? (ws.device.name || 'Computer') : ws.device.paired ? 'Computer offline' : 'Connect computer'}
+                </button>
               </div>
               <div className="mv-compose-right">
                 {input.length >= MAX_CHARS * .9 && <span className="mv-count">{input.length}/{MAX_CHARS}</span>}
@@ -729,6 +737,16 @@ export function MonitorPanel() {
       )}
       {dialog === 'ai' && <CodingConnectionModal token={ws.token} providers={ws.providers} onClose={() => setDialog(null)} onChanged={ws.refresh} onSelect={provider => ws.setSelection({ mode: 'latest', provider })} />}
       {dialog === 'perms' && <MonitorPermissions value={ws.permissions} onChange={ws.setPermissions} onClose={() => setDialog(null)} />}
+      {dialog === 'device' && (
+        <DeviceConnectionModal
+          token={ws.token}
+          agentAvailable={!!ws.backend?.capabilities.agent}
+          online={ws.device.online}
+          deviceName={ws.device.name}
+          onClose={() => setDialog(null)}
+          onPaired={ws.refreshDevice}
+        />
+      )}
     </div>
   );
 }

@@ -1,0 +1,15 @@
+{
+  "name": "launchly-local-agent",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Runs on your computer and gives the Launchly Monitor AI real, scoped access to one project folder: read/write files, run commands. Nothing outside --root is ever touched.",
+  "type": "module",
+  "main": "agent.js",
+  "bin": { "launchly-agent": "./agent.js" },
+  "scripts": {
+    "start": "node agent.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}
