@@ -124,6 +124,11 @@ export function MonitorPanel() {
   const [source, setSource] = useState('');
   const [recording, setRecording] = useState(false);
   const [paused, setPaused] = useState(false);
+  /** True only when the user asked to pause — any other pause (fullscreen, tab switch) is undone. */
+  const userPausedRef = useRef(false);
+  useEffect(() => {
+    userPausedRef.current = paused;
+  }, [paused]);
   const [zoom, setZoom] = useState(1);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -135,6 +140,27 @@ export function MonitorPanel() {
   const canShare = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getDisplayMedia;
   const Speech = typeof window !== 'undefined' ? getSpeechRecognition() : null;
   const connected = conn === 'connected';
+
+  // Browsers pause a <video> when it moves in or out of fullscreen (and
+  // sometimes when the tab is hidden). The preview must stay live unless the
+  // user paused it, so resume on those events.
+  useEffect(() => {
+    if (!connected) return;
+    const v = videoRef.current;
+    if (!v) return;
+    const resume = () => {
+      if (!userPausedRef.current && streamRef.current && v.paused) v.play?.()?.catch?.(() => {});
+    };
+    const onFs = () => setTimeout(resume, 50);
+    v.addEventListener('pause', resume);
+    document.addEventListener('fullscreenchange', onFs);
+    document.addEventListener('visibilitychange', resume);
+    return () => {
+      v.removeEventListener('pause', resume);
+      document.removeEventListener('fullscreenchange', onFs);
+      document.removeEventListener('visibilitychange', resume);
+    };
+  }, [connected]);
   /** Chat works with a shared screen, a connected project, or both. */
   const selectedProvider = ws.selection.mode === 'auto' ? null : ws.selection.provider;
   const aiReady = !!selectedProvider && ws.providers.some(p => p.provider === selectedProvider && p.connected);
@@ -276,10 +302,12 @@ export function MonitorPanel() {
       case 'stop-recording':
         return stopRecording();
       case 'pause':
+        userPausedRef.current = true;
         videoRef.current?.pause();
         setPaused(true);
         return 'Paused. The view is frozen until you resume.';
       case 'resume':
+        userPausedRef.current = false;
         videoRef.current?.play?.()?.catch?.(() => {});
         setPaused(false);
         return 'Live again.';
@@ -545,7 +573,7 @@ export function MonitorPanel() {
           </header>
 
           <div ref={screenRef} className="mv-screen">
-            <video ref={videoRef} muted playsInline hidden={!connected} style={{ transform: `scale(${zoom})` }} />
+            <video ref={videoRef} autoPlay muted playsInline hidden={!connected} style={{ transform: `scale(${zoom})` }} />
             {!connected && (
               <div className="mv-empty">
                 <span className="mv-empty__icon">
