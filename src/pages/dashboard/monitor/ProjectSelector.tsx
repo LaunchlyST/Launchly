@@ -31,7 +31,7 @@ export function ProjectSelector({ project, projects, loading, error, onSelect, o
   return <div className="mp-context" ref={ref}>
     <button type="button" className="mt-btn" ref={trigger} aria-haspopup="dialog" aria-expanded={open}
       onClick={() => { if (!open) { setQuery(''); onRefresh(); } setOpen(!open); }}>
-      <FolderOpen size={14} /> <span className="mt-btn__text">{project?.name || 'Connect project'}</span>
+      <FolderOpen size={16} /> <span className="mt-btn__text">{project?.name || 'Choose project'}</span>
       {project && <><small>{sourceLabel[project.source]}</small><GitBranch size={12} /><span className="mt-btn__text">{project.branch}</span></>}
     </button>
     {open && <div className="mp-picker" role="dialog" aria-label="Choose project">

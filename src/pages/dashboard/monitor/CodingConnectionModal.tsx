@@ -3,9 +3,10 @@ import { Modal } from './Modal';
 import { AIProviderModal } from './AIProviderModal';
 import type { ProviderConnection, ProviderId } from './types';
 
-export function CodingConnectionModal({ token, providers, onClose, onChanged, onSelect }: {
+export function CodingConnectionModal({ token, providers, selectedProvider, onClose, onChanged, onSelect }: {
   token: string | null;
   providers: ProviderConnection[];
+  selectedProvider?: ProviderId | null;
   onClose: () => void;
   onChanged: () => void;
   onSelect: (provider: ProviderId) => void;
@@ -13,7 +14,7 @@ export function CodingConnectionModal({ token, providers, onClose, onChanged, on
   const [api, setApi] = useState<ProviderId | null>(null);
   const [unavailable, setUnavailable] = useState('');
   if (api) return <AIProviderModal token={token} providers={providers} initialProvider={api}
-    onClose={() => setApi(null)} onChanged={onChanged} onConnected={onSelect} />;
+    onClose={() => setApi(null)} onChanged={onChanged} onConnected={provider => { onSelect(provider); setApi(null); }} />;
   return <Modal title="Connect coding agent" onClose={onClose}>
     <div className="mm-stack">
       {['Codex', 'Claude Code'].map(name => <div className="mm-row" key={name}>
@@ -27,9 +28,10 @@ export function CodingConnectionModal({ token, providers, onClose, onChanged, on
       {(['openai', 'anthropic'] as const).map(provider => {
         const connected = providers.some(p => p.provider === provider && p.connected);
         const label = provider === 'openai' ? 'OpenAI API' : 'Anthropic API';
-        return <div className="mm-row" key={provider}><span>{label}</span><div>
-          {connected && <button type="button" className="mm-btn" onClick={() => { onSelect(provider); onClose(); }}>Use {label}</button>}
-          <button type="button" className="mm-link" onClick={() => setApi(provider)}>{connected ? 'Manage key' : 'Connect API Key'}</button>
+        const selected = connected && selectedProvider === provider;
+        return <div className={`mm-row mm-provider ${selected ? 'is-selected' : ''}`} key={provider}><span className="mm-provider-label"><i className={`mm-provider-dot ${selected ? 'is-selected' : ''}`} aria-hidden="true" />{label}<small>{selected ? 'Selected' : connected ? 'Key saved' : 'Not connected'}</small></span><div className="mm-provider-actions">
+          <button type="button" className="mm-btn" aria-label={connected ? `Use ${label}` : `Connect API Key for ${label}`} aria-pressed={selected} onClick={() => connected ? onSelect(provider) : setApi(provider)}>Connect API Key</button>
+          {connected && <button type="button" className="mm-link" onClick={() => setApi(provider)}>Manage key</button>}
         </div></div>;
       })}
     </div>

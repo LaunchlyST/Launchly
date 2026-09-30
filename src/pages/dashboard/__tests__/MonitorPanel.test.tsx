@@ -214,7 +214,7 @@ describe('Monitor projects & models', () => {
 
   it('shows the toolbar, stays Offline without a backend and asks to connect something', () => {
     render(<MonitorPanel />);
-    expect(screen.getByText('Connect project')).toBeTruthy();
+    expect(screen.getByText('Choose project')).toBeTruthy();
     expect(screen.getByText('Connect AI')).toBeTruthy();
     expect(screen.getByLabelText('Monitor permissions')).toBeTruthy();
     expect(document.querySelector('.mv-pill')!.textContent).toBe('Offline');
@@ -222,18 +222,20 @@ describe('Monitor projects & models', () => {
     expect((screen.getByLabelText('Message') as HTMLTextAreaElement).disabled).toBe(true);
   });
 
-  it('Connect project lists the three options and never fakes GitHub', async () => {
+  it('Connect project opens GitHub first and preserves other connection options', async () => {
     render(<MonitorPanel />);
-    fireEvent.click(screen.getByText('Connect project'));
+    fireEvent.click(screen.getByText('Choose project'));
     expect(screen.getByRole('dialog', { name: 'Choose project' })).toBeTruthy();
     expect(screen.getByText('No projects yet')).toBeTruthy();
     fireEvent.click(screen.getByText('Connect a project'));
     expect(screen.getByRole('dialog', { name: 'Connect a project' })).toBeTruthy();
+    expect(screen.getByText('Sign in to Launchly to connect your GitHub account.')).toBeTruthy();
+    fireEvent.click(screen.getByText('All options'));
     expect(screen.getByText('Connect a repository')).toBeTruthy();
     expect(screen.getByText('Connect a folder on this computer')).toBeTruthy();
     expect(screen.getByText('Import using a repository URL')).toBeTruthy();
     fireEvent.click(screen.getByText('GitHub'));
-    expect(screen.getByText(/GitHub connection isn’t set up on the server yet/)).toBeTruthy();
+    expect(screen.getByText('Sign in to Launchly to connect your GitHub account.')).toBeTruthy();
   });
 
   it('coding connections: unavailable agents stay disconnected and API selection is explicit', async () => {
@@ -263,7 +265,7 @@ describe('Monitor projects & models', () => {
   it('AI provider modal never shows a stored key and reports server errors honestly', async () => {
     render(<MonitorPanel />);
     fireEvent.click(screen.getByText('Connect AI'));
-    fireEvent.click(screen.getAllByRole('button', { name: 'Connect API Key' })[1]);
+    fireEvent.click(screen.getAllByRole('button', { name: /Connect API Key for/ })[1]);
     expect(screen.getByRole('dialog', { name: 'Connect AI' })).toBeTruthy();
     fireEvent.change(screen.getByPlaceholderText('sk-ant-…'), { target: { value: 'sk-ant-secret' } });
     fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
@@ -308,9 +310,8 @@ describe('Monitor projects & models', () => {
     }));
     render(<MonitorPanel />);
     await waitFor(() => expect(document.querySelector('.mv-pill')!.textContent).toBe('Online'));
-    fireEvent.click(screen.getByText('Connect project'));
+    fireEvent.click(screen.getByText('Choose project'));
     fireEvent.click(screen.getByText('Connect a project'));
-    fireEvent.click(screen.getByText('GitHub'));
     fireEvent.click(await screen.findByText('matas/launchly'));
     fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
     await waitFor(() => expect(document.querySelector('.mv-composer')!.textContent).toContain('launchlyGitHubmain'));
@@ -337,7 +338,7 @@ describe('Monitor projects & models', () => {
     expect(document.querySelector('.mv-pill')!.textContent).toBe('Offline');
     fireEvent.click(screen.getByText('Connect AI'));
     expect(screen.getByText('Codex')).toBeTruthy();
-    fireEvent.click(screen.getAllByRole('button', { name: 'Connect API Key' })[1]);
+    fireEvent.click(screen.getAllByRole('button', { name: /Connect API Key for/ })[1]);
     expect(screen.getByRole('dialog', { name: 'Connect AI' })).toBeTruthy();
   });
 });

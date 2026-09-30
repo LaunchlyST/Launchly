@@ -74,6 +74,7 @@ export const monitorApi = {
   // Projects
   projects: (t: string | null) => call<ConnectedProject[]>('/api/monitor/projects', t),
   githubStart: (t: string | null) => call<{ authorizeUrl: string }>('/api/monitor/github/authorize', t, json({})),
+  githubComplete: (t: string | null, code: string, state: string) => call<{ login: string }>('/api/monitor/github/complete', t, json({ code, state })),
   githubRepos: (t: string | null, q = '') => call<GitHubRepo[]>(`/api/monitor/github/repos?q=${encodeURIComponent(q)}`, t),
   githubBranches: (t: string | null, repo: string) => call<string[]>(`/api/monitor/github/branches?repo=${encodeURIComponent(repo)}`, t),
   connectProject: (t: string | null, body: { source: 'github' | 'git-url' | 'local'; repository: string; branch: string }) =>

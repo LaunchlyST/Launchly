@@ -53,9 +53,9 @@ export function AIProviderModal({ token, providers, initialProvider = 'anthropic
         {PROVIDERS.filter(p => p.id !== 'xai').map((p) => {
           const on = (providers ?? []).some((c) => c.provider === p.id && c.connected);
           return (
-            <button key={p.id} type="button" role="tab" aria-selected={provider === p.id} className={provider === p.id ? 'is-on' : ''} onClick={() => { setProvider(p.id); setKey(''); setState({ kind: 'idle' }); }}>
+            <button key={p.id} type="button" role="tab" disabled={busy} aria-selected={provider === p.id} className={provider === p.id ? 'is-on' : ''} onClick={() => { setProvider(p.id); setKey(''); setState({ kind: 'idle' }); }}>
               {p.name}
-              {on && <i className="mv-live-dot" />}
+              {on && <Check size={12} aria-label="Key saved" />}
             </button>
           );
         })}

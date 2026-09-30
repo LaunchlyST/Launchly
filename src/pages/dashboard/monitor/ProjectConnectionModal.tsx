@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeft, FolderOpen, GitBranch, LoaderCircle, Lock, Search } from 'lucide-react';
 import { Github } from './GithubMark';
 import { Modal, Unavailable } from './Modal';
@@ -16,7 +16,7 @@ interface Props {
 
 /** Connect a project: GitHub (primary), local folder via Monitor Bridge, or a git URL. */
 export function ProjectConnectionModal({ token, backend, onClose, onConnected }: Props) {
-  const [step, setStep] = useState<Step>('choose');
+  const [step, setStep] = useState<Step>('github');
   const caps = backend?.capabilities;
 
   return (
@@ -71,37 +71,66 @@ function GitHubFlow({ token, enabled, onConnected }: { token: string | null; ena
   const [query, setQuery] = useState('');
   const [repo, setRepo] = useState<GitHubRepo | null>(null);
   const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const started = useRef(false);
 
   useEffect(() => {
-    if (!enabled) return;
-    monitorApi.githubRepos(token).then((r) => (r.ok ? setRepos(r.data) : r.reason === 'unauthorized' ? setRepos(null) : setError(r.message)));
+    if (!enabled || !token || started.current) return;
+    started.current = true;
+    async function load() {
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get('code');
+      const state = params.get('state');
+      const denied = params.get('error');
+      if (code || denied) {
+        const clean = new URL(window.location.href);
+        ['code', 'state', 'error', 'error_description', 'error_uri', 'github'].forEach(key => clean.searchParams.delete(key));
+        window.history.replaceState({}, '', clean);
+        if (denied || !code || !state) { setError('GitHub authorization was cancelled. You can try again.'); setLoading(false); return; }
+        const completed = await monitorApi.githubComplete(token, code, state);
+        if (!completed.ok) { setError(completed.message); setLoading(false); return; }
+      }
+      const result = await monitorApi.githubRepos(token);
+      setLoading(false);
+      if (result.ok) setRepos(result.data);
+      else if (result.reason === 'unauthorized') await authorize();
+      else setError(result.message);
+    }
+    void load();
   }, [enabled, token]);
 
   async function authorize() {
+    setError('');
     setBusy(true);
     const r = await monitorApi.githubStart(token);
     setBusy(false);
-    if (r.ok) window.location.href = r.data.authorizeUrl;
+    if (r.ok) {
+      const target = new URL(r.data.authorizeUrl);
+      if (target.origin !== 'https://github.com' || target.pathname !== '/login/oauth/authorize') { setError('The server returned an invalid GitHub authorization URL.'); return; }
+      window.location.assign(target.href);
+    }
     else setError(r.message);
   }
 
+  if (!token) return <Unavailable>Sign in to Launchly to connect your GitHub account.</Unavailable>;
   if (!enabled) return <Unavailable>GitHub connection isn’t set up on the server yet.</Unavailable>;
   if (repo) return <BranchSelector token={token} repo={repo} onBack={() => setRepo(null)} onConnected={onConnected} />;
   return (
     <div className="mm-stack">
-      {repos === null && !error && (
+      {loading && <p className="mm-note" role="status"><LoaderCircle size={14} className="spin" /> Loading your GitHub projects…</p>}
+      {repos === null && !loading && (
         <button type="button" className="mm-btn mm-btn--primary mm-btn--block" onClick={authorize} disabled={busy}>
           {busy ? <LoaderCircle size={14} className="spin" /> : <Github size={14} />} Connect GitHub
         </button>
       )}
-      {error && <p className="mm-note mm-note--error">{error}</p>}
+      {error && <p className="mm-note mm-note--error" role="alert">{error}</p>}
       {repos && <RepositorySelector repos={repos} query={query} setQuery={setQuery} onPick={setRepo} />}
     </div>
   );
 }
 
 export function RepositorySelector({ repos, query, setQuery, onPick }: { repos: GitHubRepo[]; query: string; setQuery: (q: string) => void; onPick: (r: GitHubRepo) => void }) {
-  const list = useMemo(() => repos.filter((r) => r.fullName.toLowerCase().includes(query.toLowerCase())).slice(0, 50), [repos, query]);
+  const list = useMemo(() => repos.filter((r) => r.fullName.toLowerCase().includes(query.toLowerCase())), [repos, query]);
   return (
     <>
       <div className="mm-input">
@@ -115,7 +144,7 @@ export function RepositorySelector({ repos, query, setQuery, onPick }: { repos: 
             {r.private && <Lock size={12} />}
           </button>
         ))}
-        {list.length === 0 && <p className="mm-note mm-note--muted">No repositories match.</p>}
+        {list.length === 0 && <p className="mm-note mm-note--muted">{repos.length ? 'No repositories match.' : 'No repositories are available for this GitHub account.'}</p>}
       </div>
     </>
   );

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowUp, Camera, Circle, LoaderCircle, Maximize2, MessageSquare, Mic, Monitor, MonitorUp, RotateCcw, ChevronDown, Plus, Square, X } from 'lucide-react';
+import { ArrowUp, Camera, Circle, LoaderCircle, Maximize2, Mic, Monitor, MonitorUp, RotateCcw, ChevronDown, Plus, ShieldCheck, Square, Terminal, X } from 'lucide-react';
 import { useMonitorWorkspace } from './monitor/useMonitorWorkspace';
 import { monitorApi } from './monitor/monitorApi';
 import { ProjectSelector } from './monitor/ProjectSelector';
@@ -108,7 +108,7 @@ const MAX_CHARS = 1000;
 export function MonitorPanel() {
   const openaiKey = useStore((s) => s.openaiKey);
   const ws = useMonitorWorkspace();
-  const [dialog, setDialog] = useState<null | 'project' | 'ai' | 'perms'>(null);
+  const [dialog, setDialog] = useState<null | 'project' | 'ai' | 'perms'>(() => new URLSearchParams(window.location.search).get('github') === 'connect' ? 'project' : null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const screenRef = useRef<HTMLDivElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -485,24 +485,27 @@ export function MonitorPanel() {
   const status = conn === 'connecting' ? 'Connecting' : !connected ? 'Offline' : recording ? 'Recording' : paused ? 'Paused' : 'Live';
 
   return (
-    <div className="mv">
+    <div className={`mv ${conn !== 'idle' ? 'mv--sharing' : 'mv--workspace'}`}>
       <header className="mv-head">
         <div>
-          <h1 className="mv-title">Monitor</h1>
-          <p className="mv-sub">Share your screen or connect a project and control it by typing or talking.</p>
+          <div className="mv-heading"><span className="mv-heading-icon" aria-hidden="true"><Monitor size={21} strokeWidth={1.6} /></span><h1 className="mv-title">Monitor</h1></div>
+          <p className="mv-sub">Your live screen on the left. Your assistant on the right.</p>
         </div>
+        <div className="mv-head-actions">
         <span className={`mv-pill ${ws.online ? 'mv-pill--live' : ''}`} title={ws.online ? 'Monitor service is available' : 'Monitor service isn’t reachable'}>
           <i />
           {ws.online ? 'Online' : 'Offline'}
         </span>
+        </div>
       </header>
+      {connectError && <p className="mv-connection-error" role="alert">{connectError}</p>}
 
       <div className="mv-grid">
         {/* ---------------- Screen ---------------- */}
         <section className={`mv-card mv-card--screen ${connected ? 'is-live' : ''}`}>
           <header className="mv-card__head">
             <span className="mv-card__title">
-              <Monitor size={16} strokeWidth={1.9} /> Screen
+              <span className="mv-panel-icon"><Monitor size={16} strokeWidth={1.9} /></span> Screen
               <span className="mv-visually-hidden" role="status">{status}</span>
               {connected && (
                 <span className="mv-card__meta" data-testid="connection-label">
@@ -551,17 +554,15 @@ export function MonitorPanel() {
                 <span className="mv-empty__icon">
                   {conn === 'connecting' ? <LoaderCircle size={26} className="spin" /> : <MonitorUp size={28} strokeWidth={1.5} />}
                 </span>
-                <h2>{conn === 'connecting' ? 'Choose what to share' : 'Share your screen'}</h2>
+                <span className="mv-empty__eyebrow">YOUR LIVE WORKSPACE</span>
+                <h2>{conn === 'connecting' ? 'Choose what to share' : 'Bring your screen into focus'}</h2>
                 <p>
                   {conn === 'connecting'
                     ? 'Pick a screen or window in your browser’s prompt.'
-                    : 'Your screen appears here live. Nothing is saved unless you ask for a screenshot or recording.'}
+                    : 'Share a window or your screen to work alongside your assistant.'}
                 </p>
-                {conn !== 'connecting' && (
-                  <button type="button" className="mv-cta" onClick={connect} disabled={!canShare}>
-                    <MonitorUp size={16} strokeWidth={2} /> {canShare ? 'Connect screen' : 'Not supported in this browser'}
-                  </button>
-                )}
+                {conn === 'idle' && <button type="button" className="mv-cta" onClick={connect} disabled={!canShare}><MonitorUp size={16} /> Connect screen</button>}
+                <span className="mv-empty__privacy"><ShieldCheck size={13} /> You choose what to share</span>
                 {connectError && <p className="mv-empty__error">{connectError}</p>}
               </div>
             )}
@@ -583,10 +584,11 @@ export function MonitorPanel() {
 
         {/* ---------------- Chat ---------------- */}
         <section className={`mv-card mv-card--chat ${chatReady ? '' : 'is-disabled'}`}>
-          <header className="mv-card__head">
-            <span className="mv-card__title">
-              <MessageSquare size={16} strokeWidth={1.9} /> Chat
-            </span>
+          <header className="mv-card__head mv-assistant-head">
+            <div className="mv-assistant-identity">
+              <span className="mv-assistant-mark" aria-hidden="true"><Terminal size={20} strokeWidth={1.8} /></span>
+              <div className="mv-assistant-copy"><span className="mv-assistant-name">Assistant</span><span className="mv-assistant-caption">{busy ? 'Working on your request' : 'Your workspace companion'}</span></div>
+            </div>
             <button
               type="button"
               className="mv-tool"
@@ -603,10 +605,10 @@ export function MonitorPanel() {
             {!chatReady || messages.length === 0 ? (
               <div className="mv-thread__empty">
                 <span className="mv-thread__icon">
-                  <MessageSquare size={20} strokeWidth={1.7} />
+                  <Terminal size={30} strokeWidth={1.5} />
                 </span>
                 <strong>{ws.project ? `What should we build in ${ws.project.name}?` : 'What should we build?'}</strong>
-                <p>{!chatReady ? 'Connect a project or share your screen to get started.' : connected ? 'Ask me to take a screenshot, record, zoom or go fullscreen.' : `Ask for a change in ${ws.project!.name}.`}</p>
+                <p>{!chatReady ? ws.project && !ws.backend?.capabilities.agent ? 'Project selected. The coding runtime must be configured before you can start coding.' : 'Connect a project or share your screen to get started.' : connected ? 'Ask me to take a screenshot, record, zoom or go fullscreen.' : `Ask for a change in ${ws.project!.name}.`}</p>
                 {connected && (
                   <div className="mv-suggest">
                     {['Take a screenshot', 'Start recording', 'Zoom in'].map((q) => (
@@ -652,17 +654,19 @@ export function MonitorPanel() {
               <ProjectSelector project={ws.project} projects={ws.projects} loading={ws.projectsLoading} error={ws.projectsError}
                 onRefresh={ws.refreshProjects} onSelect={p => { ws.setProject(p); setMessages([]); }} onConnect={() => setDialog('project')} />
             </div>
+            <div className="mv-compose-box">
             <textarea ref={inputRef} value={input}
               onChange={(e) => setInput(e.target.value.slice(0, MAX_CHARS))}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
               }}
-              placeholder="Ask Monitor to build or change something..."
+              placeholder="Do anything"
               disabled={!chatReady} rows={2} aria-label="Message" />
             <div className="mv-compose-tools">
               <div className="mv-compose-left">
                 <button type="button" className="mv-compose-icon" aria-label="Add project" title="Connect project" onClick={() => inputRef.current?.closest('form')?.querySelector<HTMLButtonElement>('.mp-context > button')?.click()}><Plus size={16} /></button>
-                <button type="button" className="mv-compose-text" onClick={() => setDialog('perms')} aria-label="Monitor permissions" title="Manage project permissions">
+                <button type="button" className="mv-compose-text mv-compose-access" onClick={() => setDialog('perms')} aria-label="Monitor permissions" title="Manage project permissions">
+                  <ShieldCheck size={15} />
                   {ws.permissions.readFiles && ws.permissions.searchFiles && ws.permissions.editFiles && ws.permissions.createFiles && ws.permissions.runDevCommands ? 'Full access' : 'Limited access'} <ChevronDown size={12} />
                 </button>
               </div>
@@ -681,6 +685,7 @@ export function MonitorPanel() {
                 </button>
               </div>
             </div>
+            </div>
           </form>
         </section>
       </div>
@@ -696,7 +701,7 @@ export function MonitorPanel() {
           }}
         />
       )}
-      {dialog === 'ai' && <CodingConnectionModal token={ws.token} providers={ws.providers} onClose={() => setDialog(null)} onChanged={ws.refresh} onSelect={provider => ws.setSelection({ mode: 'latest', provider })} />}
+      {dialog === 'ai' && <CodingConnectionModal token={ws.token} providers={ws.providers} selectedProvider={selectedProvider} onClose={() => setDialog(null)} onChanged={ws.refresh} onSelect={provider => ws.setSelection({ mode: 'latest', provider })} />}
       {dialog === 'perms' && <MonitorPermissions value={ws.permissions} onChange={ws.setPermissions} onClose={() => setDialog(null)} />}
     </div>
   );
