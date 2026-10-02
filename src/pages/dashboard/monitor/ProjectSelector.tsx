@@ -33,7 +33,7 @@ export function ProjectSelector({ project, projects, loading, error, permission,
   return <div className="mp-context" ref={ref}>
     <button type="button" className="mt-btn" ref={trigger} aria-haspopup="dialog" aria-expanded={open}
       onClick={() => { if (!open) { setQuery(''); onRefresh(); } setOpen(!open); }}>
-      <FolderOpen size={16} /> <span className="mt-btn__text">{project?.name || 'Choose project'}</span>
+      <FolderOpen size={16} /> <span className="mt-btn__text">{project?.name || 'Connect project'}</span>
       {project && <><small>{sourceLabel[project.source]}</small><GitBranch size={12} /><span className="mt-btn__text">{project.branch}</span></>}
     </button>
     {project && permission === 'needed' && (

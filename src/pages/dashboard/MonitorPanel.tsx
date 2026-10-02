@@ -781,42 +781,44 @@ export function MonitorPanel() {
               send();
             }}
           >
-            <div className="mv-compose-project">
-              <ProjectSelector project={ws.project} projects={ws.projects} loading={ws.projectsLoading} error={ws.projectsError}
-                permission={ws.projectPermission}
-                onRestorePermission={async () => { if (ws.project) ws.setProjectPermission(await restoreLocalPermission(ws.project.id)); }}
-                onRefresh={ws.refreshProjects} onSelect={p => { ws.setProject(p); setMessages([]); }} onConnect={() => setDialog('project')} />
-            </div>
-            <textarea ref={inputRef} value={input}
-              onChange={(e) => setInput(e.target.value.slice(0, MAX_CHARS))}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
-              }}
-              placeholder="Ask Monitor to build or change something..."
-              disabled={!chatReady} rows={2} aria-label="Message" />
-            <div className="mv-compose-tools">
-              <div className="mv-compose-left">
-                <button type="button" className="mv-compose-icon" aria-label="Add project" title="Connect project" onClick={() => inputRef.current?.closest('form')?.querySelector<HTMLButtonElement>('.mp-context > button')?.click()}><Plus size={16} /></button>
-                <button type="button" className="mv-compose-text" onClick={() => setDialog('perms')} aria-label="Monitor permissions" title="Manage project permissions">
-                  {ws.permissions.readFiles && ws.permissions.searchFiles && ws.permissions.editFiles && ws.permissions.createFiles && ws.permissions.runDevCommands ? 'Full access' : 'Limited access'} <ChevronDown size={12} />
-                </button>
-                <button type="button" className="mv-compose-text" onClick={() => setDialog('device')} aria-label="Computer connection" title="The computer the AI actually edits">
-                  <Circle size={7} fill={ws.device.online ? '#12b76a' : '#98a2b3'} stroke="none" /> {ws.device.online ? (ws.device.name || 'Computer') : ws.device.paired ? 'Computer offline' : 'Connect computer'}
-                </button>
+            <div className="mv-compose-box">
+              <div className="mv-compose-project">
+                <ProjectSelector project={ws.project} projects={ws.projects} loading={ws.projectsLoading} error={ws.projectsError}
+                  permission={ws.projectPermission}
+                  onRestorePermission={async () => { if (ws.project) ws.setProjectPermission(await restoreLocalPermission(ws.project.id)); }}
+                  onRefresh={ws.refreshProjects} onSelect={p => { ws.setProject(p); setMessages([]); }} onConnect={() => setDialog('project')} />
               </div>
-              <div className="mv-compose-right">
-                {input.length >= MAX_CHARS * .9 && <span className="mv-count">{input.length}/{MAX_CHARS}</span>}
-                <button type="button" className="mv-compose-text mv-compose-ai" onClick={() => setDialog('ai')}>
-                  {aiReady ? (selectedProvider === 'openai' ? 'OpenAI API' : 'Anthropic API') : 'Connect AI'} <ChevronDown size={12} />
-                </button>
-                <button type="button" className={`mv-compose-icon ${listening ? 'is-listening' : ''}`}
-                  disabled={!Speech || !chatReady || busy} onClick={toggleVoice}
-                  aria-label={listening ? 'Stop listening' : 'Voice'} title={Speech ? 'Voice' : 'Voice is unavailable in this browser'}>
-                  {listening ? <X size={16} /> : <Mic size={16} />}
-                </button>
-                <button type="submit" className="mv-send" disabled={!chatReady || busy || !input.trim()} aria-label="Send">
-                  {busy ? <LoaderCircle size={15} className="spin" /> : <ArrowUp size={15} strokeWidth={2.4} />}
-                </button>
+              <textarea ref={inputRef} value={input}
+                onChange={(e) => setInput(e.target.value.slice(0, MAX_CHARS))}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+                }}
+                placeholder="Ask Monitor to build or change something..."
+                disabled={!chatReady} rows={2} aria-label="Message" />
+              <div className="mv-compose-tools">
+                <div className="mv-compose-left">
+                  <button type="button" className="mv-compose-icon" aria-label="Add project" title="Connect project" onClick={() => inputRef.current?.closest('form')?.querySelector<HTMLButtonElement>('.mp-context > button')?.click()}><Plus size={16} /></button>
+                  <button type="button" className="mv-compose-text" onClick={() => setDialog('perms')} aria-label="Monitor permissions" title="Manage project permissions">
+                    {ws.permissions.readFiles && ws.permissions.searchFiles && ws.permissions.editFiles && ws.permissions.createFiles && ws.permissions.runDevCommands ? 'Full access' : 'Limited access'} <ChevronDown size={12} />
+                  </button>
+                  <button type="button" className="mv-compose-text" onClick={() => setDialog('device')} aria-label="Computer connection" title="The computer the AI actually edits">
+                    <Circle size={7} fill={ws.device.online ? '#12b76a' : '#98a2b3'} stroke="none" /> {ws.device.online ? (ws.device.name || 'Computer') : ws.device.paired ? 'Computer offline' : 'Connect computer'}
+                  </button>
+                </div>
+                <div className="mv-compose-right">
+                  {input.length >= MAX_CHARS * .9 && <span className="mv-count">{input.length}/{MAX_CHARS}</span>}
+                  <button type="button" className="mv-compose-text mv-compose-ai" onClick={() => setDialog('ai')}>
+                    {aiReady ? (selectedProvider === 'openai' ? 'OpenAI API' : 'Anthropic API') : 'Connect AI'} <ChevronDown size={12} />
+                  </button>
+                  <button type="button" className={`mv-compose-icon ${listening ? 'is-listening' : ''}`}
+                    disabled={!Speech || !chatReady || busy} onClick={toggleVoice}
+                    aria-label={listening ? 'Stop listening' : 'Voice'} title={Speech ? 'Voice' : 'Voice is unavailable in this browser'}>
+                    {listening ? <X size={16} /> : <Mic size={16} />}
+                  </button>
+                  <button type="submit" className="mv-send" disabled={!chatReady || busy || !input.trim()} aria-label="Send">
+                    {busy ? <LoaderCircle size={15} className="spin" /> : <ArrowUp size={15} strokeWidth={2.4} />}
+                  </button>
+                </div>
               </div>
             </div>
           </form>
