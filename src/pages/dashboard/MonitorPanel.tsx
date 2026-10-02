@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowUp, Camera, Circle, LoaderCircle, Maximize2, MessageSquare, Mic, Monitor, MonitorUp, RotateCcw, ChevronDown, Plus, Square, X } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowUp, Mic, MessageSquare, Plus, Square, X } from 'lucide-react';
 import { useMonitorWorkspace } from './monitor/useMonitorWorkspace';
 import { restoreLocalPermission } from './monitor/localProjects';
 import { monitorApi } from './monitor/monitorApi';
@@ -9,6 +9,10 @@ import { CodingConnectionModal } from './monitor/CodingConnectionModal';
 import { DeviceConnectionModal } from './monitor/DeviceConnectionModal';
 import { MonitorPermissions } from './monitor/MonitorPermissions';
 import { AgentActivity, ChangeSummary } from './monitor/AgentActivity';
+import { MonitorTopBar } from './monitor/MonitorTopBar';
+import { ComputerPanel } from './monitor/ComputerPanel';
+import { AgentPanel } from './monitor/AgentPanel';
+import { ApprovalCard } from './monitor/ApprovalCard';
 import type { AgentTask } from './monitor/types';
 import './monitor/monitor-project.css';
 import { useStore } from '../../store';
@@ -601,120 +605,121 @@ export function MonitorPanel() {
   }
 
   const status = conn === 'connecting' ? 'Connecting' : !connected ? 'Offline' : recording ? 'Recording' : paused ? 'Paused' : 'Live';
-  const [previewOpen, setPreviewOpen] = useState(true);
+
+  /** Which column the single-column (small screen) layout is showing. */
+  const [view, setView] = useState<'computer' | 'agent'>('computer');
+
+  /** "Window · 1920×1080" → surface and resolution, both shown separately. */
+  const [surfaceName, resolution] = useMemo(() => {
+    const i = source.lastIndexOf(' · ');
+    if (i === -1) return [source || 'Screen', ''] as const;
+    return [source.slice(0, i), source.slice(i + 3)] as const;
+  }, [source]);
+
+  /** The task the server is actually driving right now, if any. */
+  const liveTask = useMemo(
+    () => [...messages].reverse().find((m) => m.task && (m.task.status === 'working' || m.task.status === 'awaiting-approval'))?.task ?? null,
+    [messages],
+  );
+  const awaitingApproval = liveTask?.status === 'awaiting-approval';
+  const agentWorking = busy || !!liveTask;
+  const agentState = awaitingApproval
+    ? { label: 'Waiting for approval', tone: 'warn' as const }
+    : agentWorking
+      ? { label: 'Working', tone: 'warn' as const }
+      : chatReady
+        ? { label: 'Ready', tone: 'ok' as const }
+        : { label: 'Standby', tone: 'idle' as const };
+
+  /** Real model name from the backend's catalogue, never a hard-coded one. */
+  const modelLabel = useMemo(() => {
+    if (!aiReady || !selectedProvider) return 'Connect AI';
+    const sel = ws.selection;
+    if (sel.mode === 'exact') {
+      return ws.models.find((m) => m.modelId === sel.modelId)?.displayName ?? sel.modelId;
+    }
+    const latestId = ws.latest[selectedProvider];
+    return (
+      ws.models.find((m) => m.modelId === latestId)?.displayName ??
+      ws.models.find((m) => m.provider === selectedProvider && m.recommended)?.displayName ??
+      (selectedProvider === 'openai' ? 'OpenAI' : selectedProvider === 'xai' ? 'xAI' : 'Anthropic')
+    );
+  }, [aiReady, selectedProvider, ws.selection, ws.models, ws.latest]);
+
+  const fullAccess =
+    ws.permissions.editMode === 'auto' && ws.permissions.readFiles && ws.permissions.editFiles && ws.permissions.runDevCommands;
+  const accessLabel = fullAccess ? 'Full access' : 'Ask before actions';
 
   return (
-    <div className="mv mv--canvas">
-      <header className="mv-head">
-        <div className="mv-heading">
-          <h1 className="mv-title">Monitor</h1>
-          <span className="mv-visually-hidden" role="status">{status}</span>
-          <span className={`mv-pill ${ws.online ? 'mv-pill--live' : ''}`} title={ws.online ? 'Monitor service is available' : 'Monitor service isn’t reachable'}>
-            <i />
-            {ws.online ? 'Online' : 'Offline'}
-          </span>
-          <span className={`mv-pill ${ws.device.online ? 'mv-pill--live' : ''}`} title={ws.device.online ? 'Paired computer is connected' : 'Paired computer is not connected'}>
-            <i />
-            {ws.device.online ? (ws.device.name || 'Computer connected') : 'Computer disconnected'}
-          </span>
-        </div>
-        <div className="mv-head-actions">
-          {connected ? (
-            <button type="button" className="mv-stop" onClick={disconnect}>
-              <Square size={8} fill="currentColor" /> Stop sharing
-            </button>
-          ) : (
-            <button type="button" className="mv-share" onClick={connect} disabled={!canShare || conn === 'connecting'}>
-              <MonitorUp size={15} /> {conn === 'connecting' ? 'Connecting…' : canShare ? 'Share screen' : 'Sharing not supported'}
-            </button>
-          )}
-          {busy && (
-            <button type="button" className="mv-stop mv-stop--danger" onClick={emergencyStop}>
-              <Square size={8} fill="currentColor" /> Stop AI
-            </button>
-          )}
-          <button
-            type="button"
-            className="mv-tool"
-            onClick={() => setMessages([])}
-            disabled={!chatReady || messages.length === 0}
-            title="Clear chat"
-            aria-label="Clear chat"
-          >
-            <RotateCcw size={14} />
-          </button>
-        </div>
-      </header>
-      {connectError && <p className="mv-connection-error" role="alert">{connectError}</p>}
+    <div className="mv" data-view={view}>
+      <span className="mv-visually-hidden" role="status">{status}</span>
+      <MonitorTopBar
+        serviceOnline={ws.online}
+        deviceOnline={ws.device.online}
+        deviceName={ws.device.name}
+        streamLive={connected}
+        onOpenSettings={() => setDialog('perms')}
+      >
+        <ProjectSelector project={ws.project} projects={ws.projects} loading={ws.projectsLoading} error={ws.projectsError}
+          permission={ws.projectPermission}
+          onRestorePermission={async () => { if (ws.project) ws.setProjectPermission(await restoreLocalPermission(ws.project.id)); }}
+          onRefresh={ws.refreshProjects} onSelect={p => { ws.setProject(p); setMessages([]); }} onConnect={() => setDialog('project')} />
+      </MonitorTopBar>
 
-      {connected && (
-        <section className={`mv-screenstrip ${previewOpen ? '' : 'is-minimized'}`} aria-label="Shared screen preview">
-          <header className="mv-screenstrip__head">
-            <span className="mv-screenstrip__title">
-              <Monitor size={15} strokeWidth={1.9} /> Screen
-              <span className="mv-card__meta" data-testid="connection-label">
-                <i className="mv-live-dot" /> Connected <span className="mv-sep">·</span> {source}
-              </span>
-            </span>
-            <div className="mv-tools">
-              <button type="button" className="mv-tool" onClick={() => send('Take a screenshot')} disabled={busy} title="Screenshot" aria-label="Screenshot">
-                <Camera size={15} />
-              </button>
-              <button
-                type="button"
-                className={`mv-tool ${recording ? 'is-rec' : ''}`}
-                onClick={() => send(recording ? 'Stop recording' : 'Start recording')}
-                disabled={busy}
-                title={recording ? 'Stop recording' : 'Record'}
-                aria-label={recording ? 'Stop recording' : 'Record'}
-              >
-                <Circle size={13} fill={recording ? 'currentColor' : 'none'} />
-              </button>
-              <button type="button" className="mv-tool" onClick={() => connected && send('fullscreen')} disabled={!connected} title="Fullscreen" aria-label="Fullscreen">
-                <Maximize2 size={15} />
-              </button>
-              <button type="button" className="mv-tool" onClick={() => setPreviewOpen(o => !o)} title={previewOpen ? 'Hide preview' : 'Show preview'} aria-label={previewOpen ? 'Hide preview' : 'Show preview'} aria-expanded={previewOpen}>
-                <ChevronDown size={15} className={previewOpen ? '' : 'mv-flip'} />
-              </button>
-            </div>
-          </header>
-          <div className="mv-screenstrip__body">
-            <div ref={screenRef} className="mv-screen">
-              <video ref={videoRef} autoPlay muted playsInline style={{ transform: `scale(${zoom})` }} />
-              <div className={`mv-cursor ${pointer ? 'is-pointing' : input.trim() || busy || listening ? 'is-still' : ''}`} style={pointerStyle()} aria-hidden="true">
-                <svg width="22" height="22" viewBox="0 0 22 22">
-                  <path d="M3.5 2.2c-.5-.2-1 .3-.8.8l5.6 16.1c.2.6 1 .6 1.2 0l2.1-6 6-2.1c.6-.2.6-1 0-1.2z" fill="#2563eb" stroke="#fff" strokeWidth="1.8" strokeLinejoin="round" />
-                </svg>
-              </div>
-              {recording && (
-                <span className="mv-badge mv-badge--rec">
-                  <i /> Recording
-                </span>
-              )}
-              {paused && <span className="mv-badge mv-badge--right">Paused</span>}
-            </div>
-          </div>
-        </section>
-      )}
+      <div className="mv-viewswitch" role="tablist" aria-label="Workspace panels">
+        <button type="button" role="tab" aria-selected={view === 'computer'} className={view === 'computer' ? 'is-active' : ''} onClick={() => setView('computer')}>
+          Computer
+        </button>
+        <button type="button" role="tab" aria-selected={view === 'agent'} className={view === 'agent' ? 'is-active' : ''} onClick={() => setView('agent')}>
+          Agent
+        </button>
+      </div>
 
-      <div className="mv-canvas">
-          <div className="mv-thread" ref={listRef} aria-live="polite">
-            {!chatReady || messages.length === 0 ? (
-              <div className="mv-thread__empty">
-                <span className="mv-thread__icon">
-                  <MessageSquare size={20} strokeWidth={1.7} />
+      <div className="mv-workspace">
+        <ComputerPanel
+          conn={conn}
+          connected={connected}
+          canShare={canShare}
+          connectError={connectError}
+          surfaceName={surfaceName}
+          resolution={resolution}
+          deviceName={ws.device.name}
+          deviceOnline={ws.device.online}
+          devicePaired={ws.device.paired}
+          recording={recording}
+          paused={paused}
+          pointerStyle={pointerStyle()}
+          cursorVisible={!!pointer && ws.permissions.controlMouse && ws.permissions.viewScreen}
+          cursorPointing={!!pointer}
+          videoRef={videoRef}
+          stageRef={screenRef}
+          zoom={zoom}
+          busy={busy}
+          onConnect={connect}
+          onDisconnect={disconnect}
+          onScreenshot={() => send('Take a screenshot')}
+          onRecord={() => send(recording ? 'Stop recording' : 'Start recording')}
+          onFullscreen={() => send('fullscreen')}
+          onOpenDevice={() => setDialog('device')}
+          onRefreshDevice={ws.refreshDevice}
+        />
+
+        <AgentPanel statusLabel={agentState.label} statusTone={agentState.tone} modelLabel={modelLabel} onOpenModel={() => setDialog('ai')} onOpenMenu={() => setDialog('perms')}>
+          <div className="mv-conv" ref={listRef} aria-live="polite">
+            {messages.length === 0 ? (
+              <div className="mv-conv__empty">
+                <span className="mv-conv__icon">
+                  <MessageSquare size={17} strokeWidth={1.7} />
                 </span>
-                <strong>{ws.project ? `What should we build in ${ws.project.name}?` : 'What should we build?'}</strong>
-                <p>{!chatReady ? 'Connect a project or share your screen to get started.' : connected ? 'The AI can see your screen and control your computer. Tell it what to do.' : `Ask for a change in ${ws.project!.name}.`}</p>
-                {connected && (
-                  <div className="mv-suggest">
-                    {['Take a screenshot', 'Start recording', 'Zoom in'].map((q) => (
-                      <button key={q} type="button" onClick={() => send(q)}>
-                        {q}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                <strong>What should we do?</strong>
+                <p>{chatReady ? 'Ask Launchly to work with the connected computer.' : 'Connect a computer or a project to get started.'}</p>
+                <div className="mv-chips">
+                  {['Find a product', 'Fill this form', 'Analyse this page', 'Fix this', 'Continue'].map((c) => (
+                    <button key={c} type="button" onClick={() => send(c)} disabled={!chatReady || agentWorking}>
+                      {c}
+                    </button>
+                  ))}
+                </div>
               </div>
             ) : (
               messages.map((m) => (
@@ -723,19 +728,7 @@ export function MonitorPanel() {
                     <>
                       <AgentActivity task={m.task} />
                       {m.task.status === 'awaiting-approval' && (
-                        <div className="mc" role="alert">
-                          <p className="mc-title">Needs your approval</p>
-                          <p className="mc-meta">The AI wants to run a high-impact action. Nothing further runs until you approve or stop.</p>
-                          <div className="mc-actions">
-                            <button type="button" className="mm-btn mm-btn--primary" onClick={() => approvePending(activeTaskRef.current ?? '', m.id)}>Approve once</button>
-                            <button type="button" className="mm-btn" onClick={emergencyStop}>Stop</button>
-                          </div>
-                        </div>
-                      )}
-                      {(m.task.status === 'working' || m.task.status === 'awaiting-approval') && (
-                        <div className="mc-actions" style={{ marginTop: 8 }}>
-                          <button type="button" className="mm-btn mm-btn--primary" onClick={emergencyStop}>Stop</button>
-                        </div>
+                        <ApprovalCard task={m.task} onAllow={() => approvePending(activeTaskRef.current ?? '', m.id)} onCancel={emergencyStop} />
                       )}
                       {m.task.changes && (
                         <ChangeSummary changes={m.task.changes} busy={busy} onApply={() => applyChanges(m.id, m.task!)} onUndo={() => undoChanges(m.id, m.task!)} />
@@ -754,15 +747,6 @@ export function MonitorPanel() {
               ))
             )}
           </div>
-      </div>
-
-      {ws.project && (
-        <div className="mv-tabs" aria-label="Project context">
-          <span className="mv-tab mv-tab--name">{ws.project.name}</span>
-          <span className="mv-tab">{ws.project.source === 'github' ? 'GitHub' : ws.project.source === 'local' ? 'Local' : 'Git'}</span>
-          <span className="mv-tab">{ws.project.branch}</span>
-        </div>
-      )}
 
           <form
             className="mv-composer"
@@ -771,47 +755,53 @@ export function MonitorPanel() {
               send();
             }}
           >
-            <div className="mv-compose-box">
-              <div className="mv-compose-project">
-                <ProjectSelector project={ws.project} projects={ws.projects} loading={ws.projectsLoading} error={ws.projectsError}
-                  permission={ws.projectPermission}
-                  onRestorePermission={async () => { if (ws.project) ws.setProjectPermission(await restoreLocalPermission(ws.project.id)); }}
-                  onRefresh={ws.refreshProjects} onSelect={p => { ws.setProject(p); setMessages([]); }} onConnect={() => setDialog('project')} />
-              </div>
-              <textarea ref={inputRef} value={input}
+            <div className="mv-composer__meta">
+              <button type="button" className="mv-chipbtn" onClick={() => setDialog('perms')} aria-label="Monitor permissions" title="Manage permissions">
+                {accessLabel}
+              </button>
+              <button type="button" className="mv-chipbtn" onClick={() => setDialog('ai')} aria-label="AI model" title="Choose the AI model">
+                {modelLabel}
+              </button>
+              <button type="button" className="mv-chipbtn" onClick={() => setDialog('project')} aria-label="Connected project" title="Choose the project">
+                {ws.project ? ws.project.name : 'No project'}
+              </button>
+            </div>
+            <div className="mv-composer__row">
+              <button type="button" className="mv-iconbtn" onClick={() => setDialog('project')} aria-label="Connect project" title="Connect project">
+                <Plus size={16} />
+              </button>
+              <textarea
+                ref={inputRef}
+                value={input}
                 onChange={(e) => setInput(e.target.value.slice(0, MAX_CHARS))}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    send();
+                  }
                 }}
-                placeholder="Ask Monitor to build or change something..."
-                disabled={!chatReady} rows={2} aria-label="Message" />
-              <div className="mv-compose-tools">
-                <div className="mv-compose-left">
-                  <button type="button" className="mv-compose-icon" aria-label="Add project" title="Connect project" onClick={() => inputRef.current?.closest('form')?.querySelector<HTMLButtonElement>('.mp-context > button')?.click()}><Plus size={16} /></button>
-                  <button type="button" className="mv-compose-text" onClick={() => setDialog('perms')} aria-label="Monitor permissions" title="Manage project permissions">
-                    {ws.permissions.readFiles && ws.permissions.searchFiles && ws.permissions.editFiles && ws.permissions.createFiles && ws.permissions.runDevCommands ? 'Full access' : 'Limited access'} <ChevronDown size={12} />
-                  </button>
-                  <button type="button" className="mv-compose-text" onClick={() => setDialog('device')} aria-label="Computer connection" title="The computer the AI actually edits">
-                    <Circle size={7} fill={ws.device.online ? '#12b76a' : '#98a2b3'} stroke="none" /> {ws.device.online ? (ws.device.name || 'Computer') : ws.device.paired ? 'Computer offline' : 'Connect computer'}
-                  </button>
-                </div>
-                <div className="mv-compose-right">
-                  {input.length >= MAX_CHARS * .9 && <span className="mv-count">{input.length}/{MAX_CHARS}</span>}
-                  <button type="button" className="mv-compose-text mv-compose-ai" onClick={() => setDialog('ai')}>
-                    {aiReady ? (selectedProvider === 'openai' ? 'OpenAI API' : 'Anthropic API') : 'Connect AI'} <ChevronDown size={12} />
-                  </button>
-                  <button type="button" className={`mv-compose-icon ${listening ? 'is-listening' : ''}`}
-                    disabled={!Speech || !chatReady || busy} onClick={toggleVoice}
-                    aria-label={listening ? 'Stop listening' : 'Voice'} title={Speech ? 'Voice' : 'Voice is unavailable in this browser'}>
-                    {listening ? <X size={16} /> : <Mic size={16} />}
-                  </button>
-                  <button type="submit" className="mv-send" disabled={!chatReady || busy || !input.trim()} aria-label="Send">
-                    {busy ? <LoaderCircle size={15} className="spin" /> : <ArrowUp size={15} strokeWidth={2.4} />}
-                  </button>
-                </div>
-              </div>
+                placeholder="Ask Launchly to do something…"
+                disabled={!chatReady}
+                rows={1}
+                aria-label="Message"
+              />
+              <button type="button" className={`mv-iconbtn ${listening ? 'is-listening' : ''}`} disabled={!Speech || !chatReady || agentWorking} onClick={toggleVoice}
+                aria-label={listening ? 'Stop listening' : 'Voice'} title={Speech ? 'Voice' : 'Voice is unavailable in this browser'}>
+                {listening ? <X size={16} /> : <Mic size={16} />}
+              </button>
+              {agentWorking ? (
+                <button type="button" className="mv-iconbtn mv-iconbtn--danger" onClick={emergencyStop} aria-label="Stop agent" title="Stop the agent">
+                  <Square size={11} fill="currentColor" />
+                </button>
+              ) : (
+                <button type="submit" className="mv-send" disabled={!chatReady || !input.trim()} aria-label="Send">
+                  <ArrowUp size={15} strokeWidth={2.4} />
+                </button>
+              )}
             </div>
           </form>
+        </AgentPanel>
+      </div>
 
       {dialog === 'project' && (
         <ProjectConnectionModal

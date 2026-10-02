@@ -56,8 +56,8 @@ afterEach(() => {
 });
 
 async function connect() {
-  fireEvent.click(screen.getByRole('button', { name: 'Share screen' }));
-  expect(screen.getByRole('button', { name: 'Connecting…' })).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', { name: 'Connect computer' }));
+  expect(screen.getByRole('status').textContent).toBe('Connecting');
   await act(async () => resolveShare!(fakeStream(track)));
   await waitFor(() => expect(screen.getByRole('status').textContent).toBe('Live'));
 }
@@ -85,10 +85,11 @@ describe('interpret', () => {
 describe('Monitor connection state', () => {
   it('idle shows no connected UI; connecting shows a loader; connected shows the label', async () => {
     render(<MonitorPanel />);
-    expect(screen.queryByTestId('connection-label')).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Stop sharing' })).toBeNull();
+    expect(screen.getByTestId('connection-label').textContent).toBe('No computer');
+    expect(screen.getByText('Connect your computer')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Disconnect' })?.getAttribute('disabled')).not.toBeNull();
     await connect();
-    expect(screen.getByTestId('connection-label').textContent).toContain('Connected');
+    expect(document.querySelector('.mv-computer .mv-status')!.textContent).toContain('Connected');
     expect(screen.getByTestId('connection-label').textContent).toContain('Entire screen · 1920×1080');
   });
 
@@ -97,8 +98,8 @@ describe('Monitor connection state', () => {
     await connect();
     sendMessage('help');
     expect(screen.getByText(/I can take a screenshot/)).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Stop sharing' }));
-    expect(screen.queryByTestId('connection-label')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
+    expect(screen.getByTestId('connection-label').textContent).toBe('No computer');
     expect(screen.queryByText(/I can take a screenshot/)).toBeNull();
     expect(screen.getByRole('status').textContent).toBe('Offline');
     expect(track.stopped).toBe(true);
@@ -111,7 +112,7 @@ describe('Monitor connection state', () => {
     act(() => {
       track.dispatchEvent(new Event('ended'));
     });
-    expect(screen.queryByTestId('connection-label')).toBeNull();
+    expect(screen.getByTestId('connection-label').textContent).toBe('No computer');
     expect(screen.queryByText(/Hi!/)).toBeNull();
   });
 
@@ -119,7 +120,7 @@ describe('Monitor connection state', () => {
     render(<MonitorPanel />);
     await connect();
     const request = vi.fn();
-    document.querySelector('.mv-screen')!.requestFullscreen = request;
+    document.querySelector('.mv-stage')!.requestFullscreen = request;
     fireEvent.click(screen.getByRole('button', { name: 'Fullscreen' }));
     expect(request).not.toHaveBeenCalled();
     expect(screen.getByText(/share a separate Edge window/)).toBeTruthy();
@@ -132,10 +133,10 @@ describe('Monitor connection state', () => {
     );
     render(<MonitorPanel />);
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Share screen' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Connect computer' }));
     });
     expect(screen.getByRole('status').textContent).toBe('Offline');
-    expect(screen.getByRole('button', { name: 'Share screen' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Connect computer' })).toBeTruthy();
   });
 });
 
@@ -214,10 +215,10 @@ describe('Monitor projects & models', () => {
   it('shows the toolbar, stays Offline without a backend and asks to connect something', () => {
     render(<MonitorPanel />);
     expect(screen.getByText('Connect project')).toBeTruthy();
-    expect(screen.getByText('Connect AI')).toBeTruthy();
+    expect(screen.getAllByText('Connect AI').length).toBeGreaterThan(0);
     expect(screen.getByLabelText('Monitor permissions')).toBeTruthy();
-    expect(document.querySelector('.mv-pill')!.textContent).toBe('Offline');
-    expect(screen.getByText('Connect a project or share your screen to get started.')).toBeTruthy();
+    expect(screen.getByText('Service offline')).toBeTruthy();
+    expect(screen.getByText('Connect a computer or a project to get started.')).toBeTruthy();
     expect((screen.getByLabelText('Message') as HTMLTextAreaElement).disabled).toBe(true);
   });
 
@@ -248,8 +249,8 @@ describe('Monitor projects & models', () => {
       return new Response(JSON.stringify(body), { status: 200 });
     }));
     render(<MonitorPanel />);
-    await waitFor(() => expect(document.querySelector('.mv-pill')!.textContent).toBe('Online'));
-    fireEvent.click(screen.getByText('Connect AI'));
+    await waitFor(() => expect(screen.getByText('Service online')).toBeTruthy());
+    fireEvent.click(screen.getAllByText('Connect AI')[0]);
     expect(screen.getByRole('dialog', { name: 'Connect coding agent' })).toBeTruthy();
     expect(screen.getByText('Codex')).toBeTruthy();
     expect(screen.getByText('Claude Code')).toBeTruthy();
@@ -259,12 +260,13 @@ describe('Monitor projects & models', () => {
     expect(screen.getAllByRole('link', { name: /Open sign-in/ })).toHaveLength(2);
     expect(screen.queryByText('Codex · Connected')).toBeNull();
     fireEvent.click(await screen.findByRole('button', { name: 'Use Anthropic API' }));
-    expect(document.querySelector('.mv-composer')!.textContent).toContain('Anthropic API');
+    // The composer shows the real model name the backend reported.
+    expect(document.querySelector('.mv-composer')!.textContent).toContain('Model One');
   });
 
   it('AI provider modal never shows a stored key and reports server errors honestly', async () => {
     render(<MonitorPanel />);
-    fireEvent.click(screen.getByText('Connect AI'));
+    fireEvent.click(screen.getAllByText('Connect AI')[0]);
     fireEvent.click(screen.getAllByRole('button', { name: 'Connect API Key' })[1]);
     expect(screen.getByRole('dialog', { name: 'Connect AI' })).toBeTruthy();
     fireEvent.change(screen.getByPlaceholderText('sk-ant-…'), { target: { value: 'sk-ant-secret' } });
@@ -309,18 +311,18 @@ describe('Monitor projects & models', () => {
       return new Response('{}', { status: 404 });
     }));
     render(<MonitorPanel />);
-    await waitFor(() => expect(document.querySelector('.mv-pill')!.textContent).toBe('Online'));
+    await waitFor(() => expect(screen.getByText('Service online')).toBeTruthy());
     fireEvent.click(screen.getByText('Connect project'));
     fireEvent.click(screen.getByText('Connect a project'));
     fireEvent.click(screen.getByText('GitHub'));
     fireEvent.click(await screen.findByText('matas/launchly'));
     fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
-    await waitFor(() => expect(document.querySelector('.mv-composer')!.textContent).toContain('launchlyGitHubmain'));
+    await waitFor(() => expect(document.querySelector('.mv-topbar__project')!.textContent).toContain('launchly'));
     expect((screen.getByLabelText('Message') as HTMLTextAreaElement).disabled).toBe(true);
-    fireEvent.click(screen.getByText('Connect AI'));
+    fireEvent.click(screen.getAllByText('Connect AI')[0]);
     fireEvent.click(await screen.findByRole('button', { name: 'Use OpenAI API' }));
-    expect(await screen.findByText('Ask for a change in launchly.')).toBeTruthy();
-    expect(document.querySelector('.mv-composer')!.textContent).toContain('launchlyGitHubmain');
+    expect(await screen.findByText('What should we do?')).toBeTruthy();
+    expect(document.querySelector('.mv-composer')!.textContent).toContain('launchly');
 
     sendMessage('Remove the blue background behind the cursor');
     expect(await screen.findByText('Found monitor.css', {}, { timeout: 3000 })).toBeTruthy();
@@ -336,8 +338,8 @@ describe('Monitor projects & models', () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response('<!doctype html><html></html>', { status: 200, headers: { 'Content-Type': 'text/html' } })));
     render(<MonitorPanel />);
     await new Promise((r) => setTimeout(r, 50));
-    expect(document.querySelector('.mv-pill')!.textContent).toBe('Offline');
-    fireEvent.click(screen.getByText('Connect AI'));
+    expect(screen.getByText('Service offline')).toBeTruthy();
+    fireEvent.click(screen.getAllByText('Connect AI')[0]);
     expect(screen.getByText('Codex')).toBeTruthy();
     fireEvent.click(screen.getAllByRole('button', { name: 'Connect API Key' })[1]);
     expect(screen.getByRole('dialog', { name: 'Connect AI' })).toBeTruthy();

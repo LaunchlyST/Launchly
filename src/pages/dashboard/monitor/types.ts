@@ -142,6 +142,14 @@ export interface Checkpoint {
 
 export type AgentStatus = 'idle' | 'working' | 'awaiting-approval' | 'done' | 'error' | 'stopped';
 
+/** The exact action the backend paused on, so the UI can name it honestly. */
+export interface PendingApproval {
+  actionId: string;
+  tool: AgentTool;
+  label: string;
+  input: Record<string, unknown>;
+}
+
 export interface AgentTask {
   id: string;
   prompt: string;
@@ -152,6 +160,8 @@ export interface AgentTask {
   screenshot: string | null;
   actionsExecuted: number;
   maxActions: number;
+  /** Set by the server only while status is 'awaiting-approval'. */
+  pendingApproval?: PendingApproval | null;
 }
 
 /** Result wrapper: every backend call either succeeds or says honestly why not. */
