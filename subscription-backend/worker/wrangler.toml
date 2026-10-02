@@ -14,3 +14,15 @@ FRONTEND_URL = "https://launchly.pazeruga.workers.dev"
 
 # Set via `wrangler var put STRIPE_PRICE_ID=price_xxx`
 # STRIPE_PRICE_ID
+
+# One Durable Object instance per paired computer — holds its live agent
+# WebSocket and runs the AI tool-calling loop for Monitor coding tasks.
+# Requires the Workers Paid plan; deploy fails with a clear error if the
+# account is on the free tier.
+[[durable_objects.bindings]]
+name = "DEVICE_SESSION"
+class_name = "DeviceSession"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["DeviceSession"]

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeft, FolderOpen, GitBranch, LoaderCircle, Lock, Search } from 'lucide-react';
 import { Github } from './GithubMark';
+import { connectLocalProject, supportsLocalProjects } from './localProjects';
 import { Modal, Unavailable } from './Modal';
 import { monitorApi } from './monitorApi';
 import type { ConnectedProject, GitHubRepo, MonitorBackendStatus } from './types';
@@ -40,15 +41,7 @@ export function ProjectConnectionModal({ token, backend, onClose, onConnected }:
       )}
       {step === 'github' && <GitHubFlow token={token} enabled={!!caps?.github} onConnected={onConnected} />}
       {step === 'git-url' && <GitUrlFlow token={token} enabled={!!caps?.gitUrl} onConnected={onConnected} />}
-      {step === 'local' && (
-        <div className="mm-stack">
-          <p className="mm-note">
-            Local folders connect through <strong>Monitor Bridge</strong>, a small app on your computer. The website never gets direct access to your files —
-            the bridge only exposes the folder you choose.
-          </p>
-          <Unavailable>{caps?.localBridge ? 'Open Monitor Bridge on this computer to pick a folder.' : 'Monitor Bridge isn’t available yet.'}</Unavailable>
-        </div>
-      )}
+      {step === 'local' && <LocalFlow onConnected={onConnected} />}
     </Modal>
   );
 }
@@ -222,6 +215,43 @@ function GitUrlFlow({ token, enabled, onConnected }: { token: string | null; ena
           {state.busy && <LoaderCircle size={13} className="spin" />} Connect
         </button>
       </div>
+    </div>
+  );
+}
+
+function LocalFlow({ onConnected }: { onConnected: (p: ConnectedProject) => void }) {
+  const [state, setState] = useState<{ busy: boolean; error: string }>({ busy: false, error: '' });
+  const supported = supportsLocalProjects();
+
+  async function pick() {
+    setState({ busy: true, error: '' });
+    try {
+      const project = await connectLocalProject();
+      if (project) onConnected(project);
+      else setState({ busy: false, error: '' });
+    } catch (e) {
+      setState({ busy: false, error: e instanceof Error ? e.message : 'Could not open the folder.' });
+    }
+  }
+
+  if (!supported) {
+    return (
+      <div className="mm-stack">
+        <Unavailable>Connecting a local folder needs Chrome or Edge on desktop — it isn’t supported in this browser.</Unavailable>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mm-stack">
+      <p className="mm-note">
+        Your browser opens its own folder picker. Only the folder you choose is shared with Launchly — never your whole computer, and nothing is uploaded
+        automatically.
+      </p>
+      {state.error && <p className="mm-note mm-note--error">{state.error}</p>}
+      <button type="button" className="mm-btn mm-btn--primary mm-btn--block" onClick={pick} disabled={state.busy}>
+        {state.busy ? <LoaderCircle size={14} className="spin" /> : <FolderOpen size={14} />} Choose a folder
+      </button>
     </div>
   );
 }

@@ -7,8 +7,9 @@ import { createClient } from '@supabase/supabase-js';
  * MONITOR_ENCRYPTION_KEY, stored in Supabase, and never returned — callers
  * only ever get { provider, connected, keyLast4 }.
  *
- * GitHub OAuth stores encrypted tokens and validates repository selection.
- * Workspace execution, git-URL import and Monitor Bridge remain unavailable.
+ * GitHub, git-URL import, Monitor Bridge and the project agent are declared
+ * here but answer NOT_CONFIGURED until their infrastructure exists, so the
+ * UI never shows a fake success.
  */
 
 export interface MonitorEnv {
@@ -20,7 +21,8 @@ export interface MonitorEnv {
   MONITOR_LATEST_MODELS?: string;
   GITHUB_CLIENT_ID?: string;
   GITHUB_CLIENT_SECRET?: string;
-  MONITOR_GITHUB_REDIRECT_URI?: string;
+  /** One Durable Object per paired computer running the local agent (see deviceSession.ts). */
+  DEVICE_SESSION?: DurableObjectNamespace;
 }
 
 type ProviderId = 'anthropic' | 'openai' | 'xai';
@@ -107,6 +109,18 @@ function latestMap(env: MonitorEnv): Record<ProviderId, string | null> {
   }
 }
 
+// -------------------------------------------------------------- device agent
+
+/** Hashes a device token for storage — the plaintext token is only ever shown once, at pairing time. */
+async function hashToken(token: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token));
+  return b64(new Uint8Array(digest));
+}
+
+function randomToken(): string {
+  return b64(crypto.getRandomValues(new Uint8Array(32))).replace(/[+/=]/g, '').slice(0, 40);
+}
+
 // ------------------------------------------------------------------ router
 
 export async function handleMonitor(request: Request, env: MonitorEnv, fetchImpl: typeof fetch = fetch): Promise<Response> {
@@ -116,106 +130,112 @@ export async function handleMonitor(request: Request, env: MonitorEnv, fetchImpl
 
   const hasDb = !!(env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY);
   const db = hasDb ? createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY) : null;
+
+  // The local agent authenticates with its own long-lived device token, not a
+  // Supabase user session — handle it before the user-auth check below.
+  if (path === '/device/connect') {
+    if (!db || !env.DEVICE_SESSION) return fail('NOT_CONFIGURED', 'The device relay isn’t set up on the server yet.', 501);
+    const deviceToken = url.searchParams.get('token') || '';
+    if (!deviceToken) return fail('UNAUTHENTICATED', 'Missing device token.', 401);
+    const { data: device } = await db.from('monitor_devices').select('id, token_hash').eq('token_hash', await hashToken(deviceToken)).maybeSingle();
+    if (!device) return fail('UNAUTHENTICATED', 'This computer isn’t paired. Reconnect it from Monitor.', 401);
+    await db.from('monitor_devices').update({ status: 'online', last_seen_at: new Date().toISOString() }).eq('id', device.id);
+    const stub = env.DEVICE_SESSION.get(env.DEVICE_SESSION.idFromName(device.id));
+    return stub.fetch(new Request(`https://device-session/connect`, request));
+  }
+
   const token = (request.headers.get('Authorization') || '').match(/^Bearer\s+(.+)$/i)?.[1]?.trim();
   const userId = token && db ? (await db.auth.getUser(token)).data?.user?.id ?? null : null;
   if (!userId) return fail('UNAUTHENTICATED', 'Sign in required.', 401);
 
   const keysReady = !!(db && env.MONITOR_ENCRYPTION_KEY);
 
-  if (path === '/status' && request.method === 'GET') {
-    return ok({
-      online: true,
-      capabilities: {
-        github: !!(keysReady && env.GITHUB_CLIENT_ID && env.GITHUB_CLIENT_SECRET && env.MONITOR_GITHUB_REDIRECT_URI),
-        gitUrl: false,
-        localBridge: false,
-        agent: false,
-        providerKeys: keysReady,
-      },
-    });
-  }
-
-  if (path.startsWith('/github/') || (path === '/projects' && request.method === 'POST')) {
-    if (!keysReady || !env.GITHUB_CLIENT_ID || !env.GITHUB_CLIENT_SECRET || !env.MONITOR_GITHUB_REDIRECT_URI)
-      return fail('NOT_CONFIGURED', 'GitHub connection needs an OAuth app and callback URL configured on the server.', 501);
-    const github = async (accessToken: string, endpoint: string) => {
-      const response = await fetchImpl(`https://api.github.com${endpoint}`, { headers: {
-        Authorization: `Bearer ${accessToken}`, Accept: 'application/vnd.github+json', 'User-Agent': 'Launchly-Monitor',
-      } });
-      if (!response.ok) throw new Error(response.status === 401 ? 'Reconnect your GitHub account.' : 'GitHub could not load this repository. Check your access and try again.');
-      return response.json() as Promise<any>;
-    };
-    try {
-      if (path === '/github/authorize' && request.method === 'POST') {
-        const state = crypto.randomUUID();
-        const verifier = crypto.randomUUID() + crypto.randomUUID();
-        const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
-        const challenge = b64(new Uint8Array(digest)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-        const { error } = await db!.from('monitor_github_oauth').insert({ state, user_id: userId, verifier, expires_at: new Date(Date.now() + 600000).toISOString() });
-        if (error) return fail('NOT_CONFIGURED', 'GitHub storage needs to be configured.', 501);
-        const authorize = new URL('https://github.com/login/oauth/authorize');
-        authorize.search = new URLSearchParams({ client_id: env.GITHUB_CLIENT_ID, redirect_uri: env.MONITOR_GITHUB_REDIRECT_URI, scope: 'repo', state, code_challenge: challenge, code_challenge_method: 'S256' }).toString();
-        return ok({ authorizeUrl: authorize.href });
-      }
-      if (path === '/github/complete' && request.method === 'POST') {
-        const body = await request.json() as { code?: string; state?: string };
-        if (typeof body.code !== 'string' || body.code.length > 512 || typeof body.state !== 'string') return fail('INVALID_CALLBACK', 'Invalid GitHub callback.', 400);
-        const { data: pending, error } = await db!.from('monitor_github_oauth').delete().eq('state', body.state).eq('user_id', userId).gt('expires_at', new Date().toISOString()).select('verifier').maybeSingle();
-        if (error || !pending) return fail('INVALID_STATE', 'This GitHub connection expired or was already used. Please connect again.', 400);
-        const exchange = await fetchImpl('https://github.com/login/oauth/access_token', { method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/json' }, body: JSON.stringify({ client_id: env.GITHUB_CLIENT_ID, client_secret: env.GITHUB_CLIENT_SECRET, code: body.code, redirect_uri: env.MONITOR_GITHUB_REDIRECT_URI, code_verifier: pending.verifier }) });
-        const credentials = await exchange.json() as { access_token?: string };
-        if (!exchange.ok || !credentials.access_token) return fail('GITHUB_AUTH_FAILED', 'GitHub authorization failed. Please try again.', 400);
-        const account = await github(credentials.access_token, '/user');
-        const encrypted = await encryptSecret(env.MONITOR_ENCRYPTION_KEY!, credentials.access_token);
-        const saved = await db!.from('monitor_github_accounts').upsert({ user_id: userId, login: account.login, token_ciphertext: encrypted.ciphertext, token_iv: encrypted.iv });
-        if (saved.error) return fail('SERVER_ERROR', 'Could not save your GitHub connection.', 500);
-        return ok({ login: account.login });
-      }
-      const { data: account, error: accountError } = await db!.from('monitor_github_accounts').select('token_ciphertext, token_iv').eq('user_id', userId).maybeSingle();
-      if (accountError) return fail('NOT_CONFIGURED', 'GitHub storage needs to be configured.', 501);
-      if (!account) return fail('GITHUB_AUTH_REQUIRED', 'Connect your GitHub account.', 401);
-      const accessToken = await decryptSecret(env.MONITOR_ENCRYPTION_KEY!, account.token_ciphertext, account.token_iv);
-      if (path === '/github/repos' && request.method === 'GET') {
-        const repos: any[] = [];
-        for (let page = 1; ; page++) {
-          const batch = await github(accessToken, `/user/repos?per_page=100&sort=updated&page=${page}`);
-          repos.push(...batch.map((r: any) => ({ id: r.id, fullName: r.full_name, private: r.private, defaultBranch: r.default_branch, updatedAt: r.updated_at ?? null })));
-          if (batch.length < 100) break;
-        }
-        return ok(repos);
-      }
-      const body = request.method === 'POST' ? await request.json() as any : null;
-      const repository = path === '/github/branches' ? url.searchParams.get('repo') : body?.repository;
-      if (typeof repository !== 'string' || !/^[\w.-]+\/[\w.-]+$/.test(repository)) return fail('INVALID_REPO', 'Choose a valid GitHub repository.', 400);
-      if (path === '/github/branches' && request.method === 'GET') {
-        const branches: string[] = [];
-        for (let page = 1; ; page++) {
-          const batch = await github(accessToken, `/repos/${repository}/branches?per_page=100&page=${page}`);
-          branches.push(...batch.map((b: any) => b.name));
-          if (batch.length < 100) break;
-        }
-        return ok(branches);
-      }
-      if (path === '/projects' && request.method === 'POST') {
-        if (body.source !== 'github' || typeof body.branch !== 'string' || !body.branch || body.branch.length > 255) return fail('INVALID_PROJECT', 'Choose a GitHub repository and branch.', 400);
-        const repositoryInfo = await github(accessToken, `/repos/${repository}`);
-        await github(accessToken, `/repos/${repository}/branches/${encodeURIComponent(body.branch)}`);
-        const { data, error } = await db!.from('monitor_projects').upsert({ user_id: userId, source: 'github', name: repositoryInfo.name, repository: repositoryInfo.full_name, branch: body.branch,
-          status: 'syncing', workspace_id: `github:${repositoryInfo.id}:${body.branch}` }, { onConflict: 'user_id,workspace_id' }).select('id, source, name, repository, branch, status').single();
-        if (error) return fail('SERVER_ERROR', 'Could not save the selected project.', 500);
-        return ok(data);
-      }
-      return fail('NOT_FOUND', 'Not found.', 404);
-    } catch {
-      return fail('GITHUB_UNAVAILABLE', 'GitHub could not complete this request. Check repository access or reconnect and try again.', 502);
-    }
-  }
-
   const loadKeys = async () => {
     const { data, error } = await db!.from('monitor_provider_keys').select('provider, key_ciphertext, key_iv, key_last4').eq('user_id', userId);
     if (error) throw new Error(error.message);
     return (data ?? []) as { provider: ProviderId; key_ciphertext: string; key_iv: string; key_last4: string }[];
   };
+
+  /** Every authenticated device/task route below needs this user's paired computer. */
+  const getDevice = async () => {
+    if (!db) return null;
+    const { data } = await db.from('monitor_devices').select('id, name, status, last_seen_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(1).maybeSingle();
+    return data as { id: string; name: string; status: string; last_seen_at: string | null } | null;
+  };
+
+  if (path === '/device/pair' && request.method === 'POST') {
+    if (!db) return fail('NOT_CONFIGURED', 'The device relay isn’t set up on the server yet.', 501);
+    const body = (await request.json().catch(() => ({}))) as { name?: unknown };
+    const name = typeof body.name === 'string' && body.name.trim() ? body.name.trim().slice(0, 80) : 'My computer';
+    const plainToken = randomToken();
+    const { data, error } = await db.from('monitor_devices').insert({ user_id: userId, name, token_hash: await hashToken(plainToken), status: 'offline' }).select('id').single();
+    if (error || !data) return fail('SERVER_ERROR', 'Couldn’t pair this computer.', 500);
+    // The token is returned exactly once — it is not recoverable afterwards, only re-issuable via a new pairing.
+    return ok({ deviceId: data.id, name, token: plainToken });
+  }
+
+  if (path === '/device/status' && request.method === 'GET') {
+    const device = await getDevice();
+    if (!device) return ok({ paired: false, online: false, name: null });
+    let online = device.status === 'online';
+    if (env.DEVICE_SESSION) {
+      try {
+        const stub = env.DEVICE_SESSION.get(env.DEVICE_SESSION.idFromName(device.id));
+        const r = await stub.fetch('https://device-session/status');
+        online = ((await r.json()) as { online: boolean }).online;
+      } catch {
+        online = false;
+      }
+    }
+    return ok({ paired: true, online, name: device.name });
+  }
+
+  if (path === '/agent/tasks' && request.method === 'POST') {
+    if (!env.DEVICE_SESSION) return fail('NOT_CONFIGURED', 'The project agent isn’t available on the server yet.', 501);
+    const body = (await request.json().catch(() => ({}))) as { prompt?: unknown; model?: unknown };
+    const prompt = typeof body.prompt === 'string' ? body.prompt.trim() : '';
+    if (!prompt) return fail('INVALID_REQUEST', 'A prompt is required.', 400);
+    const device = await getDevice();
+    if (!device) return fail('UNAVAILABLE', 'Connect a computer first.', 409);
+    if (!keysReady) return fail('NOT_CONFIGURED', 'AI keys aren’t set up on the server yet.', 501);
+    const rows = await loadKeys();
+    const provider: ProviderId = (typeof body.model === 'string' && body.model.split(':')[0] as ProviderId) || 'anthropic';
+    const key = rows.find((r) => r.provider === provider);
+    if (!key) return fail('UNAVAILABLE', `Connect ${provider} in AI settings first.`, 409);
+    if (provider !== 'anthropic') return fail('NOT_CONFIGURED', 'Only Anthropic models can run coding tasks right now.', 501);
+    const apiKey = await decryptSecret(env.MONITOR_ENCRYPTION_KEY!, key.key_ciphertext, key.key_iv);
+    const model = typeof body.model === 'string' && body.model.includes(':') ? body.model.split(':')[1] : latestMap(env).anthropic || 'claude-opus-5-5';
+    const taskId = crypto.randomUUID();
+    const stub = env.DEVICE_SESSION.get(env.DEVICE_SESSION.idFromName(device.id));
+    const r = await stub.fetch('https://device-session/tasks', { method: 'POST', body: JSON.stringify({ taskId, prompt, apiKey, model }) });
+    if (r.status === 409) return fail('UNAVAILABLE', 'Computer disconnected.', 409);
+    if (!r.ok) return fail('SERVER_ERROR', 'Couldn’t start the task.', 500);
+    return ok({ taskId });
+  }
+
+  const agentTaskMatch = path.match(/^\/agent\/tasks\/([^/]+)$/);
+  if (agentTaskMatch && request.method === 'GET') {
+    if (!env.DEVICE_SESSION) return fail('NOT_CONFIGURED', 'The project agent isn’t available on the server yet.', 501);
+    const device = await getDevice();
+    if (!device) return fail('UNAVAILABLE', 'Connect a computer first.', 409);
+    const stub = env.DEVICE_SESSION.get(env.DEVICE_SESSION.idFromName(device.id));
+    const r = await stub.fetch(`https://device-session/tasks/${encodeURIComponent(agentTaskMatch[1])}`);
+    if (!r.ok) return fail('NOT_FOUND', 'Task not found.', 404);
+    return ok(await r.json());
+  }
+
+  if (path === '/status' && request.method === 'GET') {
+    return ok({
+      online: true,
+      capabilities: {
+        github: false, // OAuth and repository workspace routes are not implemented yet.
+        gitUrl: false,
+        localBridge: false,
+        agent: !!env.DEVICE_SESSION,
+        providerKeys: keysReady,
+      },
+    });
+  }
 
   if (path === '/providers' && request.method === 'GET') {
     if (!keysReady) return ok(PROVIDER_IDS.map((provider) => ({ provider, connected: false, keyLast4: null })));

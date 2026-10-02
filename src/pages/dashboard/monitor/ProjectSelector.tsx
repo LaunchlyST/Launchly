@@ -1,14 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Check, FolderOpen, GitBranch, Plus, Search } from 'lucide-react';
+import { Check, FolderOpen, GitBranch, Plus, Search, TriangleAlert } from 'lucide-react';
 import type { ConnectedProject } from './types';
 
 const sourceLabel = { github: 'GitHub', local: 'Local', 'git-url': 'Git' };
 
-export function ProjectSelector({ project, projects, loading, error, onSelect, onConnect, onRefresh }: {
+export function ProjectSelector({ project, projects, loading, error, permission, onRestorePermission, onSelect, onConnect, onRefresh }: {
   project: ConnectedProject | null;
   projects: ConnectedProject[];
   loading: boolean;
   error: string;
+  permission: 'granted' | 'needed' | 'unavailable' | null;
+  onRestorePermission: () => void;
   onSelect: (project: ConnectedProject) => void;
   onConnect: () => void;
   onRefresh: () => void;
@@ -34,6 +36,11 @@ export function ProjectSelector({ project, projects, loading, error, onSelect, o
       <FolderOpen size={16} /> <span className="mt-btn__text">{project?.name || 'Choose project'}</span>
       {project && <><small>{sourceLabel[project.source]}</small><GitBranch size={12} /><span className="mt-btn__text">{project.branch}</span></>}
     </button>
+    {project && permission === 'needed' && (
+      <button type="button" className="mp-permission" onClick={onRestorePermission} title="Launchly lost access to this folder — click to allow it again">
+        <TriangleAlert size={12} /> Permission needed
+      </button>
+    )}
     {open && <div className="mp-picker" role="dialog" aria-label="Choose project">
       <label className="mp-search"><Search size={14} /><input ref={search} aria-label="Search projects" placeholder="Search projects" value={query} onChange={e => setQuery(e.target.value)} /></label>
       <div className="mp-list">
