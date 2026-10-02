@@ -601,122 +601,103 @@ export function MonitorPanel() {
   }
 
   const status = conn === 'connecting' ? 'Connecting' : !connected ? 'Offline' : recording ? 'Recording' : paused ? 'Paused' : 'Live';
+  const [previewOpen, setPreviewOpen] = useState(true);
 
   return (
-    <div className="mv">
+    <div className="mv mv--canvas">
       <header className="mv-head">
-        <div>
+        <div className="mv-heading">
           <h1 className="mv-title">Monitor</h1>
-          <p className="mv-sub">Share your screen or connect a project and control it by typing or talking.</p>
+          <span className="mv-visually-hidden" role="status">{status}</span>
+          <span className={`mv-pill ${ws.online ? 'mv-pill--live' : ''}`} title={ws.online ? 'Monitor service is available' : 'Monitor service isn’t reachable'}>
+            <i />
+            {ws.online ? 'Online' : 'Offline'}
+          </span>
+          <span className={`mv-pill ${ws.device.online ? 'mv-pill--live' : ''}`} title={ws.device.online ? 'Paired computer is connected' : 'Paired computer is not connected'}>
+            <i />
+            {ws.device.online ? (ws.device.name || 'Computer connected') : 'Computer disconnected'}
+          </span>
         </div>
-        <span className={`mv-pill ${ws.online ? 'mv-pill--live' : ''}`} title={ws.online ? 'Monitor service is available' : 'Monitor service isn’t reachable'}>
-          <i />
-          {ws.online ? 'Online' : 'Offline'}
-        </span>
+        <div className="mv-head-actions">
+          {connected ? (
+            <button type="button" className="mv-stop" onClick={disconnect}>
+              <Square size={8} fill="currentColor" /> Stop sharing
+            </button>
+          ) : (
+            <button type="button" className="mv-share" onClick={connect} disabled={!canShare || conn === 'connecting'}>
+              <MonitorUp size={15} /> {conn === 'connecting' ? 'Connecting…' : canShare ? 'Share screen' : 'Sharing not supported'}
+            </button>
+          )}
+          {busy && (
+            <button type="button" className="mv-stop mv-stop--danger" onClick={emergencyStop}>
+              <Square size={8} fill="currentColor" /> Stop AI
+            </button>
+          )}
+          <button
+            type="button"
+            className="mv-tool"
+            onClick={() => setMessages([])}
+            disabled={!chatReady || messages.length === 0}
+            title="Clear chat"
+            aria-label="Clear chat"
+          >
+            <RotateCcw size={14} />
+          </button>
+        </div>
       </header>
+      {connectError && <p className="mv-connection-error" role="alert">{connectError}</p>}
 
-      <div className="mv-grid">
-        {/* ---------------- Screen ---------------- */}
-        <section className={`mv-card mv-card--screen ${connected ? 'is-live' : ''}`}>
-          <header className="mv-card__head">
-            <span className="mv-card__title">
-              <Monitor size={16} strokeWidth={1.9} /> Screen
-              <span className="mv-visually-hidden" role="status">{status}</span>
-              {connected && (
-                <span className="mv-card__meta" data-testid="connection-label">
-                  <i className="mv-live-dot" /> Connected <span className="mv-sep">·</span> {source}
-                </span>
-              )}
-              {!connected && (
-                <span className="mv-card__meta mv-card__meta--muted" data-testid="connection-label">
-                  {conn === 'connecting' ? 'Connecting…' : 'Not connected'}
-                </span>
-              )}
+      {connected && (
+        <section className={`mv-screenstrip ${previewOpen ? '' : 'is-minimized'}`} aria-label="Shared screen preview">
+          <header className="mv-screenstrip__head">
+            <span className="mv-screenstrip__title">
+              <Monitor size={15} strokeWidth={1.9} /> Screen
+              <span className="mv-card__meta" data-testid="connection-label">
+                <i className="mv-live-dot" /> Connected <span className="mv-sep">·</span> {source}
+              </span>
             </span>
             <div className="mv-tools">
-              {connected && (
-                <>
-                  <button type="button" className="mv-tool" onClick={() => send('Take a screenshot')} disabled={busy} title="Screenshot" aria-label="Screenshot">
-                    <Camera size={15} />
-                  </button>
-                  <button
-                    type="button"
-                    className={`mv-tool ${recording ? 'is-rec' : ''}`}
-                    onClick={() => send(recording ? 'Stop recording' : 'Start recording')}
-                    disabled={busy}
-                    title={recording ? 'Stop recording' : 'Record'}
-                    aria-label={recording ? 'Stop recording' : 'Record'}
-                  >
-                    <Circle size={13} fill={recording ? 'currentColor' : 'none'} />
-                  </button>
-                </>
-              )}
+              <button type="button" className="mv-tool" onClick={() => send('Take a screenshot')} disabled={busy} title="Screenshot" aria-label="Screenshot">
+                <Camera size={15} />
+              </button>
+              <button
+                type="button"
+                className={`mv-tool ${recording ? 'is-rec' : ''}`}
+                onClick={() => send(recording ? 'Stop recording' : 'Start recording')}
+                disabled={busy}
+                title={recording ? 'Stop recording' : 'Record'}
+                aria-label={recording ? 'Stop recording' : 'Record'}
+              >
+                <Circle size={13} fill={recording ? 'currentColor' : 'none'} />
+              </button>
               <button type="button" className="mv-tool" onClick={() => connected && send('fullscreen')} disabled={!connected} title="Fullscreen" aria-label="Fullscreen">
                 <Maximize2 size={15} />
               </button>
-              {connected && (
-                <button type="button" className="mv-stop" onClick={disconnect}>
-                  <Square size={8} fill="currentColor" /> Stop sharing
-                </button>
-              )}
+              <button type="button" className="mv-tool" onClick={() => setPreviewOpen(o => !o)} title={previewOpen ? 'Hide preview' : 'Show preview'} aria-label={previewOpen ? 'Hide preview' : 'Show preview'} aria-expanded={previewOpen}>
+                <ChevronDown size={15} className={previewOpen ? '' : 'mv-flip'} />
+              </button>
             </div>
           </header>
-
-          <div ref={screenRef} className="mv-screen">
-            <video ref={videoRef} autoPlay muted playsInline hidden={!connected} style={{ transform: `scale(${zoom})` }} />
-            {!connected && (
-              <div className="mv-empty">
-                <span className="mv-empty__icon">
-                  {conn === 'connecting' ? <LoaderCircle size={26} className="spin" /> : <MonitorUp size={28} strokeWidth={1.5} />}
-                </span>
-                <h2>{conn === 'connecting' ? 'Choose what to share' : 'Share your screen'}</h2>
-                <p>
-                  {conn === 'connecting'
-                    ? 'Pick a screen or window in your browser’s prompt.'
-                    : 'Your screen appears here live. Nothing is saved unless you ask for a screenshot or recording.'}
-                </p>
-                {conn !== 'connecting' && (
-                  <button type="button" className="mv-cta" onClick={connect} disabled={!canShare}>
-                    <MonitorUp size={16} strokeWidth={2} /> {canShare ? 'Connect screen' : 'Not supported in this browser'}
-                  </button>
-                )}
-                {connectError && <p className="mv-empty__error">{connectError}</p>}
-              </div>
-            )}
-            {connected && (
+          <div className="mv-screenstrip__body">
+            <div ref={screenRef} className="mv-screen">
+              <video ref={videoRef} autoPlay muted playsInline style={{ transform: `scale(${zoom})` }} />
               <div className={`mv-cursor ${pointer ? 'is-pointing' : input.trim() || busy || listening ? 'is-still' : ''}`} style={pointerStyle()} aria-hidden="true">
                 <svg width="22" height="22" viewBox="0 0 22 22">
                   <path d="M3.5 2.2c-.5-.2-1 .3-.8.8l5.6 16.1c.2.6 1 .6 1.2 0l2.1-6 6-2.1c.6-.2.6-1 0-1.2z" fill="#2563eb" stroke="#fff" strokeWidth="1.8" strokeLinejoin="round" />
                 </svg>
               </div>
-            )}
-            {connected && recording && (
-              <span className="mv-badge mv-badge--rec">
-                <i /> Recording
-              </span>
-            )}
-            {connected && paused && <span className="mv-badge mv-badge--right">Paused</span>}
+              {recording && (
+                <span className="mv-badge mv-badge--rec">
+                  <i /> Recording
+                </span>
+              )}
+              {paused && <span className="mv-badge mv-badge--right">Paused</span>}
+            </div>
           </div>
         </section>
+      )}
 
-        {/* ---------------- Chat ---------------- */}
-        <section className={`mv-card mv-card--chat ${chatReady ? '' : 'is-disabled'}`}>
-          <header className="mv-card__head">
-            <span className="mv-card__title">
-              <MessageSquare size={16} strokeWidth={1.9} /> Chat
-            </span>
-            <button
-              type="button"
-              className="mv-tool"
-              onClick={() => setMessages([])}
-              disabled={!chatReady || messages.length === 0}
-              title="Clear chat"
-              aria-label="Clear chat"
-            >
-              <RotateCcw size={14} />
-            </button>
-          </header>
-
+      <div className="mv-canvas">
           <div className="mv-thread" ref={listRef} aria-live="polite">
             {!chatReady || messages.length === 0 ? (
               <div className="mv-thread__empty">
@@ -724,7 +705,7 @@ export function MonitorPanel() {
                   <MessageSquare size={20} strokeWidth={1.7} />
                 </span>
                 <strong>{ws.project ? `What should we build in ${ws.project.name}?` : 'What should we build?'}</strong>
-                <p>{!chatReady ? 'Connect a project or share your screen to get started.' : connected ? 'Ask me to take a screenshot, record, zoom or go fullscreen.' : `Ask for a change in ${ws.project!.name}.`}</p>
+                <p>{!chatReady ? 'Connect a project or share your screen to get started.' : connected ? 'The AI can see your screen and control your computer. Tell it what to do.' : `Ask for a change in ${ws.project!.name}.`}</p>
                 {connected && (
                   <div className="mv-suggest">
                     {['Take a screenshot', 'Start recording', 'Zoom in'].map((q) => (
@@ -773,6 +754,15 @@ export function MonitorPanel() {
               ))
             )}
           </div>
+      </div>
+
+      {ws.project && (
+        <div className="mv-tabs" aria-label="Project context">
+          <span className="mv-tab mv-tab--name">{ws.project.name}</span>
+          <span className="mv-tab">{ws.project.source === 'github' ? 'GitHub' : ws.project.source === 'local' ? 'Local' : 'Git'}</span>
+          <span className="mv-tab">{ws.project.branch}</span>
+        </div>
+      )}
 
           <form
             className="mv-composer"
@@ -822,8 +812,6 @@ export function MonitorPanel() {
               </div>
             </div>
           </form>
-        </section>
-      </div>
 
       {dialog === 'project' && (
         <ProjectConnectionModal

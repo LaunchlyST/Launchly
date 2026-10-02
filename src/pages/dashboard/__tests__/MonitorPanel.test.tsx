@@ -56,9 +56,8 @@ afterEach(() => {
 });
 
 async function connect() {
-  fireEvent.click(screen.getByRole('button', { name: 'Connect screen' }));
-  expect(screen.getByRole('status').textContent).toBe('Connecting');
-  expect(screen.getByText('Choose what to share')).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', { name: 'Share screen' }));
+  expect(screen.getByRole('button', { name: 'Connecting…' })).toBeTruthy();
   await act(async () => resolveShare!(fakeStream(track)));
   await waitFor(() => expect(screen.getByRole('status').textContent).toBe('Live'));
 }
@@ -86,7 +85,7 @@ describe('interpret', () => {
 describe('Monitor connection state', () => {
   it('idle shows no connected UI; connecting shows a loader; connected shows the label', async () => {
     render(<MonitorPanel />);
-    expect(screen.getByTestId('connection-label').textContent).toBe('Not connected');
+    expect(screen.queryByTestId('connection-label')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Stop sharing' })).toBeNull();
     await connect();
     expect(screen.getByTestId('connection-label').textContent).toContain('Connected');
@@ -99,7 +98,7 @@ describe('Monitor connection state', () => {
     sendMessage('help');
     expect(screen.getByText(/I can take a screenshot/)).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Stop sharing' }));
-    expect(screen.getByTestId('connection-label').textContent).toBe('Not connected');
+    expect(screen.queryByTestId('connection-label')).toBeNull();
     expect(screen.queryByText(/I can take a screenshot/)).toBeNull();
     expect(screen.getByRole('status').textContent).toBe('Offline');
     expect(track.stopped).toBe(true);
@@ -112,7 +111,7 @@ describe('Monitor connection state', () => {
     act(() => {
       track.dispatchEvent(new Event('ended'));
     });
-    expect(screen.getByTestId('connection-label').textContent).toBe('Not connected');
+    expect(screen.queryByTestId('connection-label')).toBeNull();
     expect(screen.queryByText(/Hi!/)).toBeNull();
   });
 
@@ -133,10 +132,10 @@ describe('Monitor connection state', () => {
     );
     render(<MonitorPanel />);
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Connect screen' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Share screen' }));
     });
     expect(screen.getByRole('status').textContent).toBe('Offline');
-    expect(screen.getByRole('button', { name: 'Connect screen' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Share screen' })).toBeTruthy();
   });
 });
 
