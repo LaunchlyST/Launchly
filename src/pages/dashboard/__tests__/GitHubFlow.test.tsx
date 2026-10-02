@@ -4,7 +4,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { ProjectConnectionModal } from '../monitor/ProjectConnectionModal';
 import { monitorApi } from '../monitor/monitorApi';
 
-const backend = { online: true, capabilities: { github: true, gitUrl: false, localBridge: false, agent: false, providerKeys: true } };
+const backend = { online: true, capabilities: { github: true, gitUrl: false, localBridge: false, agent: false, providerKeys: true, screenControl: false } };
 afterEach(() => { cleanup(); vi.restoreAllMocks(); window.history.replaceState({}, '', '/'); });
 
 describe('GitHub authorization return', () => {

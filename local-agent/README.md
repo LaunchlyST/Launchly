@@ -34,8 +34,14 @@ Only inside `--root`, nothing else:
 - Write/create a file
 - List a directory
 - Run a shell command (npm, git, your dev server, etc.)
+- Screen control (Windows only, via PowerShell — no extra packages needed):
+  screenshot, mouse move/click/double-click/right-click, type, keypress,
+  hotkey, scroll, wait
 
 Any path a tool call gives that would resolve outside `--root` is refused.
+Screen input runs one action at a time; destructive combinations
+(Ctrl+Alt+Del) are blocked in the agent, and destructive commands pause
+for your approval in Monitor unless you enabled automatic editing.
 
 ## Security
 

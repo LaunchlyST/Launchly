@@ -9,6 +9,11 @@ const CORE: [keyof Perms, string][] = [
   ['createFiles', 'Create files'],
   ['runDevCommands', 'Run development commands'],
 ];
+const SCREEN: [keyof Perms, string][] = [
+  ['viewScreen', 'Let the AI see my screen'],
+  ['controlMouse', 'Let the AI move and click the mouse'],
+  ['controlKeyboard', 'Let the AI type and press keys'],
+];
 const OPTIONAL: [keyof Perms, string][] = [
   ['installPackages', 'Install packages automatically'],
   ['autoCommit', 'Commit automatically'],
@@ -28,6 +33,9 @@ export function MonitorPermissions({ value, onChange, onClose }: { value: Perms;
     <Modal title="Monitor permissions" onClose={onClose} width={400}>
       <p className="mm-group">Project access</p>
       {CORE.map(Row)}
+      <p className="mm-group">Screen control</p>
+      {SCREEN.map(Row)}
+      <p className="mm-note mm-note--muted">The agent only runs approved capabilities. Destructive actions pause for your approval unless editing mode is automatic.</p>
       <p className="mm-group">Optional</p>
       {OPTIONAL.map(Row)}
       {value.autoPush && <p className="mm-note mm-note--muted">Pushes go to a Monitor branch — never straight to main.</p>}

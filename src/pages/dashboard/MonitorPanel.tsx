@@ -84,7 +84,7 @@ async function askOpenAI(apiKey: string, image: string, question: string, signal
         {
           role: 'system',
           content:
-            'You help the user with what is on their shared screen. Be brief and practical. You cannot click or type for them — tell them exactly where to click instead. Only describe what is actually visible.',
+            'You help the user with what is on their shared screen. Be brief and practical. Describe what is actually visible and what you are doing.',
         },
         { role: 'user', content: [{ type: 'text', text: question }, { type: 'image_url', image_url: { url: image, detail: 'low' } }] },
       ],
@@ -120,6 +120,10 @@ export function MonitorPanel() {
   const recognitionRef = useRef<any>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  /** Server-side task currently driving real mouse/keyboard control. */
+  const activeTaskRef = useRef<string | null>(null);
+  const tokenRef = useRef<string | null>(null);
+  tokenRef.current = ws.token;
 
   const [conn, setConn] = useState<Conn>('idle');
   const [connectError, setConnectError] = useState('');
@@ -180,10 +184,21 @@ export function MonitorPanel() {
     listRef.current?.scrollTo?.({ top: listRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages]);
 
-  /** Tear down everything tied to the active connection, synchronously. */
+  /** Tear down everything tied to the active connection, synchronously.
+   * Stopping screen share also immediately stops any running AI control. */
   const disconnect = useCallback(() => {
     requestRef.current?.abort();
     requestRef.current = null;
+    const taskId = activeTaskRef.current;
+    activeTaskRef.current = null;
+    if (taskId && tokenRef.current) void monitorApi.stopTask(tokenRef.current, taskId).catch(() => {});
+    setMessages((list) =>
+      list.map((m) =>
+        m.task && (m.task.status === 'working' || m.task.status === 'awaiting-approval')
+          ? { ...m, task: { ...m.task, status: 'stopped', error: 'Stopped — screen sharing ended.' } }
+          : m
+      )
+    );
     recognitionRef.current?.stop?.();
     recognitionRef.current = null;
     const rec = recorderRef.current;
@@ -382,8 +397,8 @@ export function MonitorPanel() {
           setPointer({ x: hit.x, y: hit.y });
           update(id, {
             text:
-              `Found “${hit.text}” at the ${describeArea(hit.x, hit.y)} of your screen — I’m pointing at it.` +
-              (wantsClick ? ' I can’t click on your computer from a website, so click where the pointer is.' : ''),
+              `Found “${hit.text}” at the ${describeArea(hit.x, hit.y)} of your screen.` +
+              (wantsClick ? ' Tell me what to do there and I will do it on your computer.' : ''),
             status: undefined,
           });
           return;
@@ -422,21 +437,70 @@ export function MonitorPanel() {
     }
   }
 
-  /** Send a coding request to the Monitor backend agent and follow its progress. */
+  /** Capture the live shared-screen frame to send to the model. Null when not sharing. */
+  function captureFrame(): string | null {
+    const v = videoRef.current;
+    if (!v?.videoWidth) return null;
+    try {
+      const scale = Math.min(1, 1280 / v.videoWidth);
+      const c = document.createElement('canvas');
+      c.width = Math.round(v.videoWidth * scale);
+      c.height = Math.round(v.videoHeight * scale);
+      c.getContext('2d')!.drawImage(v, 0, 0, c.width, c.height);
+      return c.toDataURL('image/png');
+    } catch {
+      return null;
+    }
+  }
+
+  /** Emergency Stop: cancels the model request, clears queued actions, blocks further input. */
+  async function emergencyStop() {
+    const taskId = activeTaskRef.current;
+    requestRef.current?.abort();
+    requestRef.current = null;
+    activeTaskRef.current = null;
+    setBusy(false);
+    setMessages((list) =>
+      list.map((m) =>
+        m.task && (m.task.status === 'working' || m.task.status === 'awaiting-approval')
+          ? { ...m, task: { ...m.task, status: 'stopped', error: 'Stopped — no further mouse/keyboard actions will run.' } }
+          : m
+      )
+    );
+    if (taskId && ws.token) {
+      try { await monitorApi.stopTask(ws.token, taskId); } catch { /* already stopped */ }
+    }
+    add('assistant', 'Stopped. All mouse and keyboard control is off.');
+  }
+
+  async function approvePending(taskId: string, msgId: number) {
+    const r = await monitorApi.approveTask(ws.token, taskId);
+    if (!r.ok) {
+      setMessages((list) => list.map((m) => (m.id === msgId && m.task ? { ...m, task: { ...m.task, error: r.message ?? 'Could not approve.' } } : m)));
+    }
+  }
+
+  /** Send a task to the selected AI with the live screen. The model sees the
+   * screenshot and performs REAL mouse/keyboard/file actions on the paired
+   * computer through the local agent, in an observe → act → observe loop. */
   async function runAgent(prompt: string) {
     if (!ws.project) { add('assistant', 'Connect a project first.'); return; }
     if (!aiReady) { add('assistant', 'Connect AI first — pick a provider and save a key.'); return; }
     if (!ws.backend?.capabilities.agent) { add('assistant', 'The project agent isn’t available on the server yet.'); return; }
-    if (!ws.device.online) { add('assistant', ws.device.paired ? 'Computer disconnected. Start the local agent on your computer to run this.' : 'Connect this computer first (the folder icon next to Full access) so the AI has somewhere real to run.'); return; }
-    if (!projectReady) { add('assistant', 'Connect a project and AI with an available coding runtime before sending a coding task.'); return; }
+    if (!ws.device.online) { add('assistant', ws.device.paired ? 'Computer disconnected. Start the local agent on your computer to run this — Monitor will detect when it is back online.' : 'Connect this computer first so the AI has somewhere real to run.'); return; }
+    if (!projectReady) { add('assistant', 'Connect a project and AI with an available coding runtime before sending a task.'); return; }
     const project = ws.project!;
+    const frame = captureFrame();
     const task: AgentTask = {
       id: `local-${nextId}`,
       prompt,
       status: 'working',
-      activity: [{ id: 'u', tool: 'understand', label: 'Understanding request…', status: 'running' }],
+      activity: [{ id: 'u', tool: 'understand', label: frame ? 'Looking at your screen…' : 'Starting — no shared screen, the computer will capture one…', status: 'running' }],
       changes: null,
       error: null,
+      screenshot: null,
+      actionsExecuted: 0,
+      maxActions: 30,
     };
     const id = add('assistant', '', undefined);
     update(id, { task });
@@ -445,8 +509,9 @@ export function MonitorPanel() {
     requestRef.current = controller;
     const setTask = (t: AgentTask) => requestRef.current === controller && update(id, { task: t });
     try {
-      const started = await monitorApi.runTask(ws.token, { projectId: project.id, prompt, model: ws.selection, permissions: ws.permissions });
+      const started = await monitorApi.runTask(ws.token, { projectId: project.id, prompt, model: ws.selection, permissions: ws.permissions, screenshot: frame, maxActions: 30 });
       if (!started.ok) {
+        activeTaskRef.current = null;
         setTask({
           ...task,
           status: 'error',
@@ -455,20 +520,39 @@ export function MonitorPanel() {
         });
         return;
       }
-      // Follow the server-side task until it finishes or needs approval.
+      activeTaskRef.current = started.data.taskId;
+      // Follow the server-side task until it finishes, needs approval, or is stopped.
       for (let i = 0; i < 600 && requestRef.current === controller; i++) {
-        await new Promise((r) => setTimeout(r, 1000));
+        await new Promise((r) => setTimeout(r, 1200));
+        if (requestRef.current !== controller) return;
+        if (!ws.device.online && i % 5 === 0) {
+          await ws.refreshDevice();
+        }
         const r = await monitorApi.getTask(ws.token, started.data.taskId);
         if (!r.ok) {
           setTask({ ...task, status: 'error', error: r.message });
           return;
         }
         setTask(r.data);
-        if (r.data.status !== 'working') return;
+        if (r.data.status === 'awaiting-approval' || r.data.status === 'done' || r.data.status === 'error' || r.data.status === 'stopped') {
+          if (r.data.status !== 'awaiting-approval') {
+            if (requestRef.current === controller) {
+              requestRef.current = null;
+              activeTaskRef.current = null;
+              setBusy(false);
+            }
+          }
+          if (r.data.status === 'awaiting-approval') continue;
+          return;
+        }
+      }
+      if (requestRef.current === controller && activeTaskRef.current) {
+        try { await monitorApi.stopTask(ws.token, activeTaskRef.current); } catch { /* ignore */ }
       }
     } finally {
       if (requestRef.current === controller) {
         requestRef.current = null;
+        activeTaskRef.current = null;
         setBusy(false);
       }
     }
@@ -657,6 +741,21 @@ export function MonitorPanel() {
                   {m.task ? (
                     <>
                       <AgentActivity task={m.task} />
+                      {m.task.status === 'awaiting-approval' && (
+                        <div className="mc" role="alert">
+                          <p className="mc-title">Needs your approval</p>
+                          <p className="mc-meta">The AI wants to run a high-impact action. Nothing further runs until you approve or stop.</p>
+                          <div className="mc-actions">
+                            <button type="button" className="mm-btn mm-btn--primary" onClick={() => approvePending(activeTaskRef.current ?? '', m.id)}>Approve once</button>
+                            <button type="button" className="mm-btn" onClick={emergencyStop}>Stop</button>
+                          </div>
+                        </div>
+                      )}
+                      {(m.task.status === 'working' || m.task.status === 'awaiting-approval') && (
+                        <div className="mc-actions" style={{ marginTop: 8 }}>
+                          <button type="button" className="mm-btn mm-btn--primary" onClick={emergencyStop}>Stop</button>
+                        </div>
+                      )}
                       {m.task.changes && (
                         <ChangeSummary changes={m.task.changes} busy={busy} onApply={() => applyChanges(m.id, m.task!)} onUndo={() => undoChanges(m.id, m.task!)} />
                       )}

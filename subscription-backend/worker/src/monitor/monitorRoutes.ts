@@ -192,25 +192,63 @@ export async function handleMonitor(request: Request, env: MonitorEnv, fetchImpl
 
   if (path === '/agent/tasks' && request.method === 'POST') {
     if (!env.DEVICE_SESSION) return fail('NOT_CONFIGURED', 'The project agent isn’t available on the server yet.', 501);
-    const body = (await request.json().catch(() => ({}))) as { prompt?: unknown; model?: unknown };
+    const body = (await request.json().catch(() => ({}))) as { prompt?: unknown; model?: unknown; screenshot?: unknown; permissions?: unknown; maxActions?: unknown };
     const prompt = typeof body.prompt === 'string' ? body.prompt.trim() : '';
     if (!prompt) return fail('INVALID_REQUEST', 'A prompt is required.', 400);
+    if (prompt.length > 4000) return fail('INVALID_REQUEST', 'Prompt is too long (max 4000 characters).', 400);
     const device = await getDevice();
     if (!device) return fail('UNAVAILABLE', 'Connect a computer first.', 409);
     if (!keysReady) return fail('NOT_CONFIGURED', 'AI keys aren’t set up on the server yet.', 501);
     const rows = await loadKeys();
-    const provider: ProviderId = (typeof body.model === 'string' && body.model.split(':')[0] as ProviderId) || 'anthropic';
+    const sel = body.model as { mode?: string; provider?: ProviderId; modelId?: string } | string | undefined;
+    let provider: ProviderId = 'anthropic';
+    if (typeof sel === 'string' && sel.includes(':')) provider = sel.split(':')[0] as ProviderId;
+    else if (sel && typeof sel === 'object' && sel.provider) provider = sel.provider;
+    else {
+      // auto: prefer the first connected provider that supports vision + tools
+      const connected = rows.map((r) => r.provider);
+      provider = (['anthropic', 'openai'].find((p) => connected.includes(p as ProviderId)) ?? connected[0] ?? 'anthropic') as ProviderId;
+    }
+    if (!['anthropic', 'openai'].includes(provider)) return fail('NOT_CONFIGURED', 'Screen control needs an Anthropic or OpenAI model.', 501);
     const key = rows.find((r) => r.provider === provider);
     if (!key) return fail('UNAVAILABLE', `Connect ${provider} in AI settings first.`, 409);
-    if (provider !== 'anthropic') return fail('NOT_CONFIGURED', 'Only Anthropic models can run coding tasks right now.', 501);
     const apiKey = await decryptSecret(env.MONITOR_ENCRYPTION_KEY!, key.key_ciphertext, key.key_iv);
-    const model = typeof body.model === 'string' && body.model.includes(':') ? body.model.split(':')[1] : latestMap(env).anthropic || 'claude-opus-5-5';
+    const map = latestMap(env);
+    const model = typeof sel === 'string' && sel.includes(':') ? sel.split(':')[1]
+      : sel && typeof sel === 'object' && sel.mode === 'exact' ? sel.modelId!
+      : sel && typeof sel === 'object' && sel.mode === 'latest' ? (map[provider] || '') || (provider === 'anthropic' ? 'claude-opus-4-6' : 'gpt-4o')
+      : (map[provider] || '') || (provider === 'anthropic' ? 'claude-opus-4-6' : 'gpt-4o');
+    const screenshot = typeof body.screenshot === 'string' && body.screenshot.length < 8_000_000 ? body.screenshot : null;
+    const permissions = body.permissions && typeof body.permissions === 'object' ? body.permissions : {};
+    const maxActions = typeof body.maxActions === 'number' ? Math.min(Math.max(Math.floor(body.maxActions), 1), 60) : 30;
     const taskId = crypto.randomUUID();
     const stub = env.DEVICE_SESSION.get(env.DEVICE_SESSION.idFromName(device.id));
-    const r = await stub.fetch('https://device-session/tasks', { method: 'POST', body: JSON.stringify({ taskId, prompt, apiKey, model }) });
-    if (r.status === 409) return fail('UNAVAILABLE', 'Computer disconnected.', 409);
+    const r = await stub.fetch('https://device-session/tasks', { method: 'POST', body: JSON.stringify({ taskId, prompt, apiKey, model, provider, screenshot, permissions, maxActions }) });
+    if (r.status === 409) return fail('UNAVAILABLE', 'Computer disconnected. Start the local agent and try again.', 409);
     if (!r.ok) return fail('SERVER_ERROR', 'Couldn’t start the task.', 500);
     return ok({ taskId });
+  }
+
+  const agentStopMatch = path.match(/^\/agent\/tasks\/([^/]+)\/stop$/);
+  if (agentStopMatch && request.method === 'POST') {
+    if (!env.DEVICE_SESSION) return fail('NOT_CONFIGURED', 'The project agent isn’t available on the server yet.', 501);
+    const device = await getDevice();
+    if (!device) return fail('UNAVAILABLE', 'Connect a computer first.', 409);
+    const stub = env.DEVICE_SESSION.get(env.DEVICE_SESSION.idFromName(device.id));
+    const r = await stub.fetch(`https://device-session/tasks/${encodeURIComponent(agentStopMatch[1])}/stop`, { method: 'POST' });
+    if (!r.ok) return fail('NOT_FOUND', 'Task not found.', 404);
+    return ok({ stopped: true });
+  }
+
+  const agentApproveMatch = path.match(/^\/agent\/tasks\/([^/]+)\/approve$/);
+  if (agentApproveMatch && request.method === 'POST') {
+    if (!env.DEVICE_SESSION) return fail('NOT_CONFIGURED', 'The project agent isn’t available on the server yet.', 501);
+    const device = await getDevice();
+    if (!device) return fail('UNAVAILABLE', 'Connect a computer first.', 409);
+    const stub = env.DEVICE_SESSION.get(env.DEVICE_SESSION.idFromName(device.id));
+    const r = await stub.fetch(`https://device-session/tasks/${encodeURIComponent(agentApproveMatch[1])}/approve`, { method: 'POST' });
+    if (!r.ok) return fail('NOT_FOUND', 'Nothing to approve.', 404);
+    return ok({ approved: true });
   }
 
   const agentTaskMatch = path.match(/^\/agent\/tasks\/([^/]+)$/);
@@ -233,6 +271,7 @@ export async function handleMonitor(request: Request, env: MonitorEnv, fetchImpl
         localBridge: false,
         agent: !!env.DEVICE_SESSION,
         providerKeys: keysReady,
+        screenControl: !!env.DEVICE_SESSION,
       },
     });
   }

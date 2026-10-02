@@ -85,12 +85,14 @@ export const monitorApi = {
   pairDevice: (t: string | null, name?: string) => call<{ deviceId: string; name: string; token: string }>('/api/monitor/device/pair', t, json({ name })),
   deviceStatus: (t: string | null) => call<{ paired: boolean; online: boolean; name: string | null }>('/api/monitor/device/status', t),
 
-  // Agent
+  // Agent (observe → reason → act → observe on the real computer)
   runTask: (
     t: string | null,
-    body: { projectId: string; prompt: string; model: ModelSelection; permissions: MonitorPermissions }
+    body: { projectId: string; prompt: string; model: ModelSelection; permissions: MonitorPermissions; screenshot?: string | null; maxActions?: number }
   ) => call<{ taskId: string }>('/api/monitor/agent/tasks', t, json(body)),
   getTask: (t: string | null, taskId: string) => call<import('./types').AgentTask>(`/api/monitor/agent/tasks/${encodeURIComponent(taskId)}`, t),
+  stopTask: (t: string | null, taskId: string) => call<{ stopped: boolean }>(`/api/monitor/agent/tasks/${encodeURIComponent(taskId)}/stop`, t, json({})),
+  approveTask: (t: string | null, taskId: string) => call<{ approved: boolean }>(`/api/monitor/agent/tasks/${encodeURIComponent(taskId)}/approve`, t, json({})),
   applyChanges: (t: string | null, changeSetId: string) => call<ChangeSet>(`/api/monitor/agent/changes/${changeSetId}/apply`, t, json({})),
   undo: (t: string | null, checkpointId: string) => call<{ restored: boolean }>(`/api/monitor/agent/checkpoints/${checkpointId}/restore`, t, json({})),
 };

@@ -65,6 +65,9 @@ export interface MonitorPermissions {
   autoPush: boolean;
   autoDeploy: boolean;
   editMode: 'ask' | 'auto';
+  viewScreen: boolean;
+  controlMouse: boolean;
+  controlKeyboard: boolean;
 }
 
 export const DEFAULT_PERMISSIONS: MonitorPermissions = {
@@ -78,6 +81,9 @@ export const DEFAULT_PERMISSIONS: MonitorPermissions = {
   autoPush: false,
   autoDeploy: false,
   editMode: 'ask',
+  viewScreen: true,
+  controlMouse: true,
+  controlKeyboard: true,
 };
 
 /** Server-controlled tools the agent may call. The model never runs code in the browser. */
@@ -93,7 +99,17 @@ export type AgentTool =
   | 'run_command'
   | 'run_build'
   | 'run_tests'
-  | 'commit_changes';
+  | 'commit_changes'
+  | 'screenshot'
+  | 'mouse_move'
+  | 'click'
+  | 'double_click'
+  | 'right_click'
+  | 'type'
+  | 'keypress'
+  | 'hotkey'
+  | 'scroll'
+  | 'wait';
 
 export interface ToolActivity {
   id: string;
@@ -124,7 +140,7 @@ export interface Checkpoint {
   label: string;
 }
 
-export type AgentStatus = 'idle' | 'working' | 'awaiting-approval' | 'done' | 'error';
+export type AgentStatus = 'idle' | 'working' | 'awaiting-approval' | 'done' | 'error' | 'stopped';
 
 export interface AgentTask {
   id: string;
@@ -133,6 +149,9 @@ export interface AgentTask {
   activity: ToolActivity[];
   changes: ChangeSet | null;
   error: string | null;
+  screenshot: string | null;
+  actionsExecuted: number;
+  maxActions: number;
 }
 
 /** Result wrapper: every backend call either succeeds or says honestly why not. */
@@ -145,5 +164,26 @@ export interface ApiResult<T> {
 
 export interface MonitorBackendStatus {
   online: boolean;
-  capabilities: { github: boolean; gitUrl: boolean; localBridge: boolean; agent: boolean; providerKeys: boolean };
+  capabilities: { github: boolean; gitUrl: boolean; localBridge: boolean; agent: boolean; providerKeys: boolean; screenControl: boolean };
+}
+
+/** Screen action types returned by the AI */
+export type ScreenAction =
+  | { type: 'mouse_move'; x: number; y: number }
+  | { type: 'click'; x: number; y: number; button?: 'left' | 'right' }
+  | { type: 'double_click'; x: number; y: number }
+  | { type: 'right_click'; x: number; y: number }
+  | { type: 'type'; text: string }
+  | { type: 'keypress'; key: string }
+  | { type: 'hotkey'; keys: string[] }
+  | { type: 'scroll'; direction: 'up' | 'down'; amount?: number }
+  | { type: 'wait'; duration: number }
+  | { type: 'screenshot' }
+  | { type: 'done' }
+  | { type: 'ask_user'; question: string };
+
+export interface ScreenActionResult {
+  success: boolean;
+  screenshot?: string;
+  error?: string;
 }

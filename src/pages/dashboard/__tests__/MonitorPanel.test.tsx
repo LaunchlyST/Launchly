@@ -254,8 +254,10 @@ describe('Monitor projects & models', () => {
     expect(screen.getByRole('dialog', { name: 'Connect coding agent' })).toBeTruthy();
     expect(screen.getByText('Codex')).toBeTruthy();
     expect(screen.getByText('Claude Code')).toBeTruthy();
-    fireEvent.click(screen.getAllByRole('button', { name: 'Connect' })[0]);
-    expect(screen.getByText('Integration not available')).toBeTruthy();
+    // No fake subscription connection: the modal links to the official
+    // sign-in pages and requires a BYO API key instead.
+    expect(screen.getByText(/does not offer an official third-party OAuth flow/)).toBeTruthy();
+    expect(screen.getAllByRole('link', { name: /Open sign-in/ })).toHaveLength(2);
     expect(screen.queryByText('Codex · Connected')).toBeNull();
     fireEvent.click(await screen.findByRole('button', { name: 'Use Anthropic API' }));
     expect(document.querySelector('.mv-composer')!.textContent).toContain('Anthropic API');
