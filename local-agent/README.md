@@ -34,9 +34,17 @@ Only inside `--root`, nothing else:
 - Write/create a file
 - List a directory
 - Run a shell command (npm, git, your dev server, etc.)
-- Screen control (Windows only, via PowerShell — no extra packages needed):
-  screenshot, mouse move/click/double-click/right-click, type, keypress,
-  hotkey, scroll, wait
+- Screen control:
+  - Windows (via PowerShell — no extra packages needed): screenshot,
+    mouse move/click/double-click/right-click, type, keypress, hotkey,
+    scroll, wait. Use `--monitor N` to capture a non-primary display.
+  - macOS (built in, no packages needed): screenshots via `screencapture`;
+    typing, key presses and hotkeys via AppleScript — grant Accessibility
+    permission to your terminal/Node app in System Settings → Privacy &
+    Security → Accessibility, and Screen Recording permission if captures
+    fail. Mouse move/click/scroll additionally need the free `cliclick`
+    tool (`brew install cliclick`); without it mouse actions fail with a
+    clear message instead of pretending to work.
 
 Any path a tool call gives that would resolve outside `--root` is refused.
 Screen input runs one action at a time; destructive combinations

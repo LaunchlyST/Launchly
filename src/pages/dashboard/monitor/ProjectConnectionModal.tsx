@@ -105,6 +105,19 @@ function GitHubFlow({ token, enabled, onConnected }: { token: string | null; ena
     else setError(r.message);
   }
 
+  async function disconnect() {
+    setError('');
+    setBusy(true);
+    const r = await monitorApi.githubDisconnect(token);
+    setBusy(false);
+    if (!r.ok) { setError(r.message ?? 'Could not disconnect GitHub.'); return; }
+    setRepos(null);
+    setRepo(null);
+    started.current = false;
+  }
+
+  const expired = /expired/i.test(error);
+
   if (!token) return <Unavailable>Sign in to Launchly to connect your GitHub account.</Unavailable>;
   if (!enabled) return <Unavailable>GitHub connection isn’t set up on the server yet.</Unavailable>;
   if (repo) return <BranchSelector token={token} repo={repo} onBack={() => setRepo(null)} onConnected={onConnected} />;
@@ -113,11 +126,19 @@ function GitHubFlow({ token, enabled, onConnected }: { token: string | null; ena
       {loading && <p className="mm-note" role="status"><LoaderCircle size={14} className="spin" /> Loading your GitHub projects…</p>}
       {repos === null && !loading && (
         <button type="button" className="mm-btn mm-btn--primary mm-btn--block" onClick={authorize} disabled={busy}>
-          {busy ? <LoaderCircle size={14} className="spin" /> : <Github size={14} />} Connect GitHub
+          {busy ? <LoaderCircle size={14} className="spin" /> : <Github size={14} />} {expired ? 'Reconnect GitHub' : 'Connect GitHub'}
         </button>
       )}
       {error && <p className="mm-note mm-note--error" role="alert">{error}</p>}
-      {repos && <RepositorySelector repos={repos} query={query} setQuery={setQuery} onPick={setRepo} />}
+      {repos && (
+        <>
+          <div className="mm-row">
+            <span className="mm-row__label"><Github size={14} /> Connected — {repos.length} repositor{repos.length === 1 ? 'y' : 'ies'}</span>
+            <button type="button" className="mm-link mm-link--danger" onClick={disconnect} disabled={busy}>Disconnect</button>
+          </div>
+          <RepositorySelector repos={repos} query={query} setQuery={setQuery} onPick={setRepo} />
+        </>
+      )}
     </div>
   );
 }

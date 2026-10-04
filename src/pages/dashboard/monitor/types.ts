@@ -16,11 +16,23 @@ export interface ModelInfo {
   available: boolean;
 }
 
+export type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'limited' | 'error';
+export interface ProviderFailure {
+  code: string;
+  message: string;
+  provider?: ProviderId;
+  connectionType?: 'api' | 'subscription' | 'local';
+  retryAfter?: string;
+}
+
 /** What the backend returns about a saved provider key — never the key itself. */
 export interface ProviderConnection {
   provider: ProviderId;
   connected: boolean;
   keyLast4: string | null;
+  connectionType?: 'api' | 'subscription' | 'local';
+  state?: ConnectionState;
+  message?: string;
 }
 
 /**
@@ -28,11 +40,14 @@ export interface ProviderConnection {
  *  - auto:   backend picks the recommended coding model across connected providers
  *  - latest: newest recommended model of one provider (moves when the provider ships a new one)
  *  - exact:  a pinned modelId that never changes on its own
+ *  - local:  the official provider CLI installed on the user's own computer,
+ *             billed to the user's own subscription login (never touches Launchly servers)
  */
 export type ModelSelection =
   | { mode: 'auto' }
   | { mode: 'latest'; provider: ProviderId }
-  | { mode: 'exact'; provider: ProviderId; modelId: string };
+  | { mode: 'exact'; provider: ProviderId; modelId: string }
+  | { mode: 'local'; provider: ProviderId };
 
 export type ProjectSource = 'github' | 'local' | 'git-url';
 
@@ -109,7 +124,9 @@ export type AgentTool =
   | 'keypress'
   | 'hotkey'
   | 'scroll'
-  | 'wait';
+  | 'wait'
+  | 'subscription_status'
+  | 'subscription_exec';
 
 export interface ToolActivity {
   id: string;
@@ -162,6 +179,7 @@ export interface AgentTask {
   maxActions: number;
   /** Set by the server only while status is 'awaiting-approval'. */
   pendingApproval?: PendingApproval | null;
+  providerFailure?: ProviderFailure;
 }
 
 /** Result wrapper: every backend call either succeeds or says honestly why not. */
@@ -170,6 +188,7 @@ export interface ApiResult<T> {
   data?: T;
   reason?: 'not_configured' | 'unauthorized' | 'unavailable' | 'error';
   message?: string;
+  failure?: ProviderFailure;
 }
 
 export interface MonitorBackendStatus {

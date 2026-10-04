@@ -32,7 +32,7 @@ describe('GitHub authorization return', () => {
     const connected = vi.fn();
     render(<ProjectConnectionModal token="test-token" backend={backend} onClose={() => {}} onConnected={connected} />);
     fireEvent.click(await screen.findByText('tester/project'));
-    fireEvent.click(screen.getByRole('button', { name: 'Connect', exact: true }));
+    fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
     await waitFor(() => expect(screen.getByText('Repository access denied.')).toBeTruthy());
     expect(connected).not.toHaveBeenCalled();
   });

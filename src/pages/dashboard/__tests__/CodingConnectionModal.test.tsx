@@ -31,8 +31,8 @@ it.each(['openai', 'anthropic'] as const)('opens and saves the correct %s key be
   fireEvent.click(screen.getByRole('button', { name: `Connect API Key for ${provider === 'openai' ? 'OpenAI' : 'Anthropic'} API` }));
   expect(select).not.toHaveBeenCalled();
   fireEvent.change(screen.getByLabelText('API key'), { target: { value: 'sk-test-key-1234' } });
-  fireEvent.click(screen.getByRole('button', { name: 'Connect', exact: true }));
+  fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
   await screen.findByRole('dialog', { name: 'Connect coding agent' });
-  expect(save).toHaveBeenCalledWith('token', provider, 'sk-test-key-1234');
+  expect(save).toHaveBeenCalledWith('token', provider, 'sk-test-key-1234', 'api');
   expect(select).toHaveBeenCalledExactlyOnceWith(provider);
 });

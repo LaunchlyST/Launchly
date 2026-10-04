@@ -1,3 +1,4 @@
+import { providerError, ProviderRequestError, type ProviderFailure } from './providerErrors.ts';
 /**
  * DeviceSession — one Durable Object instance per paired computer.
  *
@@ -23,7 +24,8 @@ type ToolStatus = 'pending' | 'running' | 'done' | 'error';
 type ToolName =
   | 'read_file' | 'write_file' | 'list_directory' | 'run_command'
   | 'screenshot' | 'mouse_move' | 'click' | 'double_click' | 'right_click'
-  | 'type' | 'keypress' | 'hotkey' | 'scroll' | 'wait';
+  | 'type' | 'keypress' | 'hotkey' | 'scroll' | 'wait' | 'list_monitors'
+  | 'subscription_status' | 'subscription_exec';
 
 interface ToolActivity {
   id: string;
@@ -39,6 +41,14 @@ interface PendingApproval {
   input: any;
 }
 
+interface MonitorInfo {
+  index: number;
+  name: string;
+  width: number;
+  height: number;
+  primary: boolean;
+}
+
 interface Task {
   id: string;
   prompt: string;
@@ -46,13 +56,34 @@ interface Task {
   activity: ToolActivity[];
   changes: null;
   error: string | null;
+  providerFailure?: ProviderFailure;
   screenshot: string | null;
   actionsExecuted: number;
   maxActions: number;
   stopped?: boolean;
   pendingApproval?: PendingApproval | null;
   resumeInput?: any | null;
+  monitorIndex?: number;
+  monitors?: MonitorInfo[];
+  connectionType?: 'api' | 'subscription' | 'local';
+  project?: { id: string; source: string; name: string; repository: string; branch: string } | null;
 }
+
+/** Local provider-CLI tools. These run on the USER'S OWN computer through the
+ * local agent (official `claude`/`codex` CLIs with the user's own login) and
+ * are never advertised to API models. */
+const LOCAL_CLI_TOOLS = [
+  {
+    name: 'subscription_status',
+    description: 'Report which official provider CLIs (claude, codex) are installed and logged in on this computer.',
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'subscription_exec',
+    description: 'Run one coding task through the official provider CLI on this computer, billed to the user\'s own subscription login.',
+    input_schema: { type: 'object', properties: { tool: { type: 'string', enum: ['claude', 'codex'] }, prompt: { type: 'string' } }, required: ['tool', 'prompt'] },
+  },
+];
 
 const MAX_ACTIONS_DEFAULT = 30;
 const TASK_TIMEOUT_MS = 10 * 60 * 1000;
@@ -151,6 +182,9 @@ export function redactSecrets(text: string): string {
 }
 
 function isDestructive(tool: string, input: any): boolean {
+  // A local CLI run can edit files and execute commands on its own — it always
+  // pauses for approval unless the user enabled automatic editing.
+  if (tool === 'subscription_exec') return true;
   if (tool === 'run_command') {
     const cmd = String(input?.command ?? '').toLowerCase();
     return /\b(rm\s+-rf?|del\s+\/[fsq]|format\s+[a-z]:|mkfs|shutdown|reboot|reg\s+delete|net\s+user|passwd\b|rd\s+\/s)/.test(cmd);
@@ -195,6 +229,13 @@ function validateAction(tool: string, input: any, perms: any): string | null {
     const d = Number(input?.duration);
     if (!Number.isFinite(d) || d < 100 || d > 10000) return 'Wait must be 100-10000 ms.';
   }
+  if (tool === 'subscription_exec') {
+    if (!['claude', 'codex'].includes(String(input?.tool))) return 'Subscription tool must be "claude" or "codex".';
+    const p = String(input?.prompt ?? '').trim();
+    if (!p) return 'Nothing to ask.';
+    if (p.length > 8000) return 'Prompt is too long (max 8000 characters).';
+    if (!perms.runDevCommands) return 'Running the local provider CLI is disabled in permissions.';
+  }
   if (['read_file', 'write_file', 'list_directory', 'run_command'].includes(tool) && !perms.viewScreen && false) return 'Not permitted.';
   return null;
 }
@@ -218,6 +259,7 @@ export class DeviceSession {
       server.accept();
       this.agentSocket?.close(1000, 'replaced by a new connection');
       this.agentSocket = server;
+      this.lastAgentSeenAt = new Date().toISOString();
       server.addEventListener('message', (ev) => this.onAgentMessage(ev));
       const failAll = () => {
         for (const [, p] of this.pending) p.reject(new Error('Computer disconnected'));
@@ -235,15 +277,26 @@ export class DeviceSession {
     }
 
     if (url.pathname === '/status') {
-      return json({ online: !!this.agentSocket });
+      const meta = await this.state.storage.get<{ root?: string; platform?: string }>('device-meta');
+      return json({ online: !!this.agentSocket, lastSeenAt: this.lastAgentSeenAt, monitors: this.monitorList, agentRoot: meta?.root ?? null, agentPlatform: meta?.platform ?? null });
+    }
+
+    if (url.pathname === '/subscription' && request.method === 'GET') {
+      if (!this.agentSocket) return json({ error: 'Computer disconnected' }, 409);
+      try {
+        const status = await this.callTool('subscription_status', {}, 30000);
+        return json(status && typeof status === 'object' ? status : { error: 'Unexpected response from the computer.' }, 200);
+      } catch (e) {
+        return json({ error: e instanceof Error ? e.message : 'Could not reach the computer.' }, 502);
+      }
     }
 
     if (url.pathname === '/tasks' && request.method === 'POST') {
-      const body = (await request.json()) as { taskId: string; prompt: string; apiKey: string; model: string; provider?: string; screenshot?: string | null; permissions?: any; maxActions?: number };
+      const body = (await request.json()) as { taskId: string; prompt: string; apiKey: string; model: string; provider?: string; connectionType?: 'api' | 'subscription'; screenshot?: string | null; permissions?: any; maxActions?: number; monitorIndex?: number; project?: { id: string; source: string; name: string; repository: string; branch: string } | null };
       if (!this.agentSocket) return json({ error: 'Computer disconnected' }, 409);
-      const task: Task = { id: body.taskId, prompt: body.prompt, status: 'idle', activity: [], changes: null, error: null, screenshot: body.screenshot ?? null, actionsExecuted: 0, maxActions: Math.min(Math.max(body.maxActions ?? MAX_ACTIONS_DEFAULT, 1), 60), stopped: false, pendingApproval: null, resumeInput: null };
+      const task: Task = { id: body.taskId, prompt: body.prompt, status: 'idle', activity: [], changes: null, error: null, screenshot: body.screenshot ?? null, actionsExecuted: 0, maxActions: Math.min(Math.max(body.maxActions ?? MAX_ACTIONS_DEFAULT, 1), 60), stopped: false, pendingApproval: null, resumeInput: null, monitorIndex: body.monitorIndex ?? 0, monitors: this.monitorList, connectionType: body.connectionType, project: body.project ?? null };
       await this.saveTask(task);
-      this.runControlLoop(body.taskId, body.prompt, body.apiKey, body.model, body.provider ?? 'anthropic', body.screenshot ?? null, body.permissions ?? {}).catch(() => {});
+      this.runControlLoop(body.taskId, body.prompt, body.apiKey, body.model, body.provider ?? 'anthropic', body.screenshot ?? null, body.permissions ?? {}, body.connectionType ?? 'api').catch(() => {});
       return json({ taskId: body.taskId });
     }
 
@@ -299,7 +352,22 @@ export class DeviceSession {
       if (msg.error) p.reject(new Error(msg.error));
       else p.resolve(msg.result);
     }
+    if (msg.type === 'monitor_list' && Array.isArray(msg.monitors)) {
+      this.monitorList = msg.monitors;
+    }
+    if (msg.type === 'hello' && (typeof msg.root === 'string' || typeof msg.platform === 'string')) {
+      void this.state.storage.put('device-meta', {
+        root: typeof msg.root === 'string' ? msg.root.slice(0, 500) : undefined,
+        platform: typeof msg.platform === 'string' ? msg.platform.slice(0, 32) : undefined,
+      });
+    }
+    if (msg.type === 'heartbeat' || msg.type === 'hello' || msg.type === 'monitor_list' || msg.type === 'tool_result') {
+      this.lastAgentSeenAt = new Date().toISOString();
+    }
   }
+
+  private monitorList: MonitorInfo[] = [];
+  private lastAgentSeenAt: string | null = null;
 
   private callTool(name: string, input: any, timeoutMs = 45000): Promise<any> {
     if (!this.agentSocket) return Promise.reject(new Error('Computer disconnected'));
@@ -347,7 +415,7 @@ export class DeviceSession {
    * real computer actions; every action is validated, executed on the paired
    * computer, and followed by a fresh screenshot.
    */
-  private async runControlLoop(taskId: string, prompt: string, apiKey: string, model: string, provider: string, firstScreenshot: string | null, perms: any) {
+  private async runControlLoop(taskId: string, prompt: string, apiKey: string, model: string, provider: string, firstScreenshot: string | null, perms: any, connectionTypeArg: 'api' | 'subscription' = 'api') {
     const started = Date.now();
     const checkStop = async (): Promise<boolean> => {
       const t = await this.loadTask(taskId);
@@ -360,22 +428,34 @@ export class DeviceSession {
     await this.updateTask(taskId, { status: 'working' });
     await this.setActivity(taskId, 'understand', 'Looking at your screen…', 'running');
 
+    const taskMeta0 = await this.loadTask(taskId);
+    if ((taskMeta0?.connectionType ?? connectionTypeArg) === 'local') {
+      await this.runLocalCliTask(taskId, prompt, provider, perms);
+      return;
+    }
+
     let screenshot: string | null = firstScreenshot;
     // If the browser didn't forward a frame, capture one from the agent.
     if (!screenshot) {
       try {
-        const shot = await this.callTool('screenshot', {}, 30000);
+        const task = await this.loadTask(taskId);
+        const monitorIndex = task?.monitorIndex ?? 0;
+        const shot = await this.callTool('screenshot', { monitorIndex }, 30000);
         screenshot = typeof shot === 'string' ? shot : (shot?.image ?? null);
-        const t = await this.loadTask(taskId);
-        if (t) await this.saveTask({ ...t, screenshot });
+        if (task) await this.saveTask({ ...task, screenshot });
       } catch {
         await this.updateTask(taskId, { status: 'error', error: 'Could not capture the screen. Share your screen and make sure the computer agent is online.' });
         return;
       }
     }
 
+    const taskMeta = await this.loadTask(taskId);
+    const projectCtx = taskMeta?.project
+      ? `The user's selected project is "${taskMeta.project.name}" (${taskMeta.project.source}:${taskMeta.project.repository}, branch ${taskMeta.project.branch}). Prefer working inside that project: use list_directory/read_file first to locate relevant files. `
+      : 'No project is selected: work with what is visible on screen. ';
     const sys =
       'You control the user\'s REAL Windows computer. You can click, type and press keys through the provided tools — never claim you cannot. ' +
+      projectCtx +
       'Work step by step: look at the screenshot, do ONE small action, then take another screenshot to verify. ' +
       'Coordinates are 0-1000 relative. ' +
       'Reply with tool calls only. When the task is complete, answer with a short summary and no more tool calls.';
@@ -413,23 +493,25 @@ export class DeviceSession {
         }
       }
 
+      const taskData = await this.loadTask(taskId);
+      const connectionType = taskData?.connectionType ?? connectionTypeArg;
       const imageBlock = screenshot ? [{ type: 'image', source: screenshot }] : [];
       let toolUses: { id: string; name: string; input: any }[] = [];
       let textOut = '';
       try {
         if (provider === 'openai') {
-          const r = await this.callOpenAI(apiKey, model, sys, history, screenshot);
+          const r = await this.callOpenAI(apiKey, model, sys, history, screenshot, connectionType);
           toolUses = r.toolUses;
           textOut = r.text;
           history.push(...r.nextHistory);
         } else {
-          const r = await this.callAnthropic(apiKey, model, sys, history, screenshot);
+          const r = await this.callAnthropic(apiKey, model, sys, history, screenshot, connectionType);
           toolUses = r.toolUses;
           textOut = r.text;
           history.push(...r.nextHistory);
         }
       } catch (e) {
-        await this.updateTask(taskId, { status: 'error', error: e instanceof Error ? e.message : 'AI provider error.' });
+        await this.updateTask(taskId, { status: 'error', error: e instanceof Error ? e.message : 'AI provider error.', ...(e instanceof ProviderRequestError ? { providerFailure: e.failure } : {}) });
         return;
       }
       void imageBlock;
@@ -469,7 +551,9 @@ export class DeviceSession {
           // Observe: fresh screenshot after every action.
           if (use.name !== 'screenshot') {
             try {
-              const shot = await this.callTool('screenshot', {}, 30000);
+              const task = await this.loadTask(taskId);
+              const monitorIndex = task?.monitorIndex ?? 0;
+              const shot = await this.callTool('screenshot', { monitorIndex }, 30000);
               const img = typeof shot === 'string' ? shot : (shot?.image ?? null);
               if (img) {
                 screenshot = img;
@@ -497,7 +581,94 @@ export class DeviceSession {
     await this.updateTask(taskId, { status: 'error', error: 'Stopped after too many steps.' });
   }
 
-  private async callAnthropic(apiKey: string, model: string, sys: string, history: any[], screenshot: string | null) {
+  /**
+   * Local-subscription task: ONE run of the official provider CLI on the
+   * user's own computer (`claude --print` / `codex exec`), billed to the
+   * user's own login. Credentials never leave the device — the backend only
+   * sends the prompt and receives text. Same approval policy as other
+   * destructive tools: pauses unless editMode is 'auto'.
+   */
+  private async runLocalCliTask(taskId: string, prompt: string, provider: string, perms: any) {
+    const task = await this.loadTask(taskId);
+    if (!task || task.stopped) return;
+    const cli = provider === 'openai' ? 'codex' : 'claude';
+    const cliName = cli === 'codex' ? 'Codex CLI' : 'Claude Code';
+    const fullPrompt = `${task.project ? `Project: ${task.project.name} (${task.project.source}:${task.project.repository}, branch ${task.project.branch}). Work inside the connected project folder. ` : ''}${redactSecrets(prompt)}`;
+    const blocked = validateAction('subscription_exec', { tool: cli, prompt: fullPrompt }, perms);
+    if (blocked) {
+      await this.updateTask(taskId, { status: 'error', error: blocked });
+      await this.setActivity(taskId, 'understand', 'Blocked.', 'error');
+      return;
+    }
+    if (perms.editMode !== 'auto' && !task.resumeInput?.approved) {
+      await this.updateTask(taskId, {
+        status: 'awaiting-approval',
+        pendingApproval: { actionId: crypto.randomUUID(), tool: 'subscription_exec', label: `Run ${cliName} on your computer (billed to your own login)`, input: { tool: cli } },
+      });
+      await this.setActivity(taskId, 'subscription_exec', `Waiting for your approval to run ${cliName}`, 'pending');
+      let waited = 0;
+      while (waited < 120000) {
+        await new Promise((r) => setTimeout(r, 1000));
+        waited += 1000;
+        const cur = await this.loadTask(taskId);
+        if (!cur || cur.stopped || cur.status === 'stopped') return;
+        if (cur.status === 'working' && cur.resumeInput?.approved) break;
+        if (cur?.status !== 'awaiting-approval') break;
+      }
+      const after = await this.loadTask(taskId);
+      if (!after || after.stopped) return;
+      if (after.status !== 'working') {
+        await this.updateTask(taskId, { status: 'error', error: 'Approval timed out.' });
+        return;
+      }
+    }
+    const stepId = await this.setActivity(taskId, 'subscription_exec', `Running ${cliName} on your computer…`, 'running');
+    try {
+      const output = await this.callTool('subscription_exec', { tool: cli, prompt: fullPrompt }, 300000);
+      await this.setActivity(taskId, 'subscription_exec', `Running ${cliName} on your computer…`, 'done', stepId);
+      const t = await this.loadTask(taskId);
+      // Best-effort evidence of what changed on disk (works when the project is a git checkout).
+      let filesNote = '';
+      try {
+        const st: any = await this.callTool('run_command', { command: 'git status --porcelain' }, 30000);
+        const text = typeof st === 'string' ? st : JSON.stringify(st);
+        const section = text.split('--- stdout ---')[1] ?? text;
+        const lines = section.split('\n').map((l: string) => l.trim()).filter(Boolean).slice(0, 20);
+        if (lines.length) filesNote = `\nChanged files:\n${lines.join('\n')}`;
+      } catch { /* not a git checkout — the CLI output below still stands */ }
+      const summary = `${String(output).slice(0, 2000)}${filesNote}`;
+      if (t) await this.saveTask({ ...t, actionsExecuted: t.actionsExecuted + 1 });
+      await this.updateTask(taskId, { status: 'done', error: null });
+      await this.setActivity(taskId, 'understand', summary || 'Done.', 'done');
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Local CLI run failed.';
+      await this.setActivity(taskId, 'subscription_exec', `Running ${cliName} on your computer…`, 'error', stepId);
+      if (/disconnected|stopped/i.test(message)) {
+        const cur = await this.loadTask(taskId);
+        await this.updateTask(taskId, { status: cur?.stopped ? 'stopped' : 'error', error: message.replace(/\[SUBSCRIPTION_\w+\] ?/, '') });
+        return;
+      }
+      if (message.includes('[SUBSCRIPTION_LIMITED]')) {
+        await this.updateTask(taskId, {
+          status: 'error',
+          error: 'Subscription usage unavailable or limit reached. Switch to API key?',
+          providerFailure: { code: 'PROVIDER_LIMITED', message: 'Subscription usage unavailable or limit reached. Switch to API key?', provider, connectionType: 'local' },
+        });
+        return;
+      }
+      if (message.includes('[SUBSCRIPTION_AUTH]')) {
+        await this.updateTask(taskId, {
+          status: 'error',
+          error: message.replace(/\[SUBSCRIPTION_AUTH\] ?/, ''),
+          providerFailure: { code: 'PROVIDER_AUTH_ERROR', message: message.replace(/\[SUBSCRIPTION_AUTH\] ?/, ''), provider, connectionType: 'local' },
+        });
+        return;
+      }
+      await this.updateTask(taskId, { status: 'error', error: message.replace(/\[SUBSCRIPTION_TIMEOUT\] ?/, '') });
+    }
+  }
+
+  private async callAnthropic(apiKey: string, model: string, sys: string, history: any[], screenshot: string | null, connectionType: 'api' | 'subscription' | 'local') {
     const content: any[] = [];
     const last = history[history.length - 1];
     // Attach the screenshot to the latest user message.
@@ -516,8 +687,7 @@ export class DeviceSession {
       body: JSON.stringify({ model, max_tokens: 1024, system: sys, tools: [...FILE_TOOLS, ...SCREEN_TOOLS], messages: msgs }),
     });
     if (!res.ok) {
-      const body = await res.text().catch(() => '');
-      throw new Error(`AI provider error (${res.status}): ${redactSecrets(body).slice(0, 300)}`);
+      throw await providerError(res, 'anthropic', connectionType);
     }
     const data: any = await res.json();
     const toolUses = ((data.content ?? []).filter((b: any) => b.type === 'tool_use')).map((b: any) => ({ id: b.id, name: b.name, input: b.input ?? {} }));
@@ -525,7 +695,7 @@ export class DeviceSession {
     return { toolUses, text, nextHistory: [{ role: 'assistant', content: data.content }] };
   }
 
-  private async callOpenAI(apiKey: string, model: string, sys: string, history: any[], screenshot: string | null) {
+  private async callOpenAI(apiKey: string, model: string, sys: string, history: any[], screenshot: string | null, connectionType: 'api' | 'subscription' | 'local') {
     const messages: any[] = [{ role: 'system', content: sys }];
     history.forEach((m, i) => {
       if (m.role === 'user' && typeof m.content === 'string' && i === history.length - 1 && screenshot) {
@@ -540,11 +710,10 @@ export class DeviceSession {
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({ model, max_tokens: 1024, messages, tools, tool_choice: 'auto' }),
+      body: JSON.stringify({ model, max_completion_tokens: 1024, messages, tools, tool_choice: 'auto' }),
     });
     if (!res.ok) {
-      const body = await res.text().catch(() => '');
-      throw new Error(`AI provider error (${res.status}): ${redactSecrets(body).slice(0, 300)}`);
+      throw await providerError(res, 'openai', connectionType);
     }
     const data: any = await res.json();
     const choice = data.choices?.[0]?.message;
@@ -573,6 +742,8 @@ function describeTool(name: string, input: any): string {
   if (name === 'hotkey') return `Pressing ${(input?.keys ?? []).join('+')}`;
   if (name === 'scroll') return `Scrolling ${input?.direction}`;
   if (name === 'wait') return `Waiting ${input?.duration}ms…`;
+  if (name === 'subscription_status') return 'Checking provider CLI logins…';
+  if (name === 'subscription_exec') return `Running ${input?.tool === 'codex' ? 'Codex CLI' : 'Claude Code'} on your computer…`;
   return name;
 }
 

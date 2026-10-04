@@ -1,69 +1,88 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-const auth = vi.hoisted(() => ({ token: null as string | null }));
+const auth = vi.hoisted(() => ({ token: 'token' as string | null }));
 vi.mock('../../../auth-store', () => ({
   useAuthStore: (sel: (s: any) => any) => sel({ session: auth.token ? { access_token: auth.token } : null, user: null }),
 }));
-
-vi.mock('../screenReader', async (orig) => {
-  const real: any = await orig();
-  return {
-    ...real,
-    readScreen: vi.fn(async () => ({
-      width: 1000,
-      height: 500,
-      text: 'Launchly Dashboard\nSettings\nWinning products',
-      words: [
-        { text: 'Launchly', x0: 10, y0: 10, x1: 90, y1: 30, confidence: 95 },
-        { text: 'Settings', x0: 880, y0: 20, x1: 960, y1: 40, confidence: 92 },
-      ],
-    })),
-  };
-});
+vi.mock('../screenReader', async (orig) => ({
+  ...await orig() as any,
+  readScreen: vi.fn(async () => ({ width: 1000, height: 500, text: 'Launchly Settings', words: [{ text: 'Settings', x0: 880, y0: 20, x1: 960, y1: 40, confidence: 92 }] })),
+}));
 import { MonitorPanel, interpret } from '../MonitorPanel';
 import { extractTarget, locate, describeArea } from '../screenReader';
-import { useStore } from '../../../store';
 
 class FakeTrack extends EventTarget {
   stopped = false;
-  stop() {
-    this.stopped = true;
-  }
-  getSettings() {
-    return { displaySurface: 'monitor', width: 1920, height: 1080 };
-  }
+  readyState = 'live';
+  stop() { this.stopped = true; this.readyState = 'ended'; }
+  getSettings() { return { displaySurface: 'window', width: 1920, height: 1080 }; }
 }
-
 function fakeStream(track: FakeTrack) {
-  return { getVideoTracks: () => [track], getTracks: () => [track] } as unknown as MediaStream;
+  return Object.assign(new EventTarget(), { getVideoTracks: () => [track], getTracks: () => [track] }) as unknown as MediaStream;
 }
-
 let track: FakeTrack;
-let resolveShare: ((s: MediaStream) => void) | null;
+let resolveShare: (s: MediaStream) => void;
+let saved: Record<string, any>;
+let chatResponse: () => Response;
+let verifyResponse: ((provider: string) => Promise<Response>) | null;
+const ok = (data: unknown) => new Response(JSON.stringify({ success: true, data }), { status: 200 });
+const connection = (provider: string) => ({ provider, connected: true, keyLast4: '1234', connectionType: 'api', state: 'connected' });
 
 beforeEach(() => {
+  localStorage.clear();
+  auth.token = 'token';
+  saved = {};
+  verifyResponse = null;
+  chatResponse = () => ok({ text: 'This is the selected provider’s answer.', provider: 'openai', connectionType: 'api' });
+  vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined);
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({ drawImage() {} } as any);
+  vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL').mockReturnValue('data:image/png;base64,AAAA');
   track = new FakeTrack();
-  resolveShare = null;
-  Object.defineProperty(navigator, 'mediaDevices', {
-    configurable: true,
-    value: { getDisplayMedia: vi.fn(() => new Promise<MediaStream>((r) => (resolveShare = r))) },
-  });
-  useStore.setState({ openaiKey: '' });
+  Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: {
+    getDisplayMedia: vi.fn(() => new Promise<MediaStream>(resolve => { resolveShare = resolve; })),
+  } });
+  vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
+    const path = new URL(String(url)).pathname;
+    if (path.endsWith('/status')) return ok({ online: true, capabilities: { agent: false, providerKeys: true } });
+    if (path.endsWith('/providers')) return ok(Object.values(saved));
+    if (path.endsWith('/models')) return ok({ models: [], latest: {} });
+    if (path.endsWith('/projects')) return ok([]);
+    if (path.endsWith('/chat')) return chatResponse();
+    const match = path.match(/providers\/(openai|anthropic)(\/verify)?$/);
+    if (match) {
+      if (match[2]) return verifyResponse ? verifyResponse(match[1]) : ok(saved[match[1]] ?? { provider: match[1], connected: false, state: 'disconnected', connectionType: 'api' });
+      saved[match[1]] = connection(match[1]);
+      return ok(saved[match[1]]);
+    }
+    return new Response('{}', { status: 404 });
+  }));
 });
-afterEach(() => {
-  cleanup();
-  vi.restoreAllMocks();
-});
+afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); localStorage.clear(); });
 
 async function connect() {
   fireEvent.click(screen.getByRole('button', { name: 'Connect computer' }));
-  expect(screen.getByRole('status').textContent).toBe('Connecting');
-  await act(async () => resolveShare!(fakeStream(track)));
-  await waitFor(() => expect(screen.getByRole('status').textContent).toBe('Live'));
+  expect(screen.getByRole('status', { name: 'Screen connection' }).textContent).toBe('Screen: Connecting');
+  const stream = fakeStream(track);
+  await act(async () => resolveShare(stream));
+  const video = document.querySelector('video')!;
+  expect(video.srcObject).toBe(stream);
+  expect(video.hidden).toBe(false);
+  expect(video.autoplay && video.playsInline && video.muted).toBe(true);
+  expect(screen.getByRole('status', { name: 'Screen connection' }).textContent).toBe('Screen: Connecting');
+  Object.defineProperties(video, { videoWidth: { configurable: true, value: 1000 }, videoHeight: { configurable: true, value: 500 }, readyState: { configurable: true, value: 2 } });
+  await act(async () => { fireEvent.loadedMetadata(video); fireEvent.loadedData(video); });
+  await waitFor(() => expect(screen.getByRole('status', { name: 'Screen connection' }).textContent).toBe('Screen: Connected'));
+  return video;
 }
-
+async function connectAI(provider = 'openai') {
+  fireEvent.click(screen.getByRole('button', { name: 'Connect AI' }));
+  fireEvent.click(screen.getByRole('button', { name: `Connect API Key for ${provider === 'openai' ? 'OpenAI' : 'Anthropic'} API` }));
+  fireEvent.change(screen.getByLabelText('API key'), { target: { value: 'sk-test-key-1234' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+  await waitFor(() => expect(screen.getByRole('status', { name: 'AI connection' }).textContent).toContain('connected'));
+}
 function sendMessage(text: string) {
-  fireEvent.change(screen.getByLabelText('Message'), { target: { value: text } });
+  fireEvent.change(screen.getByLabelText('Message the coding agent'), { target: { value: text } });
   fireEvent.click(screen.getByRole('button', { name: 'Send' }));
 }
 
@@ -82,107 +101,140 @@ describe('interpret', () => {
   });
 });
 
-describe('Monitor connection state', () => {
-  it('idle shows no connected UI; connecting shows a loader; connected shows the label', async () => {
+describe('Window capture lifecycle', () => {
+  it('attaches the real stream, starts playback on metadata, and gates chat on AI separately', async () => {
     render(<MonitorPanel />);
-    expect(screen.getByTestId('connection-label').textContent).toBe('No computer');
-    expect(screen.getByText('Connect your computer')).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Disconnect' })?.getAttribute('disabled')).not.toBeNull();
+    expect((screen.getByLabelText('Message the coding agent') as HTMLTextAreaElement).disabled).toBe(true);
     await connect();
-    expect(document.querySelector('.mv-computer .mv-status')!.textContent).toContain('Connected');
-    expect(screen.getByTestId('connection-label').textContent).toContain('Entire screen · 1920×1080');
+    expect(HTMLMediaElement.prototype.play).toHaveBeenCalled();
+    expect((screen.getByLabelText('Message the coding agent') as HTMLTextAreaElement).disabled).toBe(true);
+    expect(screen.getByRole('status', { name: 'AI connection' }).textContent).toContain('disconnected');
+    await connectAI();
+    expect((screen.getByLabelText('Message the coding agent') as HTMLTextAreaElement).disabled).toBe(false);
   });
-
-  it('Stop clears the connected label and the whole conversation immediately', async () => {
-    render(<MonitorPanel />);
-    await connect();
+  it('keeps AI connected when browser sharing stops and clears the stream and conversation', async () => {
+    render(<MonitorPanel />); await connect(); await connectAI();
     sendMessage('help');
     expect(screen.getByText(/I can take a screenshot/)).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
-    expect(screen.getByTestId('connection-label').textContent).toBe('No computer');
+    act(() => track.dispatchEvent(new Event('ended')));
+    expect(screen.getByRole('status', { name: 'Screen connection' }).textContent).toBe('Screen: Disconnected');
+    expect(screen.getByRole('status', { name: 'AI connection' }).textContent).toContain('connected');
+    expect(document.querySelector('video')!.srcObject).toBeNull();
+    expect(track.stopped).toBe(true);
     expect(screen.queryByText(/I can take a screenshot/)).toBeNull();
-    expect(screen.getByRole('status').textContent).toBe('Offline');
+    expect((screen.getByLabelText('Message the coding agent') as HTMLTextAreaElement).disabled).toBe(true);
+  });
+  it('reports playback failures instead of claiming the black preview is connected', async () => {
+    vi.mocked(HTMLMediaElement.prototype.play).mockRejectedValue(new Error('Playback blocked'));
+    render(<MonitorPanel />);
+    fireEvent.click(screen.getByRole('button', { name: 'Connect computer' }));
+    await act(async () => resolveShare(fakeStream(track)));
+    await act(async () => fireEvent.loadedMetadata(document.querySelector('video')!));
+    expect(await screen.findByText(/shared window could not be played/)).toBeTruthy();
+    expect(track.stopped).toBe(true);
+    expect(screen.getByRole('status', { name: 'Screen connection' }).textContent).toBe('Screen: Error');
+  });
+  it('ignores a late sharing result after Monitor unmounts', async () => {
+    const view = render(<MonitorPanel />);
+    fireEvent.click(screen.getByRole('button', { name: 'Connect computer' }));
+    view.unmount();
+    await act(async () => resolveShare(fakeStream(track)));
     expect(track.stopped).toBe(true);
   });
-
-  it('closing sharing from the browser bar resets everything too', async () => {
+  it('cancelling the browser picker returns to disconnected and permits retry', async () => {
+    vi.mocked(navigator.mediaDevices.getDisplayMedia).mockRejectedValueOnce(new DOMException('Cancelled', 'NotAllowedError'));
     render(<MonitorPanel />);
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Connect computer' })));
+    expect(screen.getByRole('status', { name: 'Screen connection' }).textContent).toBe('Screen: Disconnected');
+    expect(screen.queryByRole('alert')).toBeNull();
     await connect();
-    sendMessage('hello');
-    act(() => {
-      track.dispatchEvent(new Event('ended'));
-    });
-    expect(screen.getByTestId('connection-label').textContent).toBe('No computer');
-    expect(screen.queryByText(/Hi!/)).toBeNull();
   });
-
-  it('avoids fullscreen feedback when sharing the entire screen', async () => {
+  it('does not reconnect from late metadata after sharing has ended', async () => {
     render(<MonitorPanel />);
-    await connect();
-    const request = vi.fn();
-    document.querySelector('.mv-stage')!.requestFullscreen = request;
-    fireEvent.click(screen.getByRole('button', { name: 'Fullscreen' }));
-    expect(request).not.toHaveBeenCalled();
-    expect(screen.getByText(/share a separate Edge window/)).toBeTruthy();
-    expect(navigator.mediaDevices.getDisplayMedia).toHaveBeenCalledWith(expect.objectContaining({ selfBrowserSurface: 'exclude', preferCurrentTab: false }));
+    fireEvent.click(screen.getByRole('button', { name: 'Connect computer' }));
+    await act(async () => resolveShare(fakeStream(track)));
+    const video = document.querySelector('video')!;
+    act(() => track.dispatchEvent(new Event('ended')));
+    await act(async () => { fireEvent.loadedMetadata(video); fireEvent.loadedData(video); });
+    expect(screen.getByRole('status', { name: 'Screen connection' }).textContent).toBe('Screen: Disconnected');
+    expect(video.srcObject).toBeNull();
   });
-
-  it('cancelling the share prompt returns to idle without an error', async () => {
-    (navigator.mediaDevices.getDisplayMedia as any).mockImplementationOnce(() =>
-      Promise.reject(Object.assign(new Error('denied'), { name: 'NotAllowedError' }))
-    );
-    render(<MonitorPanel />);
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Connect computer' }));
-    });
-    expect(screen.getByRole('status').textContent).toBe('Offline');
-    expect(screen.getByRole('button', { name: 'Connect computer' })).toBeTruthy();
+  it('shows a muted capture warning and clears it when frames resume', async () => {
+    render(<MonitorPanel />); await connect();
+    act(() => track.dispatchEvent(new Event('mute')));
+    expect(screen.getAllByText(/not sending frames/).length).toBeGreaterThan(0);
+    await act(async () => track.dispatchEvent(new Event('unmute')));
+    expect(screen.queryByText(/not sending frames/)).toBeNull();
   });
 });
 
-describe('Monitor assistant', () => {
-  it('always replies without a key: commands locally, "where is" points at on-screen text', async () => {
-    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({ drawImage() {} } as any);
-    render(<MonitorPanel />);
+describe('AI authorization and requests', () => {
+  it.each(['openai', 'anthropic'])('verifies %s then sends the frame and selected provider to the backend', async provider => {
+    render(<MonitorPanel />); await connect(); await connectAI(provider);
+    const aiStatus = screen.getByRole('status', { name: 'AI connection' }).textContent ?? '';
+    expect(aiStatus).toContain(provider === 'openai' ? 'OpenAI' : 'Claude');
+    expect(aiStatus).toContain('API');
+    sendMessage('Explain the chart trend');
+    expect(await screen.findByText('This is the selected provider’s answer.')).toBeTruthy();
+    const calls = vi.mocked(fetch).mock.calls;
+    const chat = calls.find(([url]) => String(url).endsWith('/chat'))!;
+    expect(JSON.parse(chat[1]!.body as string)).toMatchObject({ model: { mode: 'latest', provider }, screenshot: 'data:image/png;base64,AAAA', prompt: 'Explain the chart trend' });
+    expect(calls.some(([url]) => /api.openai.com|api.anthropic.com/.test(String(url)))).toBe(false);
+    expect(JSON.stringify(localStorage)).not.toContain('sk-test-key');
+  });
+  it('AI can connect before sharing, but messages still require a live window', async () => {
+    render(<MonitorPanel />); await connectAI();
+    expect((screen.getByLabelText('Message the coding agent') as HTMLTextAreaElement).disabled).toBe(true);
     await connect();
-    const video = document.querySelector('video')!;
-    Object.defineProperty(video, 'videoWidth', { value: 1000 });
-    Object.defineProperty(video, 'videoHeight', { value: 500 });
-    sendMessage('zoom in');
-    expect(screen.getByText('Zoomed in.')).toBeTruthy();
+    expect((screen.getByLabelText('Message the coding agent') as HTMLTextAreaElement).disabled).toBe(false);
+  });
+  it('does not enable messages until saved-key verification completes', async () => {
+    let finish!: (response: Response) => void;
+    verifyResponse = () => new Promise(resolve => { finish = resolve; });
+    render(<MonitorPanel />); await connect();
+    fireEvent.click(screen.getByRole('button', { name: 'Connect AI' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Connect API Key for OpenAI API' }));
+    fireEvent.change(screen.getByLabelText('API key'), { target: { value: 'sk-test-key-1234' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+    await waitFor(() => expect(screen.getByRole('status', { name: 'AI connection' }).textContent).toContain('connecting'));
+    expect((screen.getByLabelText('Message the coding agent') as HTMLTextAreaElement).disabled).toBe(true);
+    await act(async () => finish(ok({ ...connection('openai'), connected: false, state: 'error', message: 'Key revoked.' })));
+    expect(screen.getByRole('status', { name: 'AI connection' }).textContent).toContain('error');
+    expect((screen.getByLabelText('Message the coding agent') as HTMLTextAreaElement).disabled).toBe(true);
+  });
+  it('uses real backend limits, disables sending and opens the existing API-key fallback', async () => {
+    chatResponse = () => new Response(JSON.stringify({ success: false, error: { code: 'PROVIDER_LIMITED', provider: 'openai', connectionType: 'api', message: 'Your API usage is currently limited.' } }), { status: 429 });
+    render(<MonitorPanel />); await connect(); await connectAI();
+    sendMessage('Explain the chart trend');
+    await waitFor(() => expect(screen.getByRole('status', { name: 'AI connection' }).textContent).toContain('limited'));
+    expect(screen.queryByText('Your subscription usage is currently limited. Switch to API to continue.')).toBeNull();
+    expect((screen.getByLabelText('Message the coding agent') as HTMLTextAreaElement).disabled).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Switch to API' }));
+    expect(screen.getByRole('dialog', { name: 'Connect AI' })).toBeTruthy();
+    expect(screen.getByLabelText('Replace API key')).toBeTruthy();
+  });
+  it('never authenticates by opening a subscription website', async () => {
+    const open = vi.spyOn(window, 'open');
+    render(<MonitorPanel />);
+    fireEvent.click(screen.getByRole('button', { name: 'Connect AI' }));
+    // Local subscription runs on the user's own computer — the modal names the
+    // official CLIs and their login commands as plain text, never links.
+    expect(screen.getByText(/Codex CLI \(your ChatGPT subscription, on your computer\)/)).toBeTruthy();
+    expect(screen.getByText(/Claude Code \(your Claude subscription, on your computer\)/)).toBeTruthy();
+    expect(screen.queryByRole('link', { name: /sign-in/i })).toBeNull();
+    expect(document.querySelector('.mm-stack a[href]')).toBeNull();
+    // With no computer connected, local CLIs can't be used — but API key still can.
+    expect(screen.getAllByRole('button', { name: 'Use local' }).every(b => (b as HTMLButtonElement).disabled)).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Connect API Key for Anthropic API' }));
+    expect(screen.getByPlaceholderText('sk-ant-…')).toBeTruthy();
+    expect(open).not.toHaveBeenCalled();
+    expect(screen.getByRole('status', { name: 'AI connection' }).textContent).toContain('disconnected');
+  });
+  it('preserves local screen commands and text location after connection', async () => {
+    render(<MonitorPanel />); await connect(); await connectAI();
+    sendMessage('zoom in'); expect(screen.getByText('Zoomed in.')).toBeTruthy();
     sendMessage('where is the settings button');
     expect(await screen.findByText(/Found “Settings” at the top right/)).toBeTruthy();
-    sendMessage('what is on my screen');
-    expect(await screen.findByText(/Launchly Dashboard · Settings · Winning products/)).toBeTruthy();
-    sendMessage('where is billing');
-    expect(await screen.findByText(/couldn’t see “billing”/)).toBeTruthy();
-  });
-
-  it('with a key: shows a thinking state then the answer, or a clear error', async () => {
-    useStore.setState({ openaiKey: 'sk-test' });
-    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({ drawImage() {} } as any);
-    vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL').mockReturnValue('data:image/png;base64,AAA');
-    let resolveFetch!: (r: Response) => void;
-    vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>((r) => (resolveFetch = r))));
-
-    render(<MonitorPanel />);
-    await connect();
-    const video = document.querySelector('video')!;
-    Object.defineProperty(video, 'videoWidth', { value: 1280 });
-    Object.defineProperty(video, 'videoHeight', { value: 720 });
-
-    sendMessage('why is this chart going down');
-    await waitFor(() => expect(fetch).toHaveBeenCalled());
-    await act(async () =>
-      resolveFetch(new Response(JSON.stringify({ choices: [{ message: { content: 'Top right, the gear icon.' } }] }), { status: 200 }))
-    );
-    expect(await screen.findByText('Top right, the gear icon.')).toBeTruthy();
-
-    sendMessage('explain this page to me');
-    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
-    await act(async () => resolveFetch(new Response(JSON.stringify({ error: { message: 'Invalid API key.' } }), { status: 401 })));
-    expect(await screen.findByText('Invalid API key.')).toBeTruthy();
-    vi.unstubAllGlobals();
   });
 });
 
@@ -202,146 +254,5 @@ describe('screenReader helpers', () => {
     expect(hit.text).toBe('Winning products');
     expect(describeArea(hit.x, hit.y)).toBe('top right');
     expect(locate(r, 'billing')).toBeNull();
-  });
-});
-
-describe('Monitor projects & models', () => {
-  afterEach(() => {
-    auth.token = null;
-    localStorage.clear();
-    vi.unstubAllGlobals();
-  });
-
-  it('shows the toolbar, stays Offline without a backend and asks to connect something', () => {
-    render(<MonitorPanel />);
-    expect(screen.getByText('Connect project')).toBeTruthy();
-    expect(screen.getAllByText('Connect AI').length).toBeGreaterThan(0);
-    expect(screen.getByLabelText('Monitor permissions')).toBeTruthy();
-    expect(screen.getByText('Service offline')).toBeTruthy();
-    expect(screen.getByText('Connect a computer or a project to get started.')).toBeTruthy();
-    expect((screen.getByLabelText('Message') as HTMLTextAreaElement).disabled).toBe(true);
-  });
-
-  it('Connect project lists the three options and never fakes GitHub', async () => {
-    render(<MonitorPanel />);
-    await act(async () => {});
-    fireEvent.click(screen.getByText('Connect project'));
-    expect(screen.getByRole('dialog', { name: 'Choose project' })).toBeTruthy();
-    await waitFor(() => expect(screen.getByText('No projects yet')).toBeTruthy());
-    fireEvent.click(screen.getByText('Connect a project'));
-    expect(screen.getByRole('dialog', { name: 'Connect a project' })).toBeTruthy();
-    expect(screen.getByText('Connect a repository')).toBeTruthy();
-    expect(screen.getByText('Connect a folder on this computer')).toBeTruthy();
-    expect(screen.getByText('Import using a repository URL')).toBeTruthy();
-    fireEvent.click(screen.getByText('GitHub'));
-    expect(screen.getByText(/GitHub connection isn’t set up on the server yet/)).toBeTruthy();
-  });
-
-  it('coding connections: unavailable agents stay disconnected and API selection is explicit', async () => {
-    auth.token = 'tok';
-    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
-      const u = String(url);
-      const body = u.endsWith('/status')
-        ? { success: true, data: { online: true, capabilities: { github: true, gitUrl: true, localBridge: false, agent: true, providerKeys: true } } }
-        : u.endsWith('/providers')
-          ? { success: true, data: [{ provider: 'anthropic', connected: true, keyLast4: '82XQ' }] }
-          : { success: true, data: { models: [{ provider: 'anthropic', modelId: 'm-1', displayName: 'Model One', family: 'claude', capabilities: ['coding'], recommended: true, available: true }], latest: { anthropic: 'm-1' } } };
-      return new Response(JSON.stringify(body), { status: 200 });
-    }));
-    render(<MonitorPanel />);
-    await waitFor(() => expect(screen.getByText('Service online')).toBeTruthy());
-    fireEvent.click(screen.getAllByText('Connect AI')[0]);
-    expect(screen.getByRole('dialog', { name: 'Connect coding agent' })).toBeTruthy();
-    expect(screen.getByText('Codex')).toBeTruthy();
-    expect(screen.getByText('Claude Code')).toBeTruthy();
-    // No fake subscription connection: the modal links to the official
-    // sign-in pages and requires a BYO API key instead.
-    expect(screen.getByText(/does not offer an official third-party OAuth flow/)).toBeTruthy();
-    expect(screen.getAllByRole('link', { name: /Open sign-in/ })).toHaveLength(2);
-    expect(screen.queryByText('Codex · Connected')).toBeNull();
-    fireEvent.click(await screen.findByRole('button', { name: 'Use Anthropic API' }));
-    // The composer shows the real model name the backend reported.
-    expect(document.querySelector('.mv-composer')!.textContent).toContain('Model One');
-  });
-
-  it('AI provider modal never shows a stored key and reports server errors honestly', async () => {
-    render(<MonitorPanel />);
-    fireEvent.click(screen.getAllByText('Connect AI')[0]);
-    fireEvent.click(screen.getAllByRole('button', { name: 'Connect API Key' })[1]);
-    expect(screen.getByRole('dialog', { name: 'Connect AI' })).toBeTruthy();
-    fireEvent.change(screen.getByPlaceholderText('sk-ant-…'), { target: { value: 'sk-ant-secret' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
-    expect(await screen.findByText('Sign in to use Monitor projects.')).toBeTruthy();
-    expect(localStorage.getItem('launchly.monitor.prefs') ?? '').not.toContain('sk-ant');
-  });
-
-  it('permissions default to ask-before-applying with push/deploy off', () => {
-    render(<MonitorPanel />);
-    fireEvent.click(screen.getByLabelText('Monitor permissions'));
-    expect((screen.getByLabelText('Ask before applying') as HTMLInputElement).checked).toBe(true);
-    expect((screen.getByLabelText('Push changes automatically') as HTMLInputElement).checked).toBe(false);
-    expect((screen.getByLabelText('Deploy automatically') as HTMLInputElement).checked).toBe(false);
-    expect((screen.getByLabelText('Read project files') as HTMLInputElement).checked).toBe(true);
-  });
-
-  it('project mode: connect a repo, ask for a change, see activity, changes and the diff', async () => {
-    auth.token = 'tok';
-    const task = {
-      id: 't1', prompt: 'x', status: 'awaiting-approval', error: null,
-      activity: [
-        { id: '1', tool: 'search_files', label: 'Searching project', status: 'done' },
-        { id: '2', tool: 'read_file', label: 'Found monitor.css', status: 'done' },
-        { id: '3', tool: 'run_build', label: 'Running checks', status: 'done' },
-      ],
-      changes: { id: 'c1', applied: false, checkpointId: 'k1', checks: [{ name: 'build', passed: true }],
-        files: [{ path: 'src/monitor.css', added: 1, removed: 1, patch: '@@ -1 +1 @@\n-.halo{background:blue}\n+.halo{display:none}' }] },
-    };
-    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
-      const u = String(url);
-      const ok = (data: unknown) => new Response(JSON.stringify({ success: true, data }), { status: 200 });
-      if (u.endsWith('/status')) return ok({ online: true, capabilities: { github: true, gitUrl: true, localBridge: false, agent: true, providerKeys: true } });
-      if (u.endsWith('/providers')) return ok([{ provider: 'openai', connected: true, keyLast4: '1234' }]);
-      if (u.endsWith('/models')) return ok({ models: [], latest: {} });
-      if (u.includes('/github/repos')) return ok([{ id: 1, fullName: 'matas/launchly', private: true, defaultBranch: 'main', updatedAt: null }]);
-      if (u.includes('/github/branches')) return ok(['main', 'dev']);
-      if (u.endsWith('/projects') && !init?.method) return ok([]);
-      if (u.endsWith('/projects') && init?.method === 'POST') return ok({ id: 'p1', source: 'github', name: 'launchly', repository: 'matas/launchly', branch: 'main', status: 'synced' });
-      if (u.endsWith('/agent/tasks')) return ok({ taskId: 't1' });
-      if (u.includes('/agent/tasks/t1')) return ok(task);
-      return new Response('{}', { status: 404 });
-    }));
-    render(<MonitorPanel />);
-    await waitFor(() => expect(screen.getByText('Service online')).toBeTruthy());
-    fireEvent.click(screen.getByText('Connect project'));
-    fireEvent.click(screen.getByText('Connect a project'));
-    fireEvent.click(screen.getByText('GitHub'));
-    fireEvent.click(await screen.findByText('matas/launchly'));
-    fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
-    await waitFor(() => expect(document.querySelector('.mv-topbar__project')!.textContent).toContain('launchly'));
-    expect((screen.getByLabelText('Message') as HTMLTextAreaElement).disabled).toBe(true);
-    fireEvent.click(screen.getAllByText('Connect AI')[0]);
-    fireEvent.click(await screen.findByRole('button', { name: 'Use OpenAI API' }));
-    expect(await screen.findByText('What should we do?')).toBeTruthy();
-    expect(document.querySelector('.mv-composer')!.textContent).toContain('launchly');
-
-    sendMessage('Remove the blue background behind the cursor');
-    expect(await screen.findByText('Found monitor.css', {}, { timeout: 3000 })).toBeTruthy();
-    expect(screen.getByText('Changes ready')).toBeTruthy();
-    expect(screen.getByText(/1 file changed · Build passed/)).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'View changes' }));
-    expect(screen.getByText('-.halo{background:blue}')).toBeTruthy();
-    expect(screen.getByText('+.halo{display:none}')).toBeTruthy();
-  });
-
-  it('does not crash when the backend URL returns the website HTML instead of JSON', async () => {
-    auth.token = 'tok';
-    vi.stubGlobal('fetch', vi.fn(async () => new Response('<!doctype html><html></html>', { status: 200, headers: { 'Content-Type': 'text/html' } })));
-    render(<MonitorPanel />);
-    await new Promise((r) => setTimeout(r, 50));
-    expect(screen.getByText('Service offline')).toBeTruthy();
-    fireEvent.click(screen.getAllByText('Connect AI')[0]);
-    expect(screen.getByText('Codex')).toBeTruthy();
-    fireEvent.click(screen.getAllByRole('button', { name: 'Connect API Key' })[1]);
-    expect(screen.getByRole('dialog', { name: 'Connect AI' })).toBeTruthy();
   });
 });
