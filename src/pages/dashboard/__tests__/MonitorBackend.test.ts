@@ -195,6 +195,23 @@ it('local mode is rejected for plain chat', async () => {
   const response = await handleMonitor(req('/chat', { model: { mode: 'local', provider: 'anthropic' }, prompt: 'Hi', screenshot: 'data:image/png;base64,AAAA' }), env, upstream);
   expect(response.status).toBe(400);
 });
+it('relays the latest agent frame and stream control to the paired device', async () => {
+  const deviceFetch = vi.fn(async (url: string, init?: RequestInit) => {
+    if (String(url).endsWith('/frames/latest')) {
+      return Response.json({ waiting: false, received: 7, frame: { image: 'data:image/png;base64,AAAA', ts: 1, seq: 7, monitor: 0, width: 960, bytes: 3000 } });
+    }
+    return Response.json({ streaming: true });
+  });
+  const deviceEnv = { ...env, DEVICE_SESSION: { get: () => ({ fetch: deviceFetch }), idFromName: (id: string) => id } } as any;
+  const frame = await handleMonitor(req('/device/frame'), deviceEnv, upstream);
+  expect(frame.status).toBe(200);
+  const framed: any = await frame.json();
+  expect(framed.data.frame).toMatchObject({ seq: 7, bytes: 3000 });
+  const stream = await handleMonitor(req('/device/stream', { on: true, fps: 0.5, width: 960, monitor: 0 }), deviceEnv, upstream);
+  expect(stream.status).toBe(200);
+  const streamCall = deviceFetch.mock.calls.find(([u]) => String(u).endsWith('/stream'))!;
+  expect(JSON.parse(streamCall[1]!.body as string)).toMatchObject({ on: true, fps: 0.5 });
+});
 it('rejects a projectId that does not belong to the user', async () => {
   await handleMonitor(req('/providers/anthropic', { apiKey: 'sk-test-key-1234' }), env, upstream);
   projectRow = null;

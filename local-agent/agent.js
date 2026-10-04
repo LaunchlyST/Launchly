@@ -385,19 +385,72 @@ function escPs(s) {
   return String(s ?? '').replace(/'/g, "''");
 }
 
-async function screenshot(monitorIdx = monitorIndex) {
+async function screenshot(monitorIdx = monitorIndex, width = 0) {
   if (isMac) return await macScreenshot();
   if (!isWindows) throw new Error('Screenshots need Windows PowerShell or macOS screencapture on this computer.');
+  const targetW = Math.floor(Number(width) || 0);
+  // NOTE: 1.0/double literals are required — PowerShell 5.1 binds
+  // [Math]::Min(1, x) to the int overload and truncates the scale to 0.
   const out = await ps(`${psPreamble(monitorIdx)}
+$scale = 1.0; ${targetW > 0 ? `$scale = [Math]::Min(1.0, (1.0 * ${targetW}) / $bounds.Width);` : ''}
+$w = [int]($bounds.Width * $scale); if ($w -lt 1) { $w = 1; }
+$h = [int]($bounds.Height * $scale); if ($h -lt 1) { $h = 1; }
 $bmp = New-Object System.Drawing.Bitmap($bounds.Width, $bounds.Height);
 $g = [System.Drawing.Graphics]::FromImage($bmp);
 $g.CopyFromScreen($bounds.Location, (New-Object System.Drawing.Point(0,0)), $bounds.Size);
+$small = New-Object System.Drawing.Bitmap($bmp, $w, $h);
 $ms = New-Object System.IO.MemoryStream;
-$bmp.Save($ms, [System.Drawing.Imaging.ImageFormat]::Png);
-$g.Dispose(); $bmp.Dispose();
+$small.Save($ms, [System.Drawing.Imaging.ImageFormat]::Png);
+$g.Dispose(); $bmp.Dispose(); $small.Dispose();
 [Convert]::ToBase64String($ms.ToArray());`);
   if (!out) throw new Error('Screenshot came back empty.');
   return `data:image/png;base64,${out.replace(/\s+/g, '')}`;
+}
+
+/** Continuous frame streaming: captures the real desktop at a steady rate and
+ * pushes every frame over the existing WebSocket. The backend counts and
+ * caches the latest frame; the browser polls it. Numbers at every hop
+ * (agent seq, backend received, frontend received/rendered) prove the live
+ * pipeline instead of assuming it. */
+const stream = { on: false, timer: null, inFlight: false, seq: 0, fps: 0.5, width: 960, monitor: 0 };
+function startStream(send, opts = {}) {
+  const fps = Math.min(2, Math.max(0.25, Number(opts.fps) || 0.5));
+  const width = Math.min(1920, Math.max(320, Math.floor(Number(opts.width) || 960)));
+  const monitor = Math.max(0, Math.floor(Number(opts.monitor ?? monitorIndex) || 0));
+  stopStream();
+  stream.on = true;
+  stream.seq = 0;
+  stream.fps = fps;
+  stream.width = width;
+  stream.monitor = monitor;
+  const tick = async () => {
+    if (!stream.on || stream.inFlight) return;
+    stream.inFlight = true;
+    try {
+      const image = await screenshot(stream.monitor, stream.width);
+      if (!stream.on) return;
+      stream.seq += 1;
+      send({ type: 'frame', seq: stream.seq, ts: Date.now(), monitor: stream.monitor, width: stream.width, image, bytes: Buffer.from(image.split(',')[1], 'base64').length });
+    } catch (e) {
+      if (stream.on) send({ type: 'frame_error', ts: Date.now(), error: e instanceof Error ? e.message : String(e) });
+    } finally {
+      stream.inFlight = false;
+    }
+  };
+  void tick();
+  stream.timer = setInterval(tick, Math.round(1000 / fps));
+  // Never hold the process open for streaming alone (tests, clean shutdowns).
+  if (stream.timer.unref) stream.timer.unref();
+  return `Streaming ${fps} fps at ${width}px from monitor ${monitor}.`;
+}
+function stopStream() {
+  stream.on = false;
+  stream.inFlight = false;
+  if (stream.timer) { clearInterval(stream.timer); stream.timer = null; }
+  return 'Stream stopped.';
+}
+function streamState() {
+  return { on: stream.on, seq: stream.seq, fps: stream.fps, width: stream.width, monitor: stream.monitor };
 }
 
 async function mouseAt(x, y) {
@@ -585,6 +638,16 @@ function connect() {
       return;
     }
     if (msg.type !== 'tool_call') return;
+    // Stream control bypasses handleTool: frames keep flowing after the call resolves.
+    if (msg.name === 'stream_start' || msg.name === 'stream_stop') {
+      try {
+        const result = msg.name === 'stream_stop' ? stopStream() : startStream((m) => ws.send(JSON.stringify(m)), msg.input || {});
+        ws.send(JSON.stringify({ type: 'tool_result', callId: msg.callId, result }));
+      } catch (e) {
+        ws.send(JSON.stringify({ type: 'tool_result', callId: msg.callId, error: e instanceof Error ? e.message : String(e) }));
+      }
+      return;
+    }
     // Never print typed text to the console — it may contain credentials the user typed.
     const safeInput = msg.name === 'type'
       ? { text: `[${String(msg.input?.text ?? '').length} chars, not logged]` }
@@ -600,6 +663,7 @@ function connect() {
 
   ws.on('close', () => {
     stopHeartbeat();
+    stopStream();
     console.log('Disconnected. Reconnecting in 3s…');
     setTimeout(connect, 3000);
   });
@@ -611,5 +675,5 @@ function connect() {
 
 // Exported for automated tests. The agent still connects on normal launch;
 // tests set LAUNCHLY_AGENT_NO_CONNECT=1 to import the pure tool logic.
-export { resolveScoped, handleTool, isWindows, isMac, escApple, macAbs, macModifier, MAC_KEYCODES, cliclickArgs, classifyMacError, classifyCliError, subscriptionStatus, subscriptionExec };
+export { resolveScoped, handleTool, isWindows, isMac, escApple, macAbs, macModifier, MAC_KEYCODES, cliclickArgs, classifyMacError, classifyCliError, subscriptionStatus, subscriptionExec, startStream, stopStream, streamState };
 if (process.env.LAUNCHLY_AGENT_NO_CONNECT !== '1') connect();

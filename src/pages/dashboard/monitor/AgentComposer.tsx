@@ -1,5 +1,5 @@
 import React, { useEffect, useImperativeHandle, useRef, useState, forwardRef } from 'react';
-import { Paperclip, Zap, GitBranch, Send, Square, ChevronDown, Settings } from 'lucide-react';
+import { Paperclip, Zap, GitBranch, ArrowUp, Square, ChevronDown, Settings } from 'lucide-react';
 import type { ModelSelection, ModelInfo, ConnectedProject, MonitorPermissions, ProviderId } from './types';
 import { PROVIDERS, type LocalCliStatus } from './monitorApi';
 import { getHandle, supportsLocalProjects } from './localProjects';
@@ -290,12 +290,12 @@ export const AgentComposer = forwardRef<AgentComposerHandle, AgentComposerProps>
 
       <div className="mv-composer__actions">
         {props.busy ? (
-          <button type="button" className="mv-btn mv-btn--danger mv-btn--stop" onClick={props.onStop}>
-            <Square size={15} /> Stop task
+          <button type="button" className="mv-sendbtn is-stop" onClick={props.onStop} aria-label="Stop task" title="Stop the running task">
+            <Square size={15} />
           </button>
         ) : (
-          <button type="submit" className="mv-btn mv-btn--primary mv-btn--send" disabled={props.disabled || !input.trim() || props.busy}>
-            <Send size={15} /> Send
+          <button type="submit" className="mv-sendbtn" disabled={props.disabled || !input.trim() || props.busy} aria-label="Send message" title="Send">
+            <ArrowUp size={17} strokeWidth={2.2} />
           </button>
         )}
       </div>

@@ -281,6 +281,26 @@ export class DeviceSession {
       return json({ online: !!this.agentSocket, lastSeenAt: this.lastAgentSeenAt, monitors: this.monitorList, agentRoot: meta?.root ?? null, agentPlatform: meta?.platform ?? null });
     }
 
+    if (url.pathname === '/frames/latest' && request.method === 'GET') {
+      if (!this.latestFrame) return json({ waiting: true, received: this.frameCount, lastError: this.lastFrameError });
+      return json({ waiting: false, received: this.frameCount, lastError: this.lastFrameError, frame: this.latestFrame });
+    }
+
+    if (url.pathname === '/stream' && request.method === 'POST') {
+      if (!this.agentSocket) return json({ error: 'Computer disconnected' }, 409);
+      const body = (await request.json().catch(() => ({}))) as { on?: unknown; fps?: unknown; width?: unknown; monitor?: unknown };
+      try {
+        if (body.on === false) {
+          await this.callTool('stream_stop', {}, 15000);
+          return json({ streaming: false });
+        }
+        const result = await this.callTool('stream_start', { fps: body.fps, width: body.width, monitor: body.monitor }, 30000);
+        return json({ streaming: true, result });
+      } catch (e) {
+        return json({ error: e instanceof Error ? e.message : 'Could not control the stream.' }, 502);
+      }
+    }
+
     if (url.pathname === '/subscription' && request.method === 'GET') {
       if (!this.agentSocket) return json({ error: 'Computer disconnected' }, 409);
       try {
@@ -364,10 +384,23 @@ export class DeviceSession {
     if (msg.type === 'heartbeat' || msg.type === 'hello' || msg.type === 'monitor_list' || msg.type === 'tool_result') {
       this.lastAgentSeenAt = new Date().toISOString();
     }
+    // Continuous frame stream from the device agent (see local-agent startStream).
+    if (msg.type === 'frame' && typeof msg.image === 'string' && typeof msg.seq === 'number') {
+      this.latestFrame = { image: msg.image, ts: typeof msg.ts === 'number' ? msg.ts : Date.now(), seq: msg.seq, monitor: msg.monitor ?? 0, width: msg.width ?? 0, bytes: typeof msg.bytes === 'number' ? msg.bytes : 0 };
+      this.frameCount += 1;
+      this.lastFrameError = null;
+      this.lastAgentSeenAt = new Date().toISOString();
+    }
+    if (msg.type === 'frame_error') {
+      this.lastFrameError = typeof msg.error === 'string' ? msg.error.slice(0, 500) : 'Frame capture failed.';
+    }
   }
 
   private monitorList: MonitorInfo[] = [];
   private lastAgentSeenAt: string | null = null;
+  private latestFrame: { image: string; ts: number; seq: number; monitor: number; width: number; bytes: number } | null = null;
+  private frameCount = 0;
+  private lastFrameError: string | null = null;
 
   private callTool(name: string, input: any, timeoutMs = 45000): Promise<any> {
     if (!this.agentSocket) return Promise.reject(new Error('Computer disconnected'));

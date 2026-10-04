@@ -79,6 +79,10 @@ export const monitorApi = {
     call<{ text: string; provider: ProviderId; connectionType: 'api' | 'subscription' | 'local'; model: string }>('/api/monitor/chat', t, { ...json(body), signal }),
   deviceSubscription: (t: string | null) =>
     call<{ claude: { installed: boolean; authenticated: boolean; detail?: string }; codex: { installed: boolean; authenticated: boolean; detail?: string } }>('/api/monitor/device/subscription', t),
+  deviceFrame: (t: string | null) =>
+    call<{ waiting: boolean; received: number; lastError?: string | null; frame?: { image: string; ts: number; seq: number; monitor: number; width: number; bytes: number } }>('/api/monitor/device/frame', t),
+  deviceStream: (t: string | null, body: { on: boolean; fps?: number; width?: number; monitor?: number }) =>
+    call<{ streaming: boolean; result?: unknown }>('/api/monitor/device/stream', t, json(body)),
 
   // Projects
   projects: (t: string | null) => call<ConnectedProject[]>('/api/monitor/projects', t),

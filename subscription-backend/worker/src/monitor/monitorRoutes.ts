@@ -362,6 +362,31 @@ export async function handleMonitor(request: Request, env: MonitorEnv, fetchImpl
     return ok({ paired: true, online, name: device.name, lastSeenAt, monitors, agentRoot, agentPlatform });
   }
 
+  if (path === '/device/frame' && request.method === 'GET') {
+    if (!env.DEVICE_SESSION) return fail('NOT_CONFIGURED', 'The device relay isn’t set up on the server yet.', 501);
+    const device = await getDevice();
+    if (!device) return fail('UNAVAILABLE', 'Connect a computer first.', 409);
+    const stub = env.DEVICE_SESSION.get(env.DEVICE_SESSION.idFromName(device.id));
+    const r = await stub.fetch('https://device-session/frames/latest');
+    if (r.status === 409) return fail('UNAVAILABLE', 'Computer disconnected. Start the local agent and try again.', 409);
+    return ok(await r.json());
+  }
+
+  if (path === '/device/stream' && request.method === 'POST') {
+    if (!env.DEVICE_SESSION) return fail('NOT_CONFIGURED', 'The device relay isn’t set up on the server yet.', 501);
+    const device = await getDevice();
+    if (!device) return fail('UNAVAILABLE', 'Connect a computer first.', 409);
+    const body = (await request.json().catch(() => ({}))) as { on?: unknown; fps?: unknown; width?: unknown; monitor?: unknown };
+    const stub = env.DEVICE_SESSION.get(env.DEVICE_SESSION.idFromName(device.id));
+    const r = await stub.fetch('https://device-session/stream', { method: 'POST', body: JSON.stringify(body) });
+    if (r.status === 409) return fail('UNAVAILABLE', 'Computer disconnected. Start the local agent and try again.', 409);
+    if (!r.ok) {
+      const err: any = await r.json().catch(() => ({}));
+      return fail('SERVER_ERROR', typeof err.error === 'string' ? err.error : 'Could not control the stream.', 502);
+    }
+    return ok(await r.json());
+  }
+
   if (path === '/device/subscription' && request.method === 'GET') {
     if (!env.DEVICE_SESSION) return fail('NOT_CONFIGURED', 'The device relay isn’t set up on the server yet.', 501);
     const device = await getDevice();

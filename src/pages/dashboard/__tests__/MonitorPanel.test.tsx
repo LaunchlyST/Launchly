@@ -83,7 +83,7 @@ async function connectAI(provider = 'openai') {
 }
 function sendMessage(text: string) {
   fireEvent.change(screen.getByLabelText('Message the coding agent'), { target: { value: text } });
-  fireEvent.click(screen.getByRole('button', { name: 'Send' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Send message' }));
 }
 
 describe('interpret', () => {

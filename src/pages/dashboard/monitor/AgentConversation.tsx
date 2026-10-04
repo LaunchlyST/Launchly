@@ -18,6 +18,7 @@ interface Props {
   onCancel: () => void;
   onApplyChanges: (msgId: number, task: AgentTask) => void;
   onUndoChanges: (msgId: number, task: AgentTask) => void;
+  onSuggest?: (text: string) => void;
 }
 
 const toolIcons: Record<string, React.ReactNode> = {
@@ -45,7 +46,7 @@ const statusColors: Record<ToolActivity['status'], string> = {
   error: '#e03e3e',
 };
 
-export function AgentConversation({ messages, activeTask, busy, onApprove, onCancel, onApplyChanges, onUndoChanges }: Props) {
+export function AgentConversation({ messages, activeTask, busy, onApprove, onCancel, onApplyChanges, onUndoChanges, onSuggest }: Props) {
   const listRef = useRef<HTMLDivElement>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
@@ -136,11 +137,19 @@ export function AgentConversation({ messages, activeTask, busy, onApprove, onCan
   );
 
   if (messages.length === 0) {
+    const suggestions = ['Explain this project', 'Find the file responsible for the login page', 'What changed in the project recently?'];
     return (
       <div className="mv-conv__empty">
-        <MessageSquare size={30} strokeWidth={1.4} aria-hidden="true" />
+        <span className="mv-conv__empty-icon"><MessageSquare size={26} strokeWidth={1.4} aria-hidden="true" /></span>
         <strong>What should the agent do?</strong>
         <p>Describe the task — e.g. “Open the project and fix the login bug”. The agent works on your connected computer and project.</p>
+        {onSuggest && (
+          <div className="mv-suggest">
+            {suggestions.map((s) => (
+              <button key={s} type="button" className="mv-suggest__chip" onClick={() => onSuggest(s)}>{s}</button>
+            ))}
+          </div>
+        )}
       </div>
     );
   }

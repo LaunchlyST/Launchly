@@ -81,6 +81,14 @@ export function MonitorPanel() {
   /** Timestamp of the last rendered video frame (heartbeat for stale detection). */
   const [lastFrameAt, setLastFrameAt] = useState<number | null>(null);
   const [, setNow] = useState(Date.now());
+  /** Agent-streamed live desktop (device agent → backend → browser polling). */
+  const [agentView, setAgentView] = useState(false);
+  const [agentFrame, setAgentFrame] = useState<{ image: string; ts: number; seq: number; monitor: number; width: number; bytes: number } | null>(null);
+  const [agentReceived, setAgentReceived] = useState(0);
+  const [agentRendered, setAgentRendered] = useState(0);
+  const [agentStreamError, setAgentStreamError] = useState('');
+  const agentLastSeq = useRef(0);
+  const agentStreamWanted = useRef(false);
 
   const canShare = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getDisplayMedia;
   const connected = conn === 'connected';
@@ -212,6 +220,58 @@ export function MonitorPanel() {
     // disconnect() is synchronous teardown; queue connect after state settles.
     setTimeout(() => connect(), 150);
   }
+
+  // Agent live view: start the device-side stream once, then poll the latest
+  // frame. Counters at every hop (device seq → received → rendered) prove the
+  // pipeline instead of assuming it.
+  useEffect(() => {
+    if (!agentView || !deviceOnline) {
+      if (agentStreamWanted.current) {
+        agentStreamWanted.current = false;
+        if (ws.token) void monitorApi.deviceStream(ws.token, { on: false }).catch(() => {});
+      }
+      return;
+    }
+    let cancelled = false;
+    agentStreamWanted.current = true;
+    setAgentStreamError('');
+    void monitorApi.deviceStream(ws.token, { on: true, fps: 0.5, width: 960, monitor: selectedMonitor }).then((r) => {
+      if (!cancelled && !r.ok) setAgentStreamError(r.message ?? 'Could not start the agent stream.');
+    }).catch(() => { if (!cancelled) setAgentStreamError('Could not start the agent stream.'); });
+    const id = setInterval(async () => {
+      if (cancelled) return;
+      const r = await monitorApi.deviceFrame(ws.token).catch(() => null);
+      if (cancelled || !r) return;
+      if (!r.ok) { setAgentStreamError(r.message ?? 'Could not load the agent frame.'); return; }
+      if (r.data.waiting || !r.data.frame) return;
+      const f = r.data.frame;
+      if (f.seq !== agentLastSeq.current) {
+        agentLastSeq.current = f.seq;
+        setAgentFrame(f);
+        setAgentReceived((n) => n + 1);
+        setAgentStreamError('');
+      }
+    }, 1500);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [agentView, deviceOnline, ws.token, selectedMonitor]);
+
+  useEffect(() => {
+    if (!deviceOnline && agentStreamWanted.current) {
+      agentStreamWanted.current = false;
+      agentLastSeq.current = 0;
+      setAgentFrame(null);
+    }
+  }, [deviceOnline]);
+
+  useEffect(() => () => {
+    if (agentStreamWanted.current && tokenRef.current) {
+      agentStreamWanted.current = false;
+      void monitorApi.deviceStream(tokenRef.current, { on: false }).catch(() => {});
+    }
+  }, []);
 
   const add = (role: Role, text: string, status?: Msg['status']) => {
     const m = { id: nextId++, role, text, status };
@@ -604,6 +664,16 @@ export function MonitorPanel() {
                 <input type="radio" name="captureMode" value="screen" checked={captureMode === 'screen'} onChange={() => setCaptureMode('screen')} disabled={connected} />
                 <span>Full screen</span>
               </label>
+              <button
+                type="button"
+                className={`mv-chipbtn ${agentView ? 'is-on' : ''}`}
+                onClick={() => setAgentView((v) => !v)}
+                disabled={!deviceOnline}
+                title={deviceOnline ? 'Show the live desktop streamed by the device agent itself (works even when browser capture fails)' : 'Connect your computer first'}
+                aria-pressed={agentView}
+              >
+                <Radio size={12} /> Agent view
+              </button>
             </div>
             {captureMode === 'screen' && (
               <select value={selectedMonitor} onChange={(e) => setSelectedMonitor(Number(e.target.value))} className="mv-monitor-select" aria-label="Select monitor" disabled={connected}>
@@ -613,7 +683,31 @@ export function MonitorPanel() {
               </select>
             )}
           </div>
-          <div className={`mv-stage ${connected ? 'is-connected' : ''} ${!videoActive && connected ? 'muted' : ''}`} ref={screenRef}>
+          <div className={`mv-stage ${connected || agentFrame ? 'is-connected' : ''} ${!videoActive && connected && !agentView ? 'muted' : ''}`} ref={screenRef}>
+            {agentView && deviceOnline ? (
+              agentFrame ? (
+                <>
+                  <img
+                    src={agentFrame.image}
+                    alt="Live desktop from your computer"
+                    className="mv-stage__video"
+                    style={{ transform: `scale(${zoom})` }}
+                    onLoad={() => setAgentRendered((n) => n + 1)}
+                  />
+                  <span className="mv-overlay mv-overlay--agent" data-testid="agent-frame-counters">
+                    Agent #{agentFrame.seq} · {Math.max(1, Math.round(agentFrame.bytes / 1024))} KB · received {agentReceived} · rendered {agentRendered} · {Math.max(0, Math.round((Date.now() - agentFrame.ts) / 1000))}s ago
+                  </span>
+                </>
+              ) : (
+                <div className="mv-blank">
+                  <LoaderCircle size={22} className="spin" />
+                  <strong>Starting agent stream…</strong>
+                  <p>{agentStreamError || 'Your computer is capturing its desktop — the first frame arrives within seconds.'}</p>
+                  <button type="button" className="mv-primary" onClick={() => setAgentView(false)}>Back to window capture</button>
+                </div>
+              )
+            ) : (
+            <>
             <video
               ref={videoRef}
               autoPlay
@@ -653,9 +747,11 @@ export function MonitorPanel() {
             {connected && pointer && <span className="mv-aim" style={pointerStyle()} aria-hidden="true" />}
             {recording && <span className="mv-overlay mv-overlay--rec"><i aria-hidden="true" /> Recording</span>}
             {paused && <span className="mv-overlay mv-overlay--right">Paused</span>}
+            </>
+            )}
           </div>
           <footer className="mv-window-footer">
-            <span data-testid="connection-label">{connected ? `${source}${lastFrameAt ? ` · frame ${Math.max(0, Math.round((Date.now() - lastFrameAt) / 1000))}s ago` : ''}` : 'No screen connected'}</span>
+            <span data-testid="connection-label">{agentView && deviceOnline ? (agentFrame ? `Agent view · frame #${agentFrame.seq}` : 'Agent view · waiting for frames') : connected ? `${source}${lastFrameAt ? ` · frame ${Math.max(0, Math.round((Date.now() - lastFrameAt) / 1000))}s ago` : ''}` : 'No screen connected'}</span>
             <button type="button" className="mv-primary" onClick={connected ? disconnect : connect} disabled={!canShare || conn === 'connecting'}>
               {connected ? 'Disconnect' : conn === 'connecting' ? 'Connecting…' : captureMode === 'screen' ? 'Connect Screen' : 'Connect Window'}
             </button>
@@ -694,6 +790,7 @@ export function MonitorPanel() {
             onCancel={() => void emergencyStop()}
             onApplyChanges={(msgId, task) => void applyChanges(msgId, task)}
             onUndoChanges={(msgId, task) => void undoChanges(msgId, task)}
+            onSuggest={(text) => void send(text)}
           />
           {ws.providerMessage && (
             <div className="mv-panel__error" role="alert">
@@ -701,6 +798,19 @@ export function MonitorPanel() {
               <button type="button" className="mm-btn" onClick={() => setDialog('api')}>Switch to API</button>
               {selectedProvider && !isLocalMode && <button type="button" className="mm-btn" onClick={() => void ws.verifyProvider(selectedProvider)}>Retry connection</button>}
               {isLocalMode && <button type="button" className="mm-btn" onClick={() => void ws.refreshLocalCli()}>Recheck computer</button>}
+            </div>
+          )}
+          {liveTask && (liveTask.status === 'working' || liveTask.status === 'awaiting-approval') && (
+            <div className="mv-taskbar" role="status" aria-label="Task progress">
+              <LoaderCircle size={13} className="spin" />
+              <div className="mv-taskbar__track">
+                <div
+                  className="mv-taskbar__fill"
+                  style={{ width: `${Math.min(100, Math.round((liveTask.actionsExecuted / Math.max(1, liveTask.maxActions)) * 100))}%` }}
+                />
+              </div>
+              <span>{liveTask.status === 'awaiting-approval' ? 'Waiting for your approval' : `Working · ${liveTask.actionsExecuted}/${liveTask.maxActions} actions`}</span>
+              <button type="button" className="mm-btn" onClick={() => void emergencyStop()}>Stop</button>
             </div>
           )}
           <AgentComposer

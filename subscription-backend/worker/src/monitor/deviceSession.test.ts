@@ -20,6 +20,37 @@ test('preserves provider limits through asynchronous device-task polling', async
   } finally { globalThis.fetch = original; }
 });
 
+test('live frames are counted and the latest is served to the browser', async () => {
+  const store = new Map();
+  const state: any = { storage: { get: async (key: string) => store.get(key), put: async (key: string, value: any) => store.set(key, value) } };
+  const device: any = new DeviceSession(state, {});
+  const waiting = await device.fetch(new Request('https://device-session/frames/latest'));
+  assert.equal((await waiting.json()).waiting, true);
+  device.onAgentMessage({ data: JSON.stringify({ type: 'frame', seq: 1, ts: 1000, monitor: 0, width: 960, image: 'data:image/png;base64,AAAA', bytes: 3000 }) } as any);
+  device.onAgentMessage({ data: JSON.stringify({ type: 'frame', seq: 2, ts: 2000, monitor: 0, width: 960, image: 'data:image/png;base64,BBBB', bytes: 3100 }) } as any);
+  const latest = await device.fetch(new Request('https://device-session/frames/latest'));
+  const body: any = await latest.json();
+  assert.equal(body.waiting, false);
+  assert.equal(body.received, 2);
+  assert.equal(body.frame.seq, 2);
+  assert.equal(body.frame.bytes, 3100);
+});
+
+test('stream control reaches the device agent as a tool call', async () => {
+  const { device, sent } = fakeDevice();
+  const startedP = device.fetch(new Request('https://device-session/stream', { method: 'POST', body: JSON.stringify({ on: true, fps: 0.5, width: 960, monitor: 1 }) }));
+  const startCall = await waitForCall(sent, 'stream_start');
+  assert.deepEqual(startCall.input, { fps: 0.5, width: 960, monitor: 1 });
+  startCall.answered = true;
+  device.onAgentMessage({ data: JSON.stringify({ type: 'tool_result', callId: startCall.callId, result: 'Streaming 0.5 fps' }) } as any);
+  assert.equal((await startedP).status, 200);
+  const stoppedP = device.fetch(new Request('https://device-session/stream', { method: 'POST', body: JSON.stringify({ on: false }) }));
+  const stopCall = await waitForCall(sent, 'stream_stop');
+  stopCall.answered = true;
+  device.onAgentMessage({ data: JSON.stringify({ type: 'tool_result', callId: stopCall.callId, result: 'Stream stopped.' }) } as any);
+  assert.equal((await stoppedP).status, 200);
+});
+
 async function waitForCall(sent: any[], name: string, timeoutMs = 5000): Promise<any> {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {

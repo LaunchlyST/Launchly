@@ -26,7 +26,7 @@ test('agent refuses to start without pairing token/server and prints pairing hel
 process.env.LAUNCHLY_AGENT_NO_CONNECT = '1';
 if (!process.env.LAUNCHLY_AGENT_TOKEN) process.env.LAUNCHLY_AGENT_TOKEN = 'test-token';
 if (!process.env.LAUNCHLY_AGENT_SERVER) process.env.LAUNCHLY_AGENT_SERVER = 'wss://example.invalid';
-const { resolveScoped, handleTool, escApple, macAbs, macModifier, MAC_KEYCODES, cliclickArgs, classifyMacError, classifyCliError, subscriptionStatus, subscriptionExec } = await import('../local-agent/agent.js');
+const { resolveScoped, handleTool, escApple, macAbs, macModifier, MAC_KEYCODES, cliclickArgs, classifyMacError, classifyCliError, subscriptionStatus, subscriptionExec, startStream, stopStream, streamState } = await import('../local-agent/agent.js');
 
 test('resolveScoped keeps file tools inside the project root', () => {
   assert.ok(resolveScoped('package.json').startsWith(REPO_ROOT));
@@ -102,6 +102,31 @@ test('subscription exec validates input and classifies CLI failures', async () =
     await assert.rejects(subscriptionExec(missingTool, 'Explain this project'), /not installed|not authenticated/);
   }
   await assert.rejects(handleTool('subscription_exec', { tool: 'nope', prompt: 'hi' }), /Unknown tool|claude.*codex/);
+});
+
+test('frame streaming pushes sequenced live frames and stops cleanly', async (t) => {
+  t.after(() => stopStream());
+  const messages = [];
+  const msg = startStream((m) => messages.push(m), { fps: 2, width: 320, monitor: 0 });
+  assert.match(msg, /Streaming/);
+  assert.equal(streamState().on, true);
+  const start = Date.now();
+  while (messages.filter((m) => m.type === 'frame').length < 2 && Date.now() - start < 20000) {
+    await new Promise((r) => setTimeout(r, 200));
+  }
+  const errors = messages.filter((m) => m.type === 'frame_error');
+  assert.equal(errors.length, 0, `frame errors: ${JSON.stringify(errors.slice(0, 1))}`);
+  const frames = messages.filter((m) => m.type === 'frame');
+  assert.ok(frames.length >= 2, 'expected at least 2 live frames');
+  assert.equal(frames[1].seq, frames[0].seq + 1);
+  assert.match(frames[0].image, /^data:image\/png;base64,[A-Za-z0-9+/=]{100,}$/);
+  assert.ok(frames[0].bytes > 1000, `frame has real byte size, got ${frames[0].bytes}`);
+  assert.ok(frames[0].ts > 0);
+  stopStream();
+  assert.equal(streamState().on, false);
+  const count = messages.length;
+  await new Promise((r) => setTimeout(r, 1200));
+  assert.equal(messages.length, count, 'no frames after stop');
 });
 
 test('mac helpers: cliclick args and permission errors', () => {
