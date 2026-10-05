@@ -1222,6 +1222,7 @@
 
 /* ---- Business Connect inside the dashboard shell ---- */
 .research-main .bc-page{height:auto;min-height:760px;padding:0;background:none;grid-template-columns:minmax(0,1.1fr) minmax(360px,.9fr)}
+.research-main .cs-page{max-width:1180px}
 .research-main .bc-left{max-height:calc(100vh - 150px)}
 .research-main .bc-right{max-height:calc(100vh - 150px)}
 .research-main .bc-header h1{font:500 34px Fraunces,Georgia,serif;letter-spacing:-.8px}
