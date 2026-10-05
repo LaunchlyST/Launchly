@@ -6,7 +6,6 @@ import { useAuthStore } from './auth-store';
 import { FrontPage } from './pages/front-page/page';
 import { InsidePage } from './pages/inside/page';
 import { ResearchDashboard } from './pages/dashboard/page';
-import { StorefrontPage } from './pages/store/StorefrontPage';
 import { PricingPage } from './pages/pricing/page';
 import { GetInPage } from './pages/get-in/page';
 import { OwnTrainModelPage } from './pages/own-train-model/page';
@@ -23,7 +22,6 @@ function getRoutePath() {
   if (path === '/own-train-model') return '/own-train-model';
   if (path === '/front-page') return '/front-page';
   if (/^\/creator\/\d{1,30}$/.test(path)) return '/dashboard';
-  if (/^\/s\/[a-z0-9_]{1,30}$/i.test(path)) return '/storefront';
   if (path === '/dashboard' || path === '/business-connect' || path === '/creator-store' || path === '/monitor' || path === '/workflow') return '/dashboard';
   return '/';
 }
@@ -147,16 +145,6 @@ export function App() {
 
   if (route === '/dashboard') {
     return <><ResearchDashboard onSettings={() => setSettingsOpen(true)} profileName={user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Your workspace'} /><SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} /></>;
-  }
-
-  if (route === '/storefront') {
-    return (
-      <div className="app app--inside">
-        <main className="app__main">
-          <StorefrontPage />
-        </main>
-      </div>
-    );
   }
   if (!user) {
     return <RedirectTo path="/" />;
