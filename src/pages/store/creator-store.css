@@ -7,7 +7,7 @@
   --cs-muted: #9aa3b2;
   --cs-faint: #6b7482;
   --cs-line: rgba(255, 255, 255, 0.1);
-  --cs-glass: rgba(20, 24, 30, 0.45);
+  --cs-glass: rgba(17, 22, 29, 0.62);
   --cs-glow-blue: rgba(122, 162, 247, 0.45);
   position: relative;
   display: flex;
@@ -19,10 +19,10 @@
   overflow: hidden;
   color: var(--cs-ink);
   background:
-    radial-gradient(640px 480px at 6% 45%, rgba(150, 110, 70, 0.16) 0%, transparent 65%),
-    radial-gradient(680px 520px at 94% 50%, rgba(96, 140, 190, 0.16) 0%, transparent 65%),
-    radial-gradient(1000px 600px at 50% -15%, rgba(70, 85, 105, 0.25) 0%, transparent 60%),
-    linear-gradient(180deg, #161a20 0%, #101318 100%);
+    radial-gradient(640px 480px at 6% 45%, rgba(150, 110, 70, 0.1) 0%, transparent 65%),
+    radial-gradient(680px 520px at 94% 50%, rgba(96, 140, 190, 0.1) 0%, transparent 65%),
+    radial-gradient(1000px 600px at 50% -15%, rgba(60, 72, 90, 0.18) 0%, transparent 60%),
+    linear-gradient(180deg, #0d1117 0%, #090b0f 100%);
 }
 
 /* ---------- centered square setup container (steps 1–5) ---------- */
@@ -40,11 +40,11 @@
   background: var(--cs-glass);
   backdrop-filter: blur(32px) saturate(1.2);
   -webkit-backdrop-filter: blur(32px) saturate(1.2);
-  border: 1px solid var(--cs-line);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 26px;
   box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    0 24px 70px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
   transition: opacity 0.35s ease, transform 0.35s ease;
 }
 .cs-setup.is-leaving {
