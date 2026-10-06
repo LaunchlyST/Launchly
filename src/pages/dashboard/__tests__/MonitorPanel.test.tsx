@@ -102,27 +102,32 @@ describe('interpret', () => {
 });
 
 describe('Window capture lifecycle', () => {
-  it('attaches the real stream, starts playback on metadata, and gates chat on AI separately', async () => {
+  it('attaches the real stream, starts playback on metadata, and never disables chat while sharing', async () => {
     render(<MonitorPanel />);
-    expect((screen.getByLabelText('Message the coding agent') as HTMLTextAreaElement).disabled).toBe(true);
+    // Chat input is independent from screen state: enabled before, during and after sharing.
+    expect((screen.getByLabelText('Message the coding agent') as HTMLTextAreaElement).disabled).toBe(false);
     await connect();
     expect(HTMLMediaElement.prototype.play).toHaveBeenCalled();
-    expect((screen.getByLabelText('Message the coding agent') as HTMLTextAreaElement).disabled).toBe(true);
+    expect((screen.getByLabelText('Message the coding agent') as HTMLTextAreaElement).disabled).toBe(false);
     expect(screen.getByRole('status', { name: 'AI connection' }).textContent).toContain('disconnected');
     await connectAI();
     expect((screen.getByLabelText('Message the coding agent') as HTMLTextAreaElement).disabled).toBe(false);
+    // Typing while the screen is still sharing must work.
+    fireEvent.change(screen.getByLabelText('Message the coding agent'), { target: { value: 'hello while sharing' } });
+    expect((screen.getByLabelText('Message the coding agent') as HTMLTextAreaElement).value).toBe('hello while sharing');
   });
-  it('keeps AI connected when browser sharing stops and clears the stream and conversation', async () => {
+  it('keeps AI connected when browser sharing stops and preserves the conversation', async () => {
     render(<MonitorPanel />); await connect(); await connectAI();
-    sendMessage('help');
-    expect(screen.getByText(/I can take a screenshot/)).toBeTruthy();
+    sendMessage('Explain the chart trend');
+    expect(await screen.findByText('This is the selected provider’s answer.')).toBeTruthy();
     act(() => track.dispatchEvent(new Event('ended')));
     expect(screen.getByRole('status', { name: 'Screen connection' }).textContent).toBe('Screen: Disconnected');
     expect(screen.getByRole('status', { name: 'AI connection' }).textContent).toContain('connected');
     expect(document.querySelector('video')!.srcObject).toBeNull();
     expect(track.stopped).toBe(true);
-    expect(screen.queryByText(/I can take a screenshot/)).toBeNull();
-    expect((screen.getByLabelText('Message the coding agent') as HTMLTextAreaElement).disabled).toBe(true);
+    // Conversation is preserved and the composer stays enabled.
+    expect(screen.getByText('This is the selected provider’s answer.')).toBeTruthy();
+    expect((screen.getByLabelText('Message the coding agent') as HTMLTextAreaElement).disabled).toBe(false);
   });
   it('reports playback failures instead of claiming the black preview is connected', async () => {
     vi.mocked(HTMLMediaElement.prototype.play).mockRejectedValue(new Error('Playback blocked'));
@@ -159,21 +164,21 @@ describe('Window capture lifecycle', () => {
     expect(screen.getByRole('status', { name: 'Screen connection' }).textContent).toBe('Screen: Disconnected');
     expect(video.srcObject).toBeNull();
   });
-  it('shows a muted capture warning and clears it when frames resume', async () => {
+  it('shows a paused overlay with reload when frames stop and clears it when frames resume', async () => {
     render(<MonitorPanel />); await connect();
     act(() => track.dispatchEvent(new Event('mute')));
-    expect(screen.getAllByText(/not sending frames/).length).toBeGreaterThan(0);
+    expect(screen.getByText('Stream paused')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Reload screen stream' })).toBeTruthy();
     await act(async () => track.dispatchEvent(new Event('unmute')));
-    expect(screen.queryByText(/not sending frames/)).toBeNull();
+    expect(screen.queryByText('Stream paused')).toBeNull();
   });
 });
 
 describe('AI authorization and requests', () => {
   it.each(['openai', 'anthropic'])('verifies %s then sends the frame and selected provider to the backend', async provider => {
     render(<MonitorPanel />); await connect(); await connectAI(provider);
-    const aiStatus = screen.getByRole('status', { name: 'AI connection' }).textContent ?? '';
-    expect(aiStatus).toContain(provider === 'openai' ? 'OpenAI' : 'Claude');
-    expect(aiStatus).toContain('API');
+    // Once connected, the Connect AI button is gone (AI already configured).
+    expect(screen.queryByRole('button', { name: 'Connect AI' })).toBeNull();
     sendMessage('Explain the chart trend');
     expect(await screen.findByText('This is the selected provider’s answer.')).toBeTruthy();
     const calls = vi.mocked(fetch).mock.calls;
@@ -182,13 +187,15 @@ describe('AI authorization and requests', () => {
     expect(calls.some(([url]) => /api.openai.com|api.anthropic.com/.test(String(url)))).toBe(false);
     expect(JSON.stringify(localStorage)).not.toContain('sk-test-key');
   });
-  it('AI can connect before sharing, but messages still require a live window', async () => {
-    render(<MonitorPanel />); await connectAI();
-    expect((screen.getByLabelText('Message the coding agent') as HTMLTextAreaElement).disabled).toBe(true);
+  it('composer stays enabled before sharing, while sharing, and after AI connects', async () => {
+    render(<MonitorPanel />);
+    expect((screen.getByLabelText('Message the coding agent') as HTMLTextAreaElement).disabled).toBe(false);
+    await connectAI();
+    expect((screen.getByLabelText('Message the coding agent') as HTMLTextAreaElement).disabled).toBe(false);
     await connect();
     expect((screen.getByLabelText('Message the coding agent') as HTMLTextAreaElement).disabled).toBe(false);
   });
-  it('does not enable messages until saved-key verification completes', async () => {
+  it('does not disable the composer while saved-key verification is in flight', async () => {
     let finish!: (response: Response) => void;
     verifyResponse = () => new Promise(resolve => { finish = resolve; });
     render(<MonitorPanel />); await connect();
@@ -197,21 +204,20 @@ describe('AI authorization and requests', () => {
     fireEvent.change(screen.getByLabelText('API key'), { target: { value: 'sk-test-key-1234' } });
     fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
     await waitFor(() => expect(screen.getByRole('status', { name: 'AI connection' }).textContent).toContain('connecting'));
-    expect((screen.getByLabelText('Message the coding agent') as HTMLTextAreaElement).disabled).toBe(true);
+    expect((screen.getByLabelText('Message the coding agent') as HTMLTextAreaElement).disabled).toBe(false);
     await act(async () => finish(ok({ ...connection('openai'), connected: false, state: 'error', message: 'Key revoked.' })));
     expect(screen.getByRole('status', { name: 'AI connection' }).textContent).toContain('error');
-    expect((screen.getByLabelText('Message the coding agent') as HTMLTextAreaElement).disabled).toBe(true);
+    expect((screen.getByLabelText('Message the coding agent') as HTMLTextAreaElement).disabled).toBe(false);
   });
-  it('uses real backend limits, disables sending and opens the existing API-key fallback', async () => {
+  it('uses real backend limits and offers the Connect AI fallback afterwards', async () => {
     chatResponse = () => new Response(JSON.stringify({ success: false, error: { code: 'PROVIDER_LIMITED', provider: 'openai', connectionType: 'api', message: 'Your API usage is currently limited.' } }), { status: 429 });
     render(<MonitorPanel />); await connect(); await connectAI();
     sendMessage('Explain the chart trend');
     await waitFor(() => expect(screen.getByRole('status', { name: 'AI connection' }).textContent).toContain('limited'));
     expect(screen.queryByText('Your subscription usage is currently limited. Switch to API to continue.')).toBeNull();
-    expect((screen.getByLabelText('Message the coding agent') as HTMLTextAreaElement).disabled).toBe(true);
-    fireEvent.click(screen.getByRole('button', { name: 'Switch to API' }));
-    expect(screen.getByRole('dialog', { name: 'Connect AI' })).toBeTruthy();
-    expect(screen.getByLabelText('Replace API key')).toBeTruthy();
+    // Composer stays usable; the Connect AI button returns so the user can fix the key.
+    expect((screen.getByLabelText('Message the coding agent') as HTMLTextAreaElement).disabled).toBe(false);
+    expect(screen.getByRole('button', { name: 'Connect AI' })).toBeTruthy();
   });
   it('never authenticates by opening a subscription website', async () => {
     const open = vi.spyOn(window, 'open');
@@ -230,11 +236,22 @@ describe('AI authorization and requests', () => {
     expect(open).not.toHaveBeenCalled();
     expect(screen.getByRole('status', { name: 'AI connection' }).textContent).toContain('disconnected');
   });
-  it('preserves local screen commands and text location after connection', async () => {
+  it('sends follow-up messages while the screen is still sharing', async () => {
     render(<MonitorPanel />); await connect(); await connectAI();
-    sendMessage('zoom in'); expect(screen.getByText('Zoomed in.')).toBeTruthy();
-    sendMessage('where is the settings button');
-    expect(await screen.findByText(/Found “Settings” at the top right/)).toBeTruthy();
+    sendMessage('Explain the chart trend');
+    expect(await screen.findByText('This is the selected provider’s answer.')).toBeTruthy();
+    expect(screen.getByRole('status', { name: 'Screen connection' }).textContent).toBe('Screen: Connected');
+    // Second message while the stream is still live (wait until the first round-trip finishes).
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Send message' })).toBeTruthy());
+    await waitFor(() => expect((screen.getByTestId('ai-composer-send') as HTMLButtonElement).disabled).toBe(true));
+    fireEvent.change(screen.getByLabelText('Message the coding agent'), { target: { value: 'What about the second quarter?' } });
+    await waitFor(() => expect((screen.getByTestId('ai-composer-send') as HTMLButtonElement).disabled).toBe(false));
+    sendMessage('What about the second quarter?');
+    await waitFor(() => expect(screen.getAllByText('This is the selected provider’s answer.')).toHaveLength(2));
+    expect(screen.getByRole('status', { name: 'Screen connection' }).textContent).toBe('Screen: Connected');
+    // Model selector and settings keep working while sharing.
+    expect(screen.getByLabelText('AI model')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'AI settings' })).toBeTruthy();
   });
 });
 

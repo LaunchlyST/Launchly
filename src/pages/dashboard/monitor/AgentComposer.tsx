@@ -66,14 +66,17 @@ export const AgentComposer = forwardRef<AgentComposerHandle, AgentComposerProps>
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
+    // NOTE: screen-sharing state must NEVER disable the composer. Only busy gates sending.
     const text = input.trim();
-    if (text && !props.disabled && !props.busy) {
+    if (text && !props.busy) {
       props.onSend(text);
       setInput('');
     }
   };
 
   const onKeyDown = (e: React.KeyboardEvent) => {
+    // Don't let any global screen-control handler hijack typing.
+    e.stopPropagation();
     if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
       submit(e);
@@ -123,7 +126,7 @@ export const AgentComposer = forwardRef<AgentComposerHandle, AgentComposerProps>
             type="button"
             className="mv-composer__tool"
             title={props.project?.source === 'local' ? 'Attach file listing from the connected folder' : 'Attach needs a connected local-folder project'}
-            disabled={props.disabled || !canAttach}
+            disabled={!canAttach}
             onClick={() => void attachFolderListing()}
             aria-label="Attach file listing from connected folder"
           >
@@ -134,7 +137,7 @@ export const AgentComposer = forwardRef<AgentComposerHandle, AgentComposerProps>
               type="button"
               className={`mv-composer__select ${showModelMenu ? 'open' : ''}`}
               onClick={() => setShowModelMenu((v) => !v)}
-              disabled={props.disabled}
+              disabled={false}
               aria-expanded={showModelMenu}
               aria-haspopup="listbox"
               title="Model / provider"
@@ -208,7 +211,7 @@ export const AgentComposer = forwardRef<AgentComposerHandle, AgentComposerProps>
               type="button"
               className={`mv-composer__select ${showProjectMenu ? 'open' : ''}`}
               onClick={() => setShowProjectMenu((v) => !v)}
-              disabled={props.disabled}
+              disabled={false}
               aria-expanded={showProjectMenu}
               aria-haspopup="listbox"
               title="GitHub project / working context"
@@ -240,7 +243,7 @@ export const AgentComposer = forwardRef<AgentComposerHandle, AgentComposerProps>
           </div>
         </div>
         <div className="mv-composer__right">
-          <button type="button" className="mv-composer__tool" title="Task permissions" onClick={() => setShowPermissions((v) => !v)} disabled={props.disabled}>
+          <button type="button" className="mv-composer__tool" title="Task permissions" onClick={() => setShowPermissions((v) => !v)} disabled={false}>
             <Settings size={16} />
           </button>
         </div>
@@ -280,7 +283,7 @@ export const AgentComposer = forwardRef<AgentComposerHandle, AgentComposerProps>
           onChange={(e) => setInput(e.target.value.slice(0, 8000))}
           onKeyDown={onKeyDown}
           placeholder={props.placeholder}
-          disabled={props.disabled || props.busy}
+          disabled={props.busy}
           rows={1}
           maxLength={8000}
           aria-label="Message the coding agent"
@@ -294,7 +297,7 @@ export const AgentComposer = forwardRef<AgentComposerHandle, AgentComposerProps>
             <Square size={15} />
           </button>
         ) : (
-          <button type="submit" className="mv-sendbtn" disabled={props.disabled || !input.trim() || props.busy} aria-label="Send message" title="Send">
+          <button type="submit" className="mv-sendbtn" disabled={!input.trim() || props.busy} aria-label="Send message" title="Send">
             <ArrowUp size={17} strokeWidth={2.2} />
           </button>
         )}
