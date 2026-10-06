@@ -14,15 +14,9 @@
   align-items: center;
   justify-content: center;
   min-height: calc(100vh - 190px);
-  padding: 40px 28px;
-  border-radius: 24px;
-  overflow: hidden;
+  padding: 32px 24px;
   color: var(--cs-ink);
-  background:
-    radial-gradient(640px 480px at 6% 45%, rgba(150, 110, 70, 0.1) 0%, transparent 65%),
-    radial-gradient(680px 520px at 94% 50%, rgba(96, 140, 190, 0.1) 0%, transparent 65%),
-    radial-gradient(1000px 600px at 50% -15%, rgba(60, 72, 90, 0.18) 0%, transparent 60%),
-    linear-gradient(180deg, #0d1117 0%, #090b0f 100%);
+  background: transparent;
 }
 
 /* ---------- centered square setup container (steps 1–5) ---------- */
