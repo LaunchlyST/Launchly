@@ -117,18 +117,20 @@ export function CreatorStorePage() {
   return (
     <div className="cs-page">
       {inSetup && (
-        <div className={`cs-setupwrap${phase === 'leaving' ? ' is-leaving' : ''}`}>
+        <div className={`cs-setup${phase === 'leaving' ? ' is-leaving' : ''}`}>
           <ProgressBar step={progressStep} />
-          {data.setup.step < 6 && (
-            <SetupFlow
-              setup={data.setup}
-              onPatch={patchSetup}
-              onNext={next}
-              onBack={back}
-              onVerify={verify}
-              onRegenerate={() => patchSetup({ code: makeCode() })}
-            />
-          )}
+          <div className="cs-setup__body">
+            {data.setup.step < 6 && (
+              <SetupFlow
+                setup={data.setup}
+                onPatch={patchSetup}
+                onNext={next}
+                onBack={back}
+                onVerify={verify}
+                onRegenerate={() => patchSetup({ code: makeCode() })}
+              />
+            )}
+          </div>
         </div>
       )}
       {phase === 'designer' && (
