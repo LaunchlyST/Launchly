@@ -119,13 +119,24 @@
 /* ---------- premium connected timeline ---------- */
 .cs-progress {
   position: relative;
-  padding: 6px 44px 0;
+  width: min(760px, 100%);
+  margin: 0 auto;
+  padding: 15px 30px 0;
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  outline: 1px solid rgba(15, 23, 42, 0.07);
+  border-radius: 18px;
+  box-shadow:
+    0 12px 32px rgba(15, 23, 42, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
 }
 .cs-progress__track {
   position: absolute;
-  top: 20px;
-  left: 70px;
-  right: 70px;
+  top: 28px;
+  left: 58px;
+  right: 58px;
   height: 2px;
   border-radius: 2px;
   background: rgba(15, 23, 42, 0.12);
@@ -143,8 +154,7 @@
   justify-content: space-between;
   list-style: none;
   margin: 0;
-  padding: 0 0 20px;
-  border-bottom: 1px solid rgba(15, 23, 42, 0.09);
+  padding: 0 0 14px;
 }
 .cs-progress__node {
   display: flex;
@@ -1234,8 +1244,8 @@
 @media (max-width: 860px) {
   .cs-page { padding: 24px 12px; border-radius: 18px; }
   .cs-setup__body { padding: 36px 20px 32px; }
-  .cs-progress { padding: 6px 14px 0; }
-  .cs-progress__track { left: 32px; right: 32px; }
+  .cs-progress { padding: 12px 14px 0; }
+  .cs-progress__track { top: 25px; left: 34px; right: 34px; }
   .cs-progress__label { font-size: 8px; }
   .cs-designer { grid-template-columns: 1fr; }
   .cs-topbar { flex-wrap: wrap; }
