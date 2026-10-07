@@ -1,32 +1,58 @@
-/* ============ Creator Store — WOW premium 2026 glass experience ============
-   Deep smoked-glass square, ambient animated orbs, luminous timeline,
-   glass inputs and buttons. Steps 1–5 setup + step 6 designer.
-   Scoped under .cs-page so nothing leaks into the dashboard. */
+/* ============ Creator Store — soft light 3D glass edition ============
+   Light monochrome abstract background with flowing shapes. No outer
+   container: content floats directly on the background with frosted-glass
+   controls only where needed. Scoped under .cs-page. */
 
 .cs-page {
-  --cs-ink: #f2f4f7;
-  --cs-muted: #9aa3b2;
-  --cs-faint: #6b7482;
-  --cs-line: rgba(255, 255, 255, 0.1);
-  --cs-glass: rgba(17, 22, 29, 0.62);
-  --cs-ice: #8fd0f5;
-  --cs-ice-soft: rgba(124, 201, 242, 0.5);
+  --cs-ink: #14181d;
+  --cs-muted: #5b6472;
+  --cs-faint: #8a94a3;
+  --cs-line: rgba(15, 23, 42, 0.1);
+  --cs-glass: rgba(255, 255, 255, 0.55);
+  --cs-ice: #3f6ea6;
+  --cs-ice-soft: rgba(63, 110, 166, 0.35);
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: calc(100vh - 190px);
-  padding: 36px 26px;
+  padding: 40px 28px;
+  border-radius: 24px;
   overflow: hidden;
   color: var(--cs-ink);
   background:
-    radial-gradient(760px 520px at 8% 0%, rgba(59, 110, 180, 0.22) 0%, transparent 62%),
-    radial-gradient(720px 560px at 94% 30%, rgba(80, 200, 230, 0.1) 0%, transparent 62%),
-    radial-gradient(560px 480px at 12% 95%, rgba(150, 130, 220, 0.09) 0%, transparent 60%),
-    linear-gradient(180deg, #0a0e14 0%, #06080c 100%);
+    radial-gradient(820px 560px at 88% -10%, rgba(255, 255, 255, 0.9) 0%, transparent 60%),
+    radial-gradient(700px 520px at 4% 100%, rgba(148, 163, 184, 0.35) 0%, transparent 62%),
+    radial-gradient(560px 460px at 55% 45%, rgba(255, 255, 255, 0.55) 0%, transparent 65%),
+    linear-gradient(155deg, #eef0f3 0%, #dfe3e9 52%, #cfd5dc 100%);
 }
 
-/* ---------- ambient animated orbs ---------- */
+/* Large flowing curved shapes for soft 3D depth. */
+.cs-page::before,
+.cs-page::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  pointer-events: none;
+}
+.cs-page::before {
+  width: 640px;
+  height: 640px;
+  top: -220px;
+  right: -140px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.85) 0%, transparent 70%);
+  transform: rotate(-12deg);
+}
+.cs-page::after {
+  width: 720px;
+  height: 720px;
+  bottom: -300px;
+  left: -200px;
+  background: radial-gradient(circle, rgba(100, 116, 139, 0.35) 0%, transparent 70%);
+}
+
+/* Soft drifting light blobs — strictly decorative. */
 .cs-orbs {
   position: absolute;
   inset: 0;
@@ -36,96 +62,79 @@
 .cs-orb {
   position: absolute;
   border-radius: 50%;
-  filter: blur(80px);
+  filter: blur(70px);
 }
 .cs-orb--a {
-  width: 440px;
-  height: 440px;
-  top: -12%;
-  left: 6%;
-  background: radial-gradient(circle, rgba(70, 130, 200, 0.28) 0%, transparent 70%);
-  animation: cs-orb-drift 15s ease-in-out infinite alternate;
+  width: 420px;
+  height: 420px;
+  top: -10%;
+  left: 12%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.7) 0%, transparent 70%);
+  animation: cs-orb-drift 16s ease-in-out infinite alternate;
 }
 .cs-orb--b {
-  width: 400px;
-  height: 400px;
-  bottom: -18%;
-  right: 4%;
-  background: radial-gradient(circle, rgba(90, 200, 230, 0.16) 0%, transparent 70%);
-  animation: cs-orb-drift 19s ease-in-out infinite alternate-reverse;
+  width: 380px;
+  height: 380px;
+  bottom: -16%;
+  right: 8%;
+  background: radial-gradient(circle, rgba(147, 178, 205, 0.4) 0%, transparent 70%);
+  animation: cs-orb-drift 20s ease-in-out infinite alternate-reverse;
 }
 .cs-orb--c {
-  width: 300px;
-  height: 300px;
-  top: 44%;
-  left: 38%;
-  background: radial-gradient(circle, rgba(150, 130, 220, 0.13) 0%, transparent 70%);
-  animation: cs-orb-drift 24s ease-in-out infinite alternate;
+  width: 280px;
+  height: 280px;
+  top: 46%;
+  left: 44%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.5) 0%, transparent 70%);
+  animation: cs-orb-drift 25s ease-in-out infinite alternate;
 }
 @keyframes cs-orb-drift {
   from { transform: translate(0, 0) scale(1); }
-  to { transform: translate(46px, -34px) scale(1.08); }
+  to { transform: translate(44px, -32px) scale(1.08); }
 }
 
-/* ---------- centered smoked-glass square (steps 1–5) ---------- */
+/* ---------- setup flow floats directly on the background ---------- */
 .cs-setup {
   position: relative;
   z-index: 1;
   display: flex;
   flex-direction: column;
   width: min(840px, 100%);
-  min-height: 600px;
-  max-height: calc(100vh - 230px);
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.07) 0%, transparent 26%),
-    rgba(15, 20, 27, 0.58);
-  backdrop-filter: blur(40px) saturate(1.25);
-  -webkit-backdrop-filter: blur(40px) saturate(1.25);
-  border: 1px solid rgba(255, 255, 255, 0.11);
-  border-radius: 24px;
-  box-shadow:
-    0 30px 80px rgba(0, 0, 0, 0.45),
-    0 4px 18px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
   transition: opacity 0.35s ease, transform 0.35s ease;
 }
 .cs-setup.is-leaving {
   opacity: 0;
-  transform: scale(0.96) translateY(10px);
+  transform: scale(0.97) translateY(10px);
   pointer-events: none;
 }
 .cs-setup__body {
-  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  padding: 52px 48px 48px;
+  padding: 52px 24px 20px;
   text-align: center;
 }
 
-/* ---------- premium connected timeline (inside the square) ---------- */
+/* ---------- premium connected timeline ---------- */
 .cs-progress {
   position: relative;
-  padding: 24px 44px 0;
+  padding: 6px 44px 0;
 }
 .cs-progress__track {
   position: absolute;
-  top: 38px;
+  top: 20px;
   left: 70px;
   right: 70px;
   height: 2px;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.09);
+  background: rgba(15, 23, 42, 0.12);
 }
 .cs-progress__fill {
   height: 100%;
   border-radius: 2px;
-  background: linear-gradient(90deg, #3f6ea6, #7cc9f2);
-  box-shadow: 0 0 12px rgba(124, 201, 242, 0.6);
+  background: linear-gradient(90deg, #64748b, #0f172a);
+  box-shadow: 0 1px 6px rgba(15, 23, 42, 0.25);
   transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .cs-progress__steps {
@@ -135,7 +144,7 @@
   list-style: none;
   margin: 0;
   padding: 0 0 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.09);
 }
 .cs-progress__node {
   display: flex;
@@ -151,30 +160,31 @@
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.045);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(15, 23, 42, 0.14);
   color: var(--cs-faint);
   font-size: 10.5px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
   transition: all 0.35s ease;
 }
 .cs-progress__dot i { font-style: normal; font-weight: 600; }
 .cs-progress__node--done .cs-progress__dot {
-  background: rgba(124, 201, 242, 0.16);
-  border-color: rgba(124, 201, 242, 0.55);
-  color: #cfe7fa;
-  box-shadow: 0 0 12px rgba(124, 201, 242, 0.3);
+  background: rgba(63, 110, 166, 0.12);
+  border-color: rgba(63, 110, 166, 0.45);
+  color: #3f6ea6;
 }
 .cs-progress__node--active .cs-progress__dot {
-  background: radial-gradient(circle at 32% 28%, #ffffff 0%, #bcd9f2 42%, #6d9fd0 100%);
-  border-color: rgba(255, 255, 255, 0.75);
-  color: #0d1622;
+  background: radial-gradient(circle at 32% 28%, #3b4a5e 0%, #0f172a 72%);
+  border-color: rgba(15, 23, 42, 0.6);
+  color: #fff;
   box-shadow:
-    0 0 0 5px rgba(124, 201, 242, 0.14),
-    0 0 22px rgba(124, 201, 242, 0.65);
+    0 0 0 5px rgba(15, 23, 42, 0.08),
+    0 4px 16px rgba(15, 23, 42, 0.3);
   animation: cs-dot-breathe 2.4s ease-in-out infinite;
 }
 @keyframes cs-dot-breathe {
-  50% { box-shadow: 0 0 0 7px rgba(124, 201, 242, 0.1), 0 0 30px rgba(124, 201, 242, 0.8); }
+  50% { box-shadow: 0 0 0 7px rgba(15, 23, 42, 0.06), 0 4px 22px rgba(15, 23, 42, 0.38); }
 }
 .cs-progress__label {
   font-size: 10px;
@@ -184,8 +194,8 @@
   white-space: nowrap;
   transition: color 0.3s ease;
 }
-.cs-progress__node--active .cs-progress__label { color: #fff; font-weight: 600; }
-.cs-progress__node--done .cs-progress__label { color: #9db4d4; }
+.cs-progress__node--active .cs-progress__label { color: var(--cs-ink); font-weight: 700; }
+.cs-progress__node--done .cs-progress__label { color: var(--cs-muted); }
 
 /* ---------- setup steps ---------- */
 .cs-step { animation: cs-fade-up 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; max-width: 460px; width: 100%; }
@@ -198,21 +208,22 @@
   margin: 0 0 16px;
   padding: 5px 13px;
   font-size: 9.5px;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #9db4d4;
-  border: 1px solid rgba(255, 255, 255, 0.13);
+  color: var(--cs-muted);
+  border: 1px solid rgba(15, 23, 42, 0.12);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.045);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
 }
 .cs-step__title {
   font-size: 27px;
   font-weight: 700;
   letter-spacing: -0.02em;
   margin: 0 0 10px;
-  background: linear-gradient(180deg, #ffffff 35%, #aebdd2 100%);
+  background: linear-gradient(180deg, #0b0f14 30%, #4b5866 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -229,19 +240,18 @@
   max-width: 340px;
   margin: 0 auto 20px;
   padding: 5px 5px 5px 17px;
-  background: rgba(8, 12, 18, 0.55);
+  background: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(15, 23, 42, 0.12);
   border-radius: 15px;
-  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.8);
   transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
 }
 .cs-fieldrow:focus-within {
-  border-color: rgba(124, 201, 242, 0.65);
+  border-color: rgba(63, 110, 166, 0.6);
   box-shadow:
-    0 0 0 3px rgba(124, 201, 242, 0.16),
-    0 0 26px rgba(124, 201, 242, 0.28),
-    inset 0 2px 8px rgba(0, 0, 0, 0.35);
+    0 0 0 3px rgba(63, 110, 166, 0.15),
+    0 8px 26px rgba(63, 110, 166, 0.18);
   transform: translateY(-1px);
 }
 .cs-at { color: var(--cs-muted); font-weight: 600; font-size: 16px; }
@@ -264,34 +274,25 @@
   align-items: center;
   gap: 9px;
   padding: 12px 28px;
-  border: 1px solid rgba(255, 255, 255, 0.24);
+  border: 1px solid rgba(15, 23, 42, 0.85);
   border-radius: 14px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.06) 100%),
-    rgba(120, 170, 220, 0.12);
-  backdrop-filter: blur(14px);
+  background: linear-gradient(180deg, #2b3542, #0f172a);
   color: #fff;
   font: inherit;
   font-size: 13.5px;
   font-weight: 600;
   letter-spacing: 0.01em;
   cursor: pointer;
-  box-shadow:
-    0 10px 28px rgba(0, 0, 0, 0.35),
-    0 0 20px rgba(124, 201, 242, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.18);
   transition: transform 0.25s ease, box-shadow 0.3s ease, opacity 0.25s ease;
 }
 .cs-btn-primary svg { transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1); }
 .cs-btn-primary:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow:
-    0 14px 34px rgba(0, 0, 0, 0.4),
-    0 0 34px rgba(124, 201, 242, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.34), 0 0 24px rgba(63, 110, 166, 0.25);
 }
 .cs-btn-primary:hover:not(:disabled) svg { transform: translateX(4px); }
-.cs-btn-primary:disabled { opacity: 0.38; cursor: not-allowed; }
+.cs-btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
 .cs-btn-primary--lg { padding: 13px 34px; }
 
 .cs-btn-ghost {
@@ -300,8 +301,8 @@
   gap: 7px;
   padding: 8px 13px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  background: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(10px);
   color: var(--cs-ink);
   font: inherit;
@@ -311,7 +312,7 @@
   transition: all 0.25s ease;
   white-space: nowrap;
 }
-.cs-btn-ghost:hover { border-color: rgba(124, 201, 242, 0.55); box-shadow: 0 0 16px rgba(124, 201, 242, 0.28); }
+.cs-btn-ghost:hover { border-color: rgba(63, 110, 166, 0.5); box-shadow: 0 4px 14px rgba(63, 110, 166, 0.2); }
 .cs-btn-quiet {
   display: inline-flex;
   align-items: center;
@@ -348,19 +349,18 @@
   max-width: 360px;
   margin: 0 auto 20px;
   padding: 15px 15px 15px 22px;
-  background: rgba(8, 12, 18, 0.55);
+  background: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(14px);
-  border: 1px dashed rgba(124, 201, 242, 0.5);
+  border: 1px dashed rgba(63, 110, 166, 0.5);
   border-radius: 15px;
-  box-shadow: 0 0 30px rgba(124, 201, 242, 0.14), inset 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 .cs-codebox code {
   font-family: ui-monospace, 'SF Mono', Menlo, monospace;
   font-size: 19px;
   font-weight: 700;
   letter-spacing: 0.08em;
-  color: #d5e7f8;
-  text-shadow: 0 0 18px rgba(124, 201, 242, 0.5);
+  color: #274b73;
 }
 
 .cs-step__actions {
@@ -390,10 +390,11 @@
   padding: 11px 14px;
   font-size: 13px;
   color: var(--cs-ink);
-  background: rgba(255, 255, 255, 0.045);
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(15, 23, 42, 0.09);
   border-radius: 12px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
 }
 .cs-howto li::before {
   content: counter(howto);
@@ -403,20 +404,18 @@
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: rgba(124, 201, 242, 0.14);
-  border: 1px solid rgba(124, 201, 242, 0.45);
-  color: #bcd9f2;
+  background: #0f172a;
+  color: #fff;
   font-size: 11px;
   font-weight: 700;
-  box-shadow: 0 0 12px rgba(124, 201, 242, 0.25);
 }
 .cs-howto strong { font-weight: 600; }
 .cs-inlinecode {
   font-family: ui-monospace, Menlo, monospace;
   font-size: 11.5px;
   font-weight: 700;
-  color: #d5e7f8;
-  background: rgba(124, 201, 242, 0.13);
+  color: #274b73;
+  background: rgba(63, 110, 166, 0.12);
   padding: 2px 7px;
   border-radius: 6px;
 }
@@ -429,10 +428,10 @@
   height: 68px;
   margin-bottom: 18px;
   border-radius: 50%;
-  background: rgba(52, 211, 153, 0.12);
-  border: 1px solid rgba(52, 211, 153, 0.5);
-  color: #6ee7b7;
-  box-shadow: 0 0 0 8px rgba(52, 211, 153, 0.06), 0 0 38px rgba(52, 211, 153, 0.35);
+  background: rgba(5, 150, 105, 0.1);
+  border: 1px solid rgba(5, 150, 105, 0.45);
+  color: #047857;
+  box-shadow: 0 0 0 8px rgba(5, 150, 105, 0.07), 0 8px 28px rgba(5, 150, 105, 0.22);
   animation: cs-pop 0.45s cubic-bezier(0.22, 1.4, 0.36, 1) both;
 }
 @keyframes cs-pop {
@@ -443,16 +442,38 @@
 @keyframes cs-spin { to { transform: rotate(360deg); } }
 
 /* ---------- designer workspace (step 6, no step nav) ---------- */
-.cs-designer {
+.cs-builder {
   position: relative;
   z-index: 1;
+  width: 100%;
+  max-width: 1120px;
+  margin: auto;
+}
+.cs-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.cs-topbar > strong {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.cs-topbar__right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.cs-designer {
   display: grid;
   grid-template-columns: minmax(290px, 340px) minmax(0, 1fr);
   gap: 24px;
   align-items: start;
   width: 100%;
-  max-width: 1060px;
-  margin: auto;
   animation: cs-designer-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 @keyframes cs-designer-in {
@@ -465,7 +486,7 @@
   to { opacity: 1; transform: translateX(0); }
 }
 
-/* top-right save cluster (inside the top bar) */
+/* frosted pills + buttons */
 .cs-savestate {
   display: inline-flex;
   align-items: center;
@@ -474,21 +495,22 @@
   font-size: 11.5px;
   font-weight: 600;
   border-radius: 999px;
-  background: rgba(15, 20, 27, 0.55);
+  background: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(12px);
-  border: 1px solid var(--cs-line);
+  border: 1px solid rgba(15, 23, 42, 0.1);
   color: var(--cs-muted);
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.07);
 }
 .cs-savestate i {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #34d399;
-  box-shadow: 0 0 8px rgba(52, 211, 153, 0.8);
+  background: #059669;
+  box-shadow: 0 0 8px rgba(5, 150, 105, 0.7);
 }
 .cs-savestate--saving i {
-  background: #f5b04c;
-  box-shadow: 0 0 8px rgba(245, 176, 76, 0.8);
+  background: #d97706;
+  box-shadow: 0 0 8px rgba(217, 119, 6, 0.7);
   animation: cs-pulse 0.9s ease-in-out infinite;
 }
 @keyframes cs-pulse { 50% { opacity: 0.35; } }
@@ -496,37 +518,39 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 7px 12px;
+  padding: 7px 13px;
   font: inherit;
   font-size: 12px;
   font-weight: 600;
   border-radius: 999px;
-  border: 1px solid var(--cs-line);
-  background: rgba(15, 20, 27, 0.55);
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(12px);
   color: var(--cs-ink);
   cursor: pointer;
   transition: all 0.25s ease;
   white-space: nowrap;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.07);
 }
-.cs-toolbtn:hover { border-color: rgba(124, 201, 242, 0.5); transform: translateY(-1px); box-shadow: 0 0 16px rgba(124, 201, 242, 0.22); }
+.cs-toolbtn:hover { border-color: rgba(63, 110, 166, 0.5); transform: translateY(-1px); }
 .cs-toolbtn--primary {
-  background: linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0.08));
-  border-color: rgba(255, 255, 255, 0.24);
+  background: linear-gradient(180deg, #2b3542, #0f172a);
+  border-color: rgba(15, 23, 42, 0.85);
   color: #fff;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35), 0 0 18px rgba(124, 201, 242, 0.25), inset 0 1px 0 rgba(255,255,255,0.3);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.28);
 }
 
-/* floating glass control cards */
+/* floating frosted control cards */
 .cs-card {
   background: var(--cs-glass);
-  backdrop-filter: blur(28px) saturate(1.2);
-  -webkit-backdrop-filter: blur(28px) saturate(1.2);
-  border: 1px solid var(--cs-line);
+  backdrop-filter: blur(22px) saturate(1.15);
+  -webkit-backdrop-filter: blur(22px) saturate(1.15);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  outline: 1px solid rgba(15, 23, 42, 0.07);
   border-radius: 18px;
   box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+    0 12px 32px rgba(15, 23, 42, 0.09),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
   padding: 18px;
   display: grid;
   gap: 11px;
@@ -535,23 +559,23 @@
 .cs-card__eyebrow {
   margin: 0;
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.13em;
   text-transform: uppercase;
   color: var(--cs-muted);
 }
 .cs-card__hint { margin: 0; font-size: 12px; line-height: 1.6; color: var(--cs-muted); }
 
-.cs-label { display: grid; gap: 6px; font-size: 12px; font-weight: 600; color: #c6cdd6; }
-.cs-label > span { font-size: 12px; font-weight: 600; color: #c6cdd6; }
+.cs-label { display: grid; gap: 6px; font-size: 12px; font-weight: 600; color: #3c4653; }
+.cs-label > span { font-size: 12px; font-weight: 600; color: #3c4653; }
 .cs-label input:not([type='color']):not([type='range']):not([type='checkbox']),
 .cs-label textarea,
 .cs-label select {
   width: 100%;
   padding: 8px 10px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(15, 23, 42, 0.13);
   border-radius: 10px;
-  background: rgba(8, 12, 18, 0.5);
+  background: rgba(255, 255, 255, 0.75);
   font: inherit;
   font-size: 13px;
   font-weight: 400;
@@ -560,21 +584,20 @@
   transition: border-color 0.25s ease, box-shadow 0.25s ease;
 }
 .cs-label input::placeholder, .cs-label textarea::placeholder { color: var(--cs-faint); }
-.cs-label select option { color: #0f172a; }
 .cs-label input:focus, .cs-label textarea:focus, .cs-label select:focus {
-  border-color: rgba(124, 201, 242, 0.6);
-  box-shadow: 0 0 0 3px rgba(124, 201, 242, 0.15);
+  border-color: rgba(63, 110, 166, 0.55);
+  box-shadow: 0 0 0 3px rgba(63, 110, 166, 0.14);
 }
 .cs-label textarea { resize: vertical; line-height: 1.5; }
-.cs-label input[type='range'] { accent-color: #7aa2f7; padding: 0; }
+.cs-label input[type='range'] { accent-color: #3f6ea6; padding: 0; }
 .cs-label--color { grid-template-columns: 1fr auto; align-items: center; }
 .cs-label--color input[type='color'] {
   width: 38px;
   height: 28px;
   padding: 0;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(15, 23, 42, 0.16);
   border-radius: 8px;
-  background: transparent;
+  background: #fff;
   cursor: pointer;
 }
 .cs-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -596,31 +619,154 @@
 }
 .cs-back:hover { color: var(--cs-ink); }
 
-.cs-seclist { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
-.cs-seclist li {
+/* ---------- accordion groups ---------- */
+.cs-acc__head {
+  width: 100%;
   display: flex;
   align-items: center;
-  gap: 9px;
-  padding: 9px 11px;
-  border-radius: 11px;
-  border: 1px solid transparent;
-  background: rgba(255, 255, 255, 0.045);
+  justify-content: space-between;
+  gap: 8px;
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--cs-ink);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   cursor: pointer;
-  transition: all 0.25s ease;
 }
-.cs-seclist li:hover { border-color: rgba(124, 201, 242, 0.4); }
-.cs-seclist li.is-selected { border-color: rgba(124, 201, 242, 0.6); box-shadow: 0 0 0 3px rgba(124, 201, 242, 0.14); }
+.cs-acc__head > svg { color: var(--cs-muted); transition: transform 0.3s ease; flex-shrink: 0; }
+.cs-acc__head > svg.is-open { transform: rotate(180deg); }
+.cs-acc__body {
+  display: grid;
+  gap: 11px;
+  padding-top: 13px;
+  animation: cs-fade-up 0.3s ease both;
+}
+
+/* ---------- content blocks ---------- */
+.cs-addgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 8px;
+}
+.cs-seclist { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.cs-seclist li {
+  border-radius: 12px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: rgba(255, 255, 255, 0.45);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 0;
+  display: flex;
+}
+.cs-seclist li:hover { border-color: rgba(63, 110, 166, 0.4); }
+.cs-seclist li.is-selected { border-color: rgba(63, 110, 166, 0.55); box-shadow: 0 0 0 3px rgba(63, 110, 166, 0.13); }
+.cs-seclist li.is-expanded { border-color: rgba(63, 110, 166, 0.5); }
 .cs-seclist li svg { color: var(--cs-faint); cursor: grab; flex-shrink: 0; }
-.cs-seclist li span { flex: 1; font-size: 13px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cs-seclist li em {
   font-style: normal;
   font-size: 10px;
   font-weight: 600;
-  color: #9db4d4;
-  background: rgba(124, 201, 242, 0.12);
+  color: #3f6ea6;
+  background: rgba(63, 110, 166, 0.1);
   padding: 2px 8px;
   border-radius: 999px;
 }
+.cs-blockrow {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 11px;
+}
+.cs-blockrow__title {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--cs-ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cs-mini {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: none;
+  color: var(--cs-faint);
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+.cs-mini:hover { color: #b42318; border-color: rgba(180, 35, 24, 0.3); background: rgba(180, 35, 24, 0.06); }
+.cs-blockedit {
+  display: grid;
+  gap: 10px;
+  padding: 2px 11px 13px;
+  animation: cs-fade-up 0.3s ease both;
+}
+.cs-itemrows { display: grid; gap: 8px; }
+.cs-itemrow { display: grid; grid-template-columns: 92px 1fr auto; gap: 6px; align-items: center; }
+.cs-itemrow input, .cs-itemrow select {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 9px;
+  border: 1px solid rgba(15, 23, 42, 0.13);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.75);
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--cs-ink);
+  outline: 0;
+}
+.cs-itemrow input:focus, .cs-itemrow select:focus { border-color: rgba(63, 110, 166, 0.55); }
+.cs-itemcard {
+  display: grid;
+  gap: 9px;
+  padding: 11px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.45);
+  border: 1px solid rgba(15, 23, 42, 0.09);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+.cs-itemcard.is-selected { border-color: rgba(63, 110, 166, 0.55); box-shadow: 0 0 0 3px rgba(63, 110, 166, 0.13); }
+.cs-subform { display: grid; gap: 10px; }
+.cs-productedit {
+  border: 1px solid rgba(15, 23, 42, 0.09);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.45);
+  overflow: hidden;
+}
+.cs-productedit__head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: 0;
+  padding: 10px 11px;
+  color: var(--cs-ink);
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.cs-productedit__head span { flex: 1; min-width: 0; font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cs-productedit__head em { font-style: normal; font-size: 12px; color: var(--cs-muted); font-variant-numeric: tabular-nums; }
+.cs-productedit__head svg { color: var(--cs-muted); transition: transform 0.3s ease; flex-shrink: 0; }
+.cs-productedit.is-open .cs-productedit__head svg { transform: rotate(180deg); }
+.cs-productedit .cs-subform { padding: 0 11px 12px; animation: cs-fade-up 0.3s ease both; }
 
 .cs-card__row, .cs-addrow { display: flex; flex-wrap: wrap; gap: 8px; }
 .cs-chipbtn, .cs-addbtn {
@@ -638,10 +784,10 @@
   transition: all 0.25s ease;
   white-space: nowrap;
 }
-.cs-chipbtn { border: 1px solid rgba(255, 255, 255, 0.12); background: rgba(255, 255, 255, 0.05); color: #c6cdd6; }
-.cs-chipbtn:hover { border-color: rgba(124, 201, 242, 0.5); color: var(--cs-ink); }
-.cs-addbtn { border: 1px dashed rgba(124, 201, 242, 0.45); background: rgba(124, 201, 242, 0.08); color: #bcd2f5; }
-.cs-addbtn:hover { background: rgba(124, 201, 242, 0.15); }
+.cs-chipbtn { border: 1px solid rgba(15, 23, 42, 0.12); background: rgba(255, 255, 255, 0.55); color: #3c4653; }
+.cs-chipbtn:hover { border-color: rgba(63, 110, 166, 0.5); color: var(--cs-ink); }
+.cs-addbtn { border: 1px dashed rgba(63, 110, 166, 0.45); background: rgba(63, 110, 166, 0.07); color: #2f567f; }
+.cs-addbtn:hover { background: rgba(63, 110, 166, 0.13); }
 
 .cs-kindgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .cs-kindbtn {
@@ -654,13 +800,13 @@
   font-size: 12.5px;
   font-weight: 600;
   border-radius: 11px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: rgba(255, 255, 255, 0.55);
   color: var(--cs-ink);
   cursor: pointer;
   transition: all 0.25s ease;
 }
-.cs-kindbtn:hover { border-color: rgba(124, 201, 242, 0.5); box-shadow: 0 0 14px rgba(124, 201, 242, 0.18); }
+.cs-kindbtn:hover { border-color: rgba(63, 110, 166, 0.5); box-shadow: 0 4px 14px rgba(63, 110, 166, 0.16); }
 
 .cs-picklist { display: grid; gap: 6px; }
 .cs-picklist button {
@@ -669,8 +815,8 @@
   font: inherit;
   font-size: 12.5px;
   border-radius: 9px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  background: rgba(255, 255, 255, 0.55);
   color: var(--cs-ink);
   cursor: pointer;
   transition: all 0.25s ease;
@@ -678,17 +824,17 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.cs-picklist button:hover { border-color: rgba(124, 201, 242, 0.45); }
-.cs-picklist button.is-on { border-color: rgba(124, 201, 242, 0.6); box-shadow: 0 0 0 3px rgba(124, 201, 242, 0.14); }
-.cs-picklist__add { color: #bcd2f5 !important; border-style: dashed !important; }
+.cs-picklist button:hover { border-color: rgba(63, 110, 166, 0.45); }
+.cs-picklist button.is-on { border-color: rgba(63, 110, 166, 0.55); box-shadow: 0 0 0 3px rgba(63, 110, 166, 0.13); }
+.cs-picklist__add { color: #2f567f !important; border-style: dashed !important; }
 
 .cs-seg {
   display: flex;
   padding: 3px;
   gap: 2px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(15, 23, 42, 0.06);
+  border: 1px solid rgba(15, 23, 42, 0.07);
 }
 .cs-seg button {
   flex: 1;
@@ -703,24 +849,24 @@
   cursor: pointer;
   transition: all 0.25s ease;
 }
-.cs-seg button.is-on { background: rgba(232, 234, 237, 0.14); color: #fff; box-shadow: inset 0 1px 0 rgba(255,255,255,0.12); }
+.cs-seg button.is-on { background: #fff; color: var(--cs-ink); box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12); }
 
 .cs-swatches { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .cs-swatches button {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(15, 23, 42, 0.16);
   cursor: pointer;
   transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
 .cs-swatches button:hover { transform: scale(1.12); }
-.cs-swatches button.is-on { box-shadow: 0 0 0 2px rgba(15,20,27,0.9), 0 0 0 4px #7aa2f7; }
+.cs-swatches button.is-on { box-shadow: 0 0 0 2px #fff, 0 0 0 4px #3f6ea6; }
 .cs-swatches input[type='color'] {
   width: 28px;
   height: 28px;
   padding: 0;
-  border: 1px dashed rgba(124, 201, 242, 0.5);
+  border: 1px dashed rgba(63, 110, 166, 0.5);
   border-radius: 50%;
   background: transparent;
   cursor: pointer;
@@ -729,12 +875,12 @@
 .cs-gradients button {
   height: 42px;
   border-radius: 11px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(15, 23, 42, 0.12);
   cursor: pointer;
   transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
 .cs-gradients button:hover { transform: scale(1.04); }
-.cs-gradients button.is-on { box-shadow: 0 0 0 2px rgba(15,20,27,0.9), 0 0 0 4px #7aa2f7; }
+.cs-gradients button.is-on { box-shadow: 0 0 0 2px #fff, 0 0 0 4px #3f6ea6; }
 
 .cs-toggle {
   display: flex;
@@ -754,7 +900,7 @@
   width: 34px;
   height: 20px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.14);
+  background: rgba(15, 23, 42, 0.16);
   position: relative;
   transition: background 0.25s ease;
 }
@@ -765,11 +911,11 @@
   width: 15px;
   height: 15px;
   border-radius: 50%;
-  background: #e8eaed;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.3);
   transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
 }
-.cs-toggle.is-on .cs-toggle__track { background: rgba(124, 201, 242, 0.65); }
+.cs-toggle.is-on .cs-toggle__track { background: #3f6ea6; }
 .cs-toggle.is-on .cs-toggle__track i { transform: translateX(13px); }
 
 .cs-danger {
@@ -788,7 +934,7 @@
   cursor: pointer;
   transition: all 0.25s ease;
 }
-.cs-danger:hover { color: #f28b82; border-color: rgba(242, 139, 130, 0.35); background: rgba(242, 139, 130, 0.08); }
+.cs-danger:hover { color: #b42318; border-color: rgba(180, 35, 24, 0.3); background: rgba(180, 35, 24, 0.06); }
 
 /* ---------- right phone preview ---------- */
 .cs-preview {
@@ -824,12 +970,12 @@
   height: 620px;
   border-radius: 40px;
   padding: 10px;
-  background: rgba(10, 13, 17, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(10, 13, 17, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow:
-    0 2px 6px rgba(0, 0, 0, 0.4),
-    0 24px 60px rgba(0, 0, 0, 0.45),
-    0 0 0 7px rgba(255, 255, 255, 0.04);
+    0 2px 6px rgba(15, 23, 42, 0.25),
+    0 24px 60px rgba(15, 23, 42, 0.28),
+    0 0 0 7px rgba(255, 255, 255, 0.35);
   transform: translateY(-4px);
   transition: transform 0.3s ease;
 }
@@ -842,8 +988,8 @@
   width: 88px;
   height: 22px;
   border-radius: 999px;
-  background: rgba(10, 13, 17, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(10, 13, 17, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   z-index: 3;
 }
 .pv-screen {
@@ -882,8 +1028,8 @@
   min-height: 100%;
 }
 .pv-block { border-radius: 13px; transition: box-shadow 0.25s ease, outline-color 0.25s ease; outline: 2px solid transparent; outline-offset: 3px; }
-.pv-block.is-hover { outline-color: rgba(124, 201, 242, 0.6); cursor: pointer; }
-.pv-block.is-selected { outline-color: #7aa2f7; box-shadow: 0 0 0 4px rgba(124, 201, 242, 0.2); }
+.pv-block.is-hover { outline-color: rgba(63, 110, 166, 0.6); cursor: pointer; }
+.pv-block.is-selected { outline-color: #3f6ea6; box-shadow: 0 0 0 4px rgba(63, 110, 166, 0.2); }
 
 .pv-profile { text-align: center; padding: 6px 4px; }
 .pv-avatar {
@@ -964,220 +1110,6 @@
 .pv-social:hover { transform: translateY(-2px) scale(1.06); }
 .pv-powered { margin: auto 0 0; padding-top: 12px; text-align: center; font-size: 9.5px; opacity: 0.45; }
 
-/* ---------- preview modal + toast ---------- */
-.cs-modal {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  display: grid;
-  place-items: center;
-  padding: 24px;
-  background: rgba(8, 10, 13, 0.6);
-  backdrop-filter: blur(10px);
-  animation: cs-modal-in 0.3s ease both;
-}
-@keyframes cs-modal-in { from { opacity: 0; } to { opacity: 1; } }
-.cs-modal__inner {
-  position: relative;
-  animation: cs-phone-in 0.45s cubic-bezier(0.22, 1.25, 0.36, 1) both;
-}
-.cs-modal__close {
-  position: absolute;
-  top: -8px;
-  right: -52px;
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(15, 20, 27, 0.8);
-  color: var(--cs-ink);
-  cursor: pointer;
-  transition: transform 0.25s ease;
-}
-.cs-modal__close:hover { transform: scale(1.08); }
-.cs-toast {
-  position: fixed;
-  bottom: 28px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 70;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
-  padding: 10px 17px;
-  border-radius: 999px;
-  background: rgba(232, 234, 237, 0.94);
-  color: #14181d;
-  font-size: 12.5px;
-  font-weight: 600;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
-  animation: cs-toast-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
-  max-width: calc(100vw - 48px);
-}
-@keyframes cs-toast-in {
-  from { opacity: 0; transform: translateX(-50%) translateY(12px); }
-  to { opacity: 1; transform: translateX(-50%) translateY(0); }
-}
-
-/* ---------- builder top bar ---------- */
-.cs-builder {
-  position: relative;
-  z-index: 1;
-  width: 100%;
-  max-width: 1120px;
-  margin: auto;
-}
-.cs-topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-.cs-topbar > strong {
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-}
-.cs-topbar__right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-/* ---------- accordion groups ---------- */
-.cs-acc__head {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  background: none;
-  border: 0;
-  padding: 0;
-  color: var(--cs-ink);
-  font: inherit;
-  font-size: 13.5px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  cursor: pointer;
-}
-.cs-acc__head > svg { color: var(--cs-muted); transition: transform 0.3s ease; flex-shrink: 0; }
-.cs-acc__head > svg.is-open { transform: rotate(180deg); }
-.cs-acc__body {
-  display: grid;
-  gap: 11px;
-  padding-top: 13px;
-  animation: cs-fade-up 0.3s ease both;
-}
-
-/* ---------- content blocks ---------- */
-.cs-addgrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
-  gap: 8px;
-}
-.cs-seclist li { flex-direction: column; align-items: stretch; padding: 0; }
-.cs-seclist li.is-expanded { border-color: rgba(124, 201, 242, 0.5); }
-.cs-blockrow {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 10px 11px;
-}
-.cs-blockrow__title {
-  flex: 1;
-  min-width: 0;
-  background: none;
-  border: 0;
-  padding: 0;
-  color: var(--cs-ink);
-  font: inherit;
-  font-size: 13px;
-  font-weight: 500;
-  text-align: left;
-  cursor: pointer;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.cs-mini {
-  display: grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  flex-shrink: 0;
-  border-radius: 8px;
-  border: 1px solid transparent;
-  background: none;
-  color: var(--cs-faint);
-  cursor: pointer;
-  transition: all 0.25s ease;
-}
-.cs-mini:hover { color: #f28b82; border-color: rgba(242, 139, 130, 0.35); background: rgba(242, 139, 130, 0.08); }
-.cs-blockedit {
-  display: grid;
-  gap: 10px;
-  padding: 2px 11px 13px;
-  animation: cs-fade-up 0.3s ease both;
-}
-.cs-itemrows { display: grid; gap: 8px; }
-.cs-itemrow { display: grid; grid-template-columns: 92px 1fr auto; gap: 6px; align-items: center; }
-.cs-itemrow input, .cs-itemrow select {
-  width: 100%;
-  min-width: 0;
-  padding: 8px 9px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 9px;
-  background: rgba(8, 12, 18, 0.5);
-  font: inherit;
-  font-size: 12.5px;
-  color: var(--cs-ink);
-  outline: 0;
-}
-.cs-itemrow select option { color: #0f172a; }
-.cs-itemrow input:focus, .cs-itemrow select:focus { border-color: rgba(124, 201, 242, 0.6); }
-.cs-itemcard {
-  display: grid;
-  gap: 9px;
-  padding: 11px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.035);
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  transition: border-color 0.25s ease, box-shadow 0.25s ease;
-}
-.cs-itemcard.is-selected { border-color: rgba(124, 201, 242, 0.6); box-shadow: 0 0 0 3px rgba(124, 201, 242, 0.14); }
-.cs-subform { display: grid; gap: 10px; }
-.cs-productedit {
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.035);
-  overflow: hidden;
-}
-.cs-productedit__head {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: none;
-  border: 0;
-  padding: 10px 11px;
-  color: var(--cs-ink);
-  font: inherit;
-  cursor: pointer;
-  text-align: left;
-}
-.cs-productedit__head span { flex: 1; min-width: 0; font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cs-productedit__head em { font-style: normal; font-size: 12px; color: var(--cs-muted); font-variant-numeric: tabular-nums; }
-.cs-productedit__head svg { color: var(--cs-muted); transition: transform 0.3s ease; flex-shrink: 0; }
-.cs-productedit.is-open .cs-productedit__head svg { transform: rotate(180deg); }
-.cs-productedit .cs-subform { padding: 0 11px 12px; animation: cs-fade-up 0.3s ease both; }
-
 /* ---------- new preview blocks ---------- */
 .pv-tiktoks { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .pv-tiktok { position: relative; aspect-ratio: 3 / 4.4; border-radius: 12px; overflow: hidden; background: #1c2430; }
@@ -1236,16 +1168,74 @@
 .pv-news__done { display: inline-flex; align-items: center; justify-content: center; gap: 6px; margin-top: 8px; font-size: 12.5px; font-weight: 700; color: #059669; }
 .pv-product__cta { margin-top: 7px; align-self: flex-start; font-size: 11px; font-weight: 700; padding: 6px 12px; }
 
+/* ---------- preview modal + toast ---------- */
+.cs-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(30, 35, 45, 0.35);
+  backdrop-filter: blur(10px);
+  animation: cs-modal-in 0.3s ease both;
+}
+@keyframes cs-modal-in { from { opacity: 0; } to { opacity: 1; } }
+.cs-modal__inner {
+  position: relative;
+  animation: cs-phone-in 0.45s cubic-bezier(0.22, 1.25, 0.36, 1) both;
+}
+.cs-modal__close {
+  position: absolute;
+  top: -8px;
+  right: -52px;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--cs-ink);
+  cursor: pointer;
+  transition: transform 0.25s ease;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.15);
+}
+.cs-modal__close:hover { transform: scale(1.08); }
+.cs-toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 70;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 17px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.93);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.3);
+  animation: cs-toast-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+  max-width: calc(100vw - 48px);
+}
+@keyframes cs-toast-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(12px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
 /* ---------- responsive ---------- */
 @media (max-width: 1080px) {
   .cs-designer { grid-template-columns: minmax(270px, 320px) minmax(0, 1fr); gap: 18px; }
 }
 @media (max-width: 860px) {
-  .cs-page { padding: 24px 12px; }
-  .cs-setup { min-height: 600px; border-radius: 20px; }
-  .cs-setup__body { padding: 36px 24px 40px; }
-  .cs-progress { padding: 18px 16px 0; }
-  .cs-progress__track { left: 34px; right: 34px; }
+  .cs-page { padding: 24px 12px; border-radius: 18px; }
+  .cs-setup__body { padding: 36px 20px 32px; }
+  .cs-progress { padding: 6px 14px 0; }
+  .cs-progress__track { left: 32px; right: 32px; }
   .cs-progress__label { font-size: 8px; }
   .cs-designer { grid-template-columns: 1fr; }
   .cs-topbar { flex-wrap: wrap; }
