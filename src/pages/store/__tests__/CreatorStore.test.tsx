@@ -34,19 +34,31 @@ describe('CreatorStorePage', () => {
     expect(screen.getByText(/LAUNCHLY-/)).toBeTruthy();
   });
 
-  it('opens the designer directly when a connected store is saved', () => {
+  it('opens the builder directly when a connected store is saved', () => {
     seedConnected();
     render(<CreatorStorePage />);
-    expect(screen.getByText('Page sections')).toBeTruthy();
+    expect(screen.getByText('Page')).toBeTruthy();
+    expect(screen.getByText('Design')).toBeTruthy();
+    expect(screen.getByText('Content')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Products' })).toBeTruthy();
     expect(screen.getByRole('status')).toBeTruthy(); // Saved indicator
     expect(screen.getByLabelText('Live preview of your public page')).toBeTruthy();
     expect(screen.getByRole('button', { name: /Publish/ })).toBeTruthy();
   });
 
-  it('adds a product from the designer controls', () => {
+  it('adds a product from the content controls and edits it', () => {
     seedConnected();
     render(<CreatorStorePage />);
-    fireEvent.click(screen.getByRole('button', { name: /Product/ }));
-    expect(screen.getByText('Edit product')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Product' }));
+    expect(screen.getByLabelText('Product image URL')).toBeTruthy();
+    fireEvent.change(screen.getByLabelText('Product name'), { target: { value: 'Test Ebook' } });
+    expect(screen.getAllByText('Test Ebook').length).toBeGreaterThan(0);
+  });
+
+  it('adds a TikTok block from the content controls', () => {
+    seedConnected();
+    render(<CreatorStorePage />);
+    fireEvent.click(screen.getByRole('button', { name: 'TikTok' }));
+    expect(screen.getByLabelText('TikTok URL')).toBeTruthy();
   });
 });

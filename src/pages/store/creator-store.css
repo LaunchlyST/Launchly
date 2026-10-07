@@ -465,15 +465,7 @@
   to { opacity: 1; transform: translateX(0); }
 }
 
-/* top-right save cluster */
-.cs-savebar {
-  position: absolute;
-  top: -52px;
-  right: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
+/* top-right save cluster (inside the top bar) */
 .cs-savestate {
   display: inline-flex;
   align-items: center;
@@ -1030,6 +1022,220 @@
   to { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
+/* ---------- builder top bar ---------- */
+.cs-builder {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 1120px;
+  margin: auto;
+}
+.cs-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.cs-topbar > strong {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.cs-topbar__right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* ---------- accordion groups ---------- */
+.cs-acc__head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--cs-ink);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+}
+.cs-acc__head > svg { color: var(--cs-muted); transition: transform 0.3s ease; flex-shrink: 0; }
+.cs-acc__head > svg.is-open { transform: rotate(180deg); }
+.cs-acc__body {
+  display: grid;
+  gap: 11px;
+  padding-top: 13px;
+  animation: cs-fade-up 0.3s ease both;
+}
+
+/* ---------- content blocks ---------- */
+.cs-addgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 8px;
+}
+.cs-seclist li { flex-direction: column; align-items: stretch; padding: 0; }
+.cs-seclist li.is-expanded { border-color: rgba(124, 201, 242, 0.5); }
+.cs-blockrow {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 11px;
+}
+.cs-blockrow__title {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--cs-ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cs-mini {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: none;
+  color: var(--cs-faint);
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+.cs-mini:hover { color: #f28b82; border-color: rgba(242, 139, 130, 0.35); background: rgba(242, 139, 130, 0.08); }
+.cs-blockedit {
+  display: grid;
+  gap: 10px;
+  padding: 2px 11px 13px;
+  animation: cs-fade-up 0.3s ease both;
+}
+.cs-itemrows { display: grid; gap: 8px; }
+.cs-itemrow { display: grid; grid-template-columns: 92px 1fr auto; gap: 6px; align-items: center; }
+.cs-itemrow input, .cs-itemrow select {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9px;
+  background: rgba(8, 12, 18, 0.5);
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--cs-ink);
+  outline: 0;
+}
+.cs-itemrow select option { color: #0f172a; }
+.cs-itemrow input:focus, .cs-itemrow select:focus { border-color: rgba(124, 201, 242, 0.6); }
+.cs-itemcard {
+  display: grid;
+  gap: 9px;
+  padding: 11px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+.cs-itemcard.is-selected { border-color: rgba(124, 201, 242, 0.6); box-shadow: 0 0 0 3px rgba(124, 201, 242, 0.14); }
+.cs-subform { display: grid; gap: 10px; }
+.cs-productedit {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.035);
+  overflow: hidden;
+}
+.cs-productedit__head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: 0;
+  padding: 10px 11px;
+  color: var(--cs-ink);
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.cs-productedit__head span { flex: 1; min-width: 0; font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cs-productedit__head em { font-style: normal; font-size: 12px; color: var(--cs-muted); font-variant-numeric: tabular-nums; }
+.cs-productedit__head svg { color: var(--cs-muted); transition: transform 0.3s ease; flex-shrink: 0; }
+.cs-productedit.is-open .cs-productedit__head svg { transform: rotate(180deg); }
+.cs-productedit .cs-subform { padding: 0 11px 12px; animation: cs-fade-up 0.3s ease both; }
+
+/* ---------- new preview blocks ---------- */
+.pv-tiktoks { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.pv-tiktok { position: relative; aspect-ratio: 3 / 4.4; border-radius: 12px; overflow: hidden; background: #1c2430; }
+.pv-tiktok img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.pv-tiktok__blank { position: absolute; inset: 0; display: grid; place-items: center; color: rgba(255, 255, 255, 0.75); background: linear-gradient(135deg, #2b3648, #4b6584); }
+.pv-tiktok__play {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.45);
+  display: grid;
+  place-items: center;
+  color: #fff;
+}
+.pv-tiktok__views {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.65);
+}
+.pv-video { overflow: hidden; border-radius: 16px; box-shadow: 0 10px 26px rgba(15, 23, 42, 0.13); }
+.pv-video img { width: 100%; height: 150px; object-fit: cover; display: block; }
+.pv-video__blank { display: grid; place-items: center; height: 150px; color: rgba(255, 255, 255, 0.85); background: linear-gradient(135deg, #1c2430, #3b4a5e); }
+.pv-video small { display: block; padding: 9px 12px 11px; font-size: 11px; opacity: 0.7; }
+.pv-image { display: block; overflow: hidden; border-radius: 16px; box-shadow: 0 10px 26px rgba(15, 23, 42, 0.13); }
+.pv-image__img { width: 100%; max-height: 220px; object-fit: cover; display: block; }
+.pv-image__blank { display: block; height: 130px; background: linear-gradient(135deg, #e2e8f0, #cbd5e1); }
+.pv-image small { display: block; padding: 9px 12px 11px; font-size: 11px; opacity: 0.7; }
+.pv-text { text-align: center; padding: 6px 8px; }
+.pv-text strong { display: block; font-size: 15px; letter-spacing: -0.01em; }
+.pv-text p { font-size: 12.5px; line-height: 1.6; opacity: 0.78; margin: 6px 0 0; }
+.pv-news { padding: 15px 14px; border-radius: 16px; box-shadow: 0 10px 26px rgba(15, 23, 42, 0.13); display: grid; gap: 5px; text-align: center; }
+.pv-news strong { font-size: 13.5px; }
+.pv-news small { font-size: 11px; opacity: 0.65; line-height: 1.5; }
+.pv-news__row { display: flex; gap: 6px; margin-top: 7px; }
+.pv-news__row input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 12px;
+  background: #fff;
+  color: #0f172a;
+  outline: 0;
+}
+.pv-news__row button { border: 1px solid transparent; font: inherit; font-size: 12px; font-weight: 700; padding: 8px 13px; cursor: pointer; white-space: nowrap; }
+.pv-news__done { display: inline-flex; align-items: center; justify-content: center; gap: 6px; margin-top: 8px; font-size: 12.5px; font-weight: 700; color: #059669; }
+.pv-product__cta { margin-top: 7px; align-self: flex-start; font-size: 11px; font-weight: 700; padding: 6px 12px; }
+
 /* ---------- responsive ---------- */
 @media (max-width: 1080px) {
   .cs-designer { grid-template-columns: minmax(270px, 320px) minmax(0, 1fr); gap: 18px; }
@@ -1041,10 +1247,11 @@
   .cs-progress { padding: 18px 16px 0; }
   .cs-progress__track { left: 34px; right: 34px; }
   .cs-progress__label { font-size: 8px; }
-  .cs-designer { grid-template-columns: 1fr; margin-top: 52px; }
+  .cs-designer { grid-template-columns: 1fr; }
+  .cs-topbar { flex-wrap: wrap; }
+  .cs-topbar__right { flex-wrap: wrap; }
   .cs-preview { position: static; order: -1; }
   .pv-phone { width: 280px; height: 600px; }
-  .cs-savebar { top: -46px; right: 0; left: 0; justify-content: flex-end; flex-wrap: wrap; }
   .cs-modal__close { right: 0; top: -44px; }
 }
 

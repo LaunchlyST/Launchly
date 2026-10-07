@@ -1,9 +1,30 @@
-export type SectionKind = 'profile' | 'featured' | 'products' | 'links' | 'social';
+export type BlockType =
+  | 'profile'
+  | 'products'
+  | 'links'
+  | 'social'
+  | 'tiktok'
+  | 'video'
+  | 'image'
+  | 'text'
+  | 'newsletter';
 
-export interface StoreSection {
+export interface Block {
   id: string;
-  kind: SectionKind;
+  type: BlockType;
   title: string;
+  products?: Product[];
+  links?: LinkItem[];
+  socials?: SocialItem[];
+  videos?: TiktokVideo[];
+  image?: string;
+  url?: string;
+  caption?: string;
+  heading?: string;
+  body?: string;
+  subtext?: string;
+  buttonLabel?: string;
+  placeholder?: string;
 }
 
 export interface Product {
@@ -12,6 +33,8 @@ export interface Product {
   description: string;
   price: string;
   image: string;
+  link: string;
+  cta: string;
 }
 
 export interface LinkItem {
@@ -26,6 +49,13 @@ export interface SocialItem {
   id: string;
   network: SocialNetwork;
   url: string;
+}
+
+export interface TiktokVideo {
+  id: string;
+  url: string;
+  thumb: string;
+  views: string;
 }
 
 export type BgMode = 'color' | 'gradient' | 'image';
@@ -43,21 +73,25 @@ export interface ThemeSettings {
   bgSize: 'cover' | 'contain';
   bgPosition: string;
   textColor: string;
+  buttonColor: string;
   buttonStyle: ButtonStyle;
   buttonRadius: number;
   font: FontChoice;
 }
 
+export interface ThemePreset {
+  name: string;
+  hint: string;
+  theme: Partial<ThemeSettings>;
+}
+
 export interface DesignerState {
   displayName: string;
+  username: string;
   bio: string;
   avatar: string;
   avatarColor: string;
-  sections: StoreSection[];
-  products: Product[];
-  links: LinkItem[];
-  socials: SocialItem[];
-  featuredProductId: string | null;
+  blocks: Block[];
   theme: ThemeSettings;
 }
 
@@ -75,7 +109,8 @@ export interface CreatorStorePersisted {
   publishedAt: string | null;
 }
 
-export const STORAGE_KEY = 'launchly.creator-store-v2';
+export const STORAGE_KEY = 'launchly.creator-store-v3';
+const LEGACY_KEY = 'launchly.creator-store-v2';
 
 export const STEP_LABELS = [
   'TikTok Username',
@@ -97,6 +132,45 @@ export const GRADIENTS = [
 
 export const SOLID_COLORS = ['#ffffff', '#f8fafc', '#fdf2f8', '#eff6ff', '#f0fdf4', '#fffbeb', '#0f172a', '#1e1b4b'];
 
+export const THEME_PRESETS: ThemePreset[] = [
+  {
+    name: 'Porcelain',
+    hint: 'Clean light page',
+    theme: {
+      bgMode: 'gradient',
+      gradient: GRADIENTS[0],
+      textColor: '#0f172a',
+      buttonColor: '#0f172a',
+      buttonStyle: 'filled',
+      font: 'modern',
+    },
+  },
+  {
+    name: 'Midnight',
+    hint: 'Dark cinematic page',
+    theme: {
+      bgMode: 'color',
+      bgColor: '#0d1117',
+      textColor: '#f2f4f7',
+      buttonColor: '#e8eaed',
+      buttonStyle: 'filled',
+      font: 'modern',
+    },
+  },
+  {
+    name: 'Atelier',
+    hint: 'Warm editorial page',
+    theme: {
+      bgMode: 'gradient',
+      gradient: GRADIENTS[5],
+      textColor: '#1c1917',
+      buttonColor: '#1c1917',
+      buttonStyle: 'filled',
+      font: 'serif',
+    },
+  },
+];
+
 export const FONTS: Record<FontChoice, string> = {
   modern: "Inter, -apple-system, 'Segoe UI', sans-serif",
   serif: "Fraunces, Georgia, 'Times New Roman', serif",
@@ -114,31 +188,77 @@ export function makeCode(): string {
   return `LAUNCHLY-${out}`;
 }
 
+export function blankBlock(type: BlockType): Block {
+  const base = { id: newId('block'), type, title: '' };
+  switch (type) {
+    case 'profile':
+      return { ...base, title: 'Profile' };
+    case 'products':
+      return { ...base, title: 'Shop', products: [] };
+    case 'links':
+      return { ...base, title: 'Links', links: [] };
+    case 'social':
+      return { ...base, title: 'Follow me', socials: [] };
+    case 'tiktok':
+      return { ...base, title: 'Latest on TikTok', videos: [] };
+    case 'video':
+      return { ...base, title: 'Video', url: '', image: '', caption: '' };
+    case 'image':
+      return { ...base, title: 'Image', image: '', caption: '', url: '' };
+    case 'text':
+      return { ...base, title: 'Heading', heading: 'New section', body: '' };
+    case 'newsletter':
+      return {
+        ...base,
+        title: 'Newsletter',
+        heading: 'Join my newsletter',
+        subtext: 'Drops, templates and behind-the-scenes — once a month.',
+        buttonLabel: 'Subscribe',
+        placeholder: 'you@email.com',
+      };
+  }
+}
+
 export function defaultDesigner(username = ''): DesignerState {
-  const p1 = newId('product');
-  const p2 = newId('product');
+  const p1: Product = {
+    id: newId('product'),
+    title: 'Viral Preset Pack',
+    description: '10 presets tuned for talking-head videos.',
+    price: '$19',
+    image: '',
+    link: '',
+    cta: 'Get it',
+  };
+  const p2: Product = {
+    id: newId('product'),
+    title: '1:1 Video Edit',
+    description: 'Send clips, get a captioned edit in 48h.',
+    price: '$79',
+    image: '',
+    link: '',
+    cta: 'Book now',
+  };
   return {
     displayName: username ? `@${username}` : 'Your Studio',
+    username,
     bio: 'Digital presets, templates & custom orders — delivered instantly.',
     avatar: '',
     avatarColor: '#4f46e5',
-    sections: [
-      { id: newId('section'), kind: 'profile', title: 'Profile' },
-      { id: newId('section'), kind: 'featured', title: 'Featured' },
-      { id: newId('section'), kind: 'products', title: 'Shop' },
-      { id: newId('section'), kind: 'links', title: 'Links' },
-      { id: newId('section'), kind: 'social', title: 'Follow me' },
+    blocks: [
+      { ...blankBlock('profile'), id: newId('block') },
+      { ...blankBlock('tiktok'), id: newId('block'), videos: [] },
+      { ...blankBlock('products'), id: newId('block'), products: [p1, p2] },
+      { ...blankBlock('links'), id: newId('block'), links: [{ id: newId('link'), label: 'My latest video', url: 'https://tiktok.com' }] },
+      {
+        ...blankBlock('social'),
+        id: newId('block'),
+        socials: [
+          { id: newId('social'), network: 'instagram', url: '' },
+          { id: newId('social'), network: 'youtube', url: '' },
+        ],
+      },
+      { ...blankBlock('newsletter'), id: newId('block') },
     ],
-    products: [
-      { id: p1, title: 'Viral Preset Pack', description: '10 presets tuned for talking-head videos.', price: '$19', image: '' },
-      { id: p2, title: '1:1 Video Edit', description: 'Send clips, get a captioned edit in 48h.', price: '$79', image: '' },
-    ],
-    links: [{ id: newId('link'), label: 'My latest video', url: 'https://tiktok.com' }],
-    socials: [
-      { id: newId('social'), network: 'instagram', url: '' },
-      { id: newId('social'), network: 'youtube', url: '' },
-    ],
-    featuredProductId: p1,
     theme: {
       bgMode: 'gradient',
       bgColor: '#ffffff',
@@ -150,6 +270,7 @@ export function defaultDesigner(username = ''): DesignerState {
       bgSize: 'cover',
       bgPosition: 'center',
       textColor: '#0f172a',
+      buttonColor: '#0f172a',
       buttonStyle: 'filled',
       buttonRadius: 14,
       font: 'modern',
@@ -165,21 +286,74 @@ export function defaultPersisted(): CreatorStorePersisted {
   return { setup: defaultSetup(), designer: defaultDesigner(), publishedAt: null };
 }
 
+/** Best-effort upgrade of the previous persisted shape into blocks. */
+function migrateV2(raw: any): CreatorStorePersisted {
+  const base = defaultPersisted();
+  try {
+    const d = raw.designer ?? {};
+    const sections: Array<{ id: string; kind: string; title: string }> = Array.isArray(d.sections) ? d.sections : [];
+    const products: Product[] = Array.isArray(d.products)
+      ? d.products.map((p: any) => ({ link: '', cta: 'Get it', ...p }))
+      : [];
+    const links = Array.isArray(d.links) ? d.links : [];
+    const socials = Array.isArray(d.socials) ? d.socials : [];
+    const featuredId: string | null = d.featuredProductId ?? null;
+    const blocks: Block[] = [];
+    for (const s of sections) {
+      if (s.kind === 'profile') blocks.push({ id: s.id || newId('block'), type: 'profile', title: s.title || 'Profile' });
+      else if (s.kind === 'links') blocks.push({ id: s.id || newId('block'), type: 'links', title: s.title || 'Links', links });
+      else if (s.kind === 'social')
+        blocks.push({ id: s.id || newId('block'), type: 'social', title: s.title || 'Follow me', socials });
+      else if (s.kind === 'featured') {
+        const f = products.find((p) => p.id === featuredId);
+        if (f) blocks.push({ id: s.id || newId('block'), type: 'products', title: s.title || 'Featured', products: [f] });
+      } else if (s.kind === 'products') {
+        const rest = featuredId ? products.filter((p) => p.id !== featuredId) : products;
+        blocks.push({ id: s.id || newId('block'), type: 'products', title: s.title || 'Shop', products: rest });
+      }
+    }
+    if (!blocks.some((b) => b.type === 'profile')) blocks.unshift({ ...blankBlock('profile'), id: newId('block') });
+    return {
+      setup: { ...base.setup, ...(raw.setup ?? {}) },
+      designer: {
+        ...base.designer,
+        displayName: d.displayName ?? base.designer.displayName,
+        bio: d.bio ?? base.designer.bio,
+        avatar: d.avatar ?? '',
+        avatarColor: d.avatarColor ?? base.designer.avatarColor,
+        blocks,
+        theme: { ...base.designer.theme, ...(d.theme ?? {}), buttonColor: d.theme?.buttonColor ?? base.designer.theme.buttonColor },
+      },
+      publishedAt: raw.publishedAt ?? null,
+    };
+  } catch {
+    return base;
+  }
+}
+
 export function loadPersisted(): CreatorStorePersisted {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return defaultPersisted();
-    const parsed = JSON.parse(raw) as Partial<CreatorStorePersisted>;
-    const base = defaultPersisted();
-    return {
-      setup: { ...base.setup, ...(parsed.setup ?? {}) },
-      designer: {
-        ...base.designer,
-        ...(parsed.designer ?? {}),
-        theme: { ...base.designer.theme, ...(parsed.designer?.theme ?? {}) },
-      },
-      publishedAt: parsed.publishedAt ?? null,
-    };
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      const base = defaultPersisted();
+      return {
+        setup: { ...base.setup, ...(parsed.setup ?? {}) },
+        designer: {
+          ...base.designer,
+          ...(parsed.designer ?? {}),
+          theme: { ...base.designer.theme, ...(parsed.designer?.theme ?? {}) },
+        },
+        publishedAt: parsed.publishedAt ?? null,
+      };
+    }
+    const legacy = localStorage.getItem(LEGACY_KEY);
+    if (legacy) {
+      const migrated = migrateV2(JSON.parse(legacy));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+      return migrated;
+    }
+    return defaultPersisted();
   } catch {
     return defaultPersisted();
   }
