@@ -116,6 +116,11 @@ export function CreatorStorePage() {
 
   return (
     <div className="cs-page">
+      <div className="cs-orbs" aria-hidden="true">
+        <i className="cs-orb cs-orb--a" />
+        <i className="cs-orb cs-orb--b" />
+        <i className="cs-orb cs-orb--c" />
+      </div>
       {inSetup && (
         <div className={`cs-setup${phase === 'leaving' ? ' is-leaving' : ''}`}>
           <ProgressBar step={progressStep} />
