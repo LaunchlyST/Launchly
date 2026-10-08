@@ -100,6 +100,7 @@
   display: flex;
   flex-direction: column;
   width: min(840px, 100%);
+  align-self: stretch;
   transition: opacity 0.35s ease, transform 0.35s ease;
 }
 .cs-setup.is-leaving {
@@ -108,11 +109,12 @@
   pointer-events: none;
 }
 .cs-setup__body {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
-  padding: 52px 24px 20px;
+  justify-content: center;
+  padding: 24px 24px 56px;
   text-align: center;
 }
 
