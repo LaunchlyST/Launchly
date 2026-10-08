@@ -260,10 +260,10 @@
   transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
 }
 .cs-fieldrow:focus-within {
-  border-color: rgba(63, 110, 166, 0.6);
+  border-color: rgba(15, 23, 42, 0.38);
   box-shadow:
-    0 0 0 3px rgba(63, 110, 166, 0.15),
-    0 8px 26px rgba(63, 110, 166, 0.18);
+    0 0 0 3px rgba(15, 23, 42, 0.08),
+    0 10px 28px rgba(15, 23, 42, 0.13);
   transform: translateY(-1px);
 }
 .cs-at {
