@@ -245,19 +245,12 @@
 .cs-step__hint { color: var(--cs-muted); font-size: 12px; margin: 18px 0 0; line-height: 1.65; }
 .cs-step__hint strong { color: var(--cs-ink); font-weight: 600; }
 
-.cs-fieldrow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+/* One unified field: the @ sits overlaid inside a single input,
+   so focus styling can only ever wrap the whole pill shape. */
+.cs-fieldwrap {
+  position: relative;
   max-width: 340px;
   margin: 0 auto 20px;
-  padding: 6px 8px 6px 18px;
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(14px);
-  border: 1px solid rgba(15, 23, 42, 0.14);
-  border-radius: 16px;
-  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.9);
-  transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
 }
 .cs-page input,
 .cs-page textarea,
@@ -266,45 +259,44 @@
   outline: none !important;
   -webkit-tap-highlight-color: transparent;
 }
-.cs-page input:focus,
-.cs-page textarea:focus,
-.cs-page select:focus,
-.cs-page button:focus {
-  outline: none !important;
-  box-shadow: none;
+.cs-at {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.06);
+  color: var(--cs-muted);
+  font-weight: 700;
+  font-size: 14px;
+  pointer-events: none;
 }
-.cs-fieldrow:focus-within {
+.cs-input {
+  width: 100%;
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(14px);
+  border-radius: 16px;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--cs-ink);
+  padding: 15px 18px 15px 54px;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
+}
+.cs-input::placeholder { color: var(--cs-faint); }
+.cs-input:focus {
   border-color: rgba(15, 23, 42, 0.38);
   box-shadow:
     0 0 0 3px rgba(15, 23, 42, 0.08),
     0 10px 28px rgba(15, 23, 42, 0.13);
   transform: translateY(-1px);
 }
-.cs-at {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: rgba(15, 23, 42, 0.06);
-  color: var(--cs-muted);
-  font-weight: 700;
-  font-size: 14px;
-}
-.cs-input {
-  flex: 1;
-  min-width: 0;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  font: inherit;
-  font-size: 16px;
-  font-weight: 500;
-  color: var(--cs-ink);
-  padding: 12px 8px;
-}
-.cs-input::placeholder { color: var(--cs-faint); }
 
 .cs-btn-primary {
   display: inline-flex;

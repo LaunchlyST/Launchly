@@ -38,7 +38,7 @@ export function SetupFlow({ setup, onPatch, onNext, onBack, onVerify, onRegenera
           <p className="cs-step__eyebrow">Step 1 of 5</p>
           <h2 className="cs-step__title">What&rsquo;s your TikTok username?</h2>
           <p className="cs-step__sub">We&rsquo;ll link this account to your new Creator Store.</p>
-          <div className="cs-fieldrow">
+          <div className="cs-fieldwrap">
             <span className="cs-at" aria-hidden="true">@</span>
             <input
               className="cs-input"
