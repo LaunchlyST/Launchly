@@ -50,6 +50,9 @@ export function PhonePreview({
   const [subscribed, setSubscribed] = useState(false);
   const [dragId, setDragId] = useState<string | null>(null);
   const [dropId, setDropId] = useState<string | null>(null);
+  // Drag-to-resize the phone frame (builder only) so more of the page fits.
+  const [size, setSize] = useState<{ w: number; h: number } | null>(null);
+  const resizeRef = useRef<{ startX: number; startY: number; baseW: number; baseH: number; pointerId: number } | null>(null);
   const dragMoved = useRef(false);
   const suppressPick = useRef(false);
   const dropRef = useRef<string | null>(null);
@@ -109,6 +112,31 @@ export function PhonePreview({
   function setDrop(v: string | null) {
     dropRef.current = v;
     setDropId(v);
+  }
+
+  /** Corner-drag resizes the phone frame; the page inside reflows to fit. */
+  function onResizeDown(e: React.PointerEvent<HTMLSpanElement>) {
+    if (e.button !== 0) return;
+    e.stopPropagation();
+    e.preventDefault();
+    (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+    const base = size ?? { w: 292, h: 620 };
+    resizeRef.current = { startX: e.clientX, startY: e.clientY, baseW: base.w, baseH: base.h, pointerId: e.pointerId };
+  }
+
+  function onResizeMove(e: React.PointerEvent<HTMLSpanElement>) {
+    const r = resizeRef.current;
+    if (!r || e.pointerId !== r.pointerId) return;
+    setSize({
+      w: Math.max(280, Math.min(480, r.baseW + (e.clientX - r.startX))),
+      h: Math.max(560, Math.min(920, r.baseH + (e.clientY - r.startY))),
+    });
+  }
+
+  function endResize(e: React.PointerEvent<HTMLSpanElement>) {
+    const r = resizeRef.current;
+    if (!r || e.pointerId !== r.pointerId) return;
+    resizeRef.current = null;
   }
 
   function gripDown(e: React.PointerEvent, id: string) {
@@ -370,7 +398,11 @@ export function PhonePreview({
   }
 
   return (
-    <div className={`pv-phone${dragId ? ' is-dragging' : ''}`} aria-label="Live preview of your public page">
+    <div
+      className={`pv-phone${dragId ? ' is-dragging' : ''}`}
+      aria-label="Live preview of your public page"
+      style={size ? { width: size.w, height: size.h } : undefined}
+    >
       <div className="pv-notch" aria-hidden="true" />
       <div
         className={`pv-screen${t.bgAnimated && t.bgMode === 'gradient' ? ' is-animated' : ''}`}
@@ -388,6 +420,18 @@ export function PhonePreview({
           <p className="pv-powered">Made with Launchly</p>
         </div>
       </div>
+      {interactive && (
+        <span
+          className="pv-resize"
+          title="Drag to resize"
+          aria-hidden="true"
+          onPointerDown={onResizeDown}
+          onPointerMove={onResizeMove}
+          onPointerUp={endResize}
+          onPointerCancel={endResize}
+          onClick={(e) => e.stopPropagation()}
+        />
+      )}
     </div>
   );
 }

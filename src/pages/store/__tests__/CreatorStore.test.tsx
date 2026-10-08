@@ -115,4 +115,19 @@ describe('CreatorStorePage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Add TikTok' }));
     expect(screen.getByLabelText('TikTok URL')).toBeTruthy();
   });
+
+  it('resizes the phone preview by dragging the corner handle', () => {
+    seedConnected();
+    const { container } = render(<CreatorStorePage />);
+    const phone = container.querySelector('.pv-phone') as HTMLElement;
+    const handleEl = container.querySelector('.pv-resize') as HTMLElement;
+    expect(phone).toBeTruthy();
+    expect(handleEl).toBeTruthy();
+    expect(phone.style.width).toBe('');
+    fireEvent.pointerDown(handleEl, { button: 0, clientX: 100, clientY: 100, pointerId: 1 });
+    fireEvent.pointerMove(handleEl, { clientX: 150, clientY: 150, pointerId: 1 });
+    fireEvent.pointerUp(handleEl, { pointerId: 1 });
+    expect(phone.style.width).toBe('342px');
+    expect(phone.style.height).toBe('670px');
+  });
 });
