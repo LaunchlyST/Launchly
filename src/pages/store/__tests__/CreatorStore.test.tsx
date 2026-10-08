@@ -73,6 +73,18 @@ describe('CreatorStorePage', () => {
     expect(screen.getAllByText('Test Ebook').length).toBeGreaterThan(0);
   });
 
+  it('shows one focused box when clicking the preview, back returns to all controls', () => {
+    seedConnected();
+    render(<CreatorStorePage />);
+    fireEvent.click(screen.getByText('Viral Preset Pack'));
+    expect(screen.getByLabelText('Product image URL')).toBeTruthy();
+    expect(screen.queryByText('Design')).toBeNull();
+    expect(screen.queryByText('Content')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /All controls/ }));
+    expect(screen.getByText('Design')).toBeTruthy();
+    expect(screen.getByText('Content')).toBeTruthy();
+  });
+
   it('adds a TikTok block from the content controls', () => {
     seedConnected();
     render(<CreatorStorePage />);

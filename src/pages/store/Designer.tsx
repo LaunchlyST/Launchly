@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import {
+  ArrowLeft,
   Check,
   ChevronDown,
   Eye,
@@ -55,6 +56,8 @@ export function Designer({ designer, username, saveState, publishedAt, onPatch, 
   const [expandedProductId, setExpandedProductId] = useState<string | null>(null);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [hoverKey, setHoverKey] = useState<string | null>(null);
+  // Focus mode: clicking the preview shows ONE editing box instead of the full panel.
+  const [focusKey, setFocusKey] = useState<string | null>(null);
   const [toast, setToast] = useState('');
   const [previewOpen, setPreviewOpen] = useState(false);
   const [published, setPublished] = useState(false);
@@ -80,32 +83,37 @@ export function Designer({ designer, username, saveState, publishedAt, onPatch, 
     }, 60);
   }
 
-  /** Open the matching editor when something is clicked in the preview. */
+  /** Clicking the preview opens ONE focused editing box on the left. */
   function pick(key: string) {
-    setSelectedKey(key);
     const [kind, id] = key.split(':');
-    if (kind === 'product') {
-      setOpen((o) => ({ ...o, products: true }));
-      setExpandedProductId(id);
-      scrollToEdit(id);
-      return;
-    }
-    const block = designer.blocks.find((b) =>
-      kind === 'block'
-        ? b.id === id
+    const exists =
+      kind === 'product'
+        ? designer.blocks.some((b) => (b.products ?? []).some((p) => p.id === id))
         : kind === 'link'
-          ? (b.links ?? []).some((l) => l.id === id)
-          : (b.videos ?? []).some((v) => v.id === id)
-    );
-    if (!block) return;
-    if (kind === 'block' && block.type === 'profile') {
-      setOpen((o) => ({ ...o, page: true }));
-      scrollToEdit('page');
-      return;
-    }
-    setOpen((o) => ({ ...o, content: true }));
-    setExpandedBlockId(block.id);
-    scrollToEdit(block.id);
+          ? designer.blocks.some((b) => (b.links ?? []).some((l) => l.id === id))
+          : kind === 'tiktok'
+            ? designer.blocks.some((b) => (b.videos ?? []).some((v) => v.id === id))
+            : designer.blocks.some((b) => b.id === id);
+    if (!exists) return;
+    setSelectedKey(key);
+    setFocusKey(key);
+  }
+
+  function exitFocus() {
+    setFocusKey(null);
+  }
+
+  function openProductEditor(blockId: string, productId: string) {
+    setFocusKey(null);
+    setOpen({ page: false, design: false, content: false, products: true });
+    setExpandedProductId(productId);
+    scrollToEdit(productId);
+  }
+
+  function editInPage() {
+    setFocusKey(null);
+    setOpen({ page: true, design: false, content: false, products: false });
+    scrollToEdit('page');
   }
 
   function patchBlock(id: string, patch: Partial<Block>) {
@@ -227,6 +235,99 @@ export function Designer({ designer, username, saveState, publishedAt, onPatch, 
     flash('Published ✓ — your store is live');
   }
 
+  /** Single focused editing box shown when picking from the preview. */
+  function renderFocus(): React.ReactNode | null {
+    if (!focusKey) return null;
+    const [kind, id] = focusKey.split(':');
+    const back = (
+      <button type="button" className="cs-back" onClick={exitFocus}>
+        <ArrowLeft size={14} /> All controls
+      </button>
+    );
+    const wrap = (eyebrow: string, body: React.ReactNode) => (
+      <div className="cs-controls">
+        <div className="cs-card cs-focus">
+          {back}
+          <p className="cs-card__eyebrow">{eyebrow}</p>
+          {body}
+        </div>
+      </div>
+    );
+    if (kind === 'product') {
+      const block = designer.blocks.find((b) => (b.products ?? []).some((p) => p.id === id));
+      const product = block?.products?.find((p) => p.id === id);
+      if (!block || !product) return null;
+      return wrap(
+        'Edit product',
+        <ProductFields
+          product={product}
+          onPatch={(patch) => patchProduct(block.id, product.id, patch)}
+          onDelete={() => {
+            deleteProduct(block.id, product.id);
+            exitFocus();
+          }}
+        />
+      );
+    }
+    if (kind === 'link') {
+      const block = designer.blocks.find((b) => (b.links ?? []).some((l) => l.id === id));
+      const link = block?.links?.find((l) => l.id === id);
+      if (!block || !link) return null;
+      return wrap(
+        'Edit link',
+        <LinkFields
+          items={[link]}
+          selectedKey={selectedKey}
+          onAdd={addLink}
+          onPatch={(lid, patch) => patchBlock(block.id, { links: (block.links ?? []).map((l) => (l.id === lid ? { ...l, ...patch } : l)) })}
+          onDelete={(lid) => {
+            patchBlock(block.id, { links: (block.links ?? []).filter((l) => l.id !== lid) });
+            exitFocus();
+          }}
+        />
+      );
+    }
+    if (kind === 'tiktok') {
+      const block = designer.blocks.find((b) => (b.videos ?? []).some((v) => v.id === id));
+      const video = block?.videos?.find((v) => v.id === id);
+      if (!block || !video) return null;
+      return wrap(
+        'Edit TikTok video',
+        <TiktokFields
+          items={[video]}
+          selectedKey={selectedKey}
+          onAdd={addTiktok}
+          onPatch={(vid, patch) => patchBlock(block.id, { videos: (block.videos ?? []).map((v) => (v.id === vid ? { ...v, ...patch } : v)) })}
+          onDelete={(vid) => {
+            patchBlock(block.id, { videos: (block.videos ?? []).filter((v) => v.id !== vid) });
+            exitFocus();
+          }}
+        />
+      );
+    }
+    const block = designer.blocks.find((b) => b.id === id);
+    if (!block) return null;
+    return wrap(
+      `${BLOCK_LABEL[block.type]} block`,
+      <BlockEditor
+        block={block}
+        selectedKey={selectedKey}
+        onPatchBlock={(patch) => patchBlock(block.id, patch)}
+        onAddProduct={() => addProduct(block.id)}
+        onAddLink={addLink}
+        onAddTiktok={addTiktok}
+        onDeleteBlock={() => {
+          deleteBlock(block.id);
+          exitFocus();
+        }}
+        onOpenProduct={(productId) => openProductEditor(block.id, productId)}
+        onEditInPage={editInPage}
+      />
+    );
+  }
+
+  const focusView = renderFocus();
+
   return (
     <div className="cs-builder">
       {/* Top bar */}
@@ -250,8 +351,8 @@ export function Designer({ designer, username, saveState, publishedAt, onPatch, 
       </div>
 
       <div className="cs-designer">
-        {/* Left editor */}
-        <div className="cs-controls">
+        {/* Left editor: one focused box, or the full panel */}
+        {focusView ?? (<div className="cs-controls">
           <Group id="page" title="Page" open={open} onToggle={toggleGroup}>
             <div id="cs-edit-page">
               <label className="cs-label">
@@ -413,75 +514,17 @@ export function Designer({ designer, username, saveState, publishedAt, onPatch, 
                   </div>
                   {expandedBlockId === b.id && (
                     <div className="cs-blockedit">
-                      {b.type !== 'profile' && (
-                        <label className="cs-label">
-                          Block title
-                          <input value={b.title} maxLength={30} onChange={(e) => patchBlock(b.id, { title: e.target.value })} />
-                        </label>
-                      )}
-                      {b.type === 'profile' && (
-                        <button type="button" className="cs-chipbtn" onClick={() => { setOpen((o) => ({ ...o, page: true })); scrollToEdit('page'); }}>
-                          Edit profile in Page
-                        </button>
-                      )}
-                      {b.type === 'products' && (
-                        <>
-                          {(b.products ?? []).map((p) => (
-                            <button key={p.id} type="button" className="cs-picklist__row" onClick={() => { setOpen((o) => ({ ...o, products: true })); setExpandedProductId(p.id); scrollToEdit(p.id); }}>
-                              {p.title} · {p.price}
-                            </button>
-                          ))}
-                          <button type="button" className="cs-addbtn" onClick={() => addProduct(b.id)}><Plus size={13} /> Add product here</button>
-                        </>
-                      )}
-                      {b.type === 'links' && (
-                        <LinkFields
-                          items={b.links ?? []}
-                          selectedKey={selectedKey}
-                          onAdd={addLink}
-                          onPatch={(id, patch) => patchBlock(b.id, { links: (b.links ?? []).map((l) => (l.id === id ? { ...l, ...patch } : l)) })}
-                          onDelete={(id) => patchBlock(b.id, { links: (b.links ?? []).filter((l) => l.id !== id) })}
-                        />
-                      )}
-                      {b.type === 'tiktok' && (
-                        <TiktokFields
-                          items={b.videos ?? []}
-                          selectedKey={selectedKey}
-                          onAdd={addTiktok}
-                          onPatch={(id, patch) => patchBlock(b.id, { videos: (b.videos ?? []).map((v) => (v.id === id ? { ...v, ...patch } : v)) })}
-                          onDelete={(id) => patchBlock(b.id, { videos: (b.videos ?? []).filter((v) => v.id !== id) })}
-                        />
-                      )}
-                      {b.type === 'video' && (
-                        <>
-                          <label className="cs-label">Video URL<input value={b.url ?? ''} placeholder="https://…" inputMode="url" onChange={(e) => patchBlock(b.id, { url: e.target.value })} /></label>
-                          <label className="cs-label">Thumbnail URL<input value={b.image ?? ''} placeholder="https://…" inputMode="url" onChange={(e) => patchBlock(b.id, { image: e.target.value })} /></label>
-                          <label className="cs-label">Caption<input value={b.caption ?? ''} maxLength={80} onChange={(e) => patchBlock(b.id, { caption: e.target.value })} /></label>
-                        </>
-                      )}
-                      {b.type === 'image' && (
-                        <>
-                          <label className="cs-label">Image URL<input value={b.image ?? ''} placeholder="https://…" inputMode="url" onChange={(e) => patchBlock(b.id, { image: e.target.value })} /></label>
-                          <label className="cs-label">Caption<input value={b.caption ?? ''} maxLength={80} onChange={(e) => patchBlock(b.id, { caption: e.target.value })} /></label>
-                          <label className="cs-label">Link URL (optional)<input value={b.url ?? ''} placeholder="https://…" inputMode="url" onChange={(e) => patchBlock(b.id, { url: e.target.value })} /></label>
-                        </>
-                      )}
-                      {b.type === 'text' && (
-                        <>
-                          <label className="cs-label">Heading<input value={b.heading ?? ''} maxLength={60} onChange={(e) => patchBlock(b.id, { heading: e.target.value })} /></label>
-                          <label className="cs-label">Body<textarea value={b.body ?? ''} rows={3} maxLength={280} onChange={(e) => patchBlock(b.id, { body: e.target.value })} /></label>
-                        </>
-                      )}
-                      {b.type === 'newsletter' && (
-                        <>
-                          <label className="cs-label">Heading<input value={b.heading ?? ''} maxLength={60} onChange={(e) => patchBlock(b.id, { heading: e.target.value })} /></label>
-                          <label className="cs-label">Subtext<textarea value={b.subtext ?? ''} rows={2} maxLength={140} onChange={(e) => patchBlock(b.id, { subtext: e.target.value })} /></label>
-                          <div className="cs-grid2">
-                            <label className="cs-label">Button label<input value={b.buttonLabel ?? ''} maxLength={20} onChange={(e) => patchBlock(b.id, { buttonLabel: e.target.value })} /></label>
-                            <label className="cs-label">Placeholder<input value={b.placeholder ?? ''} maxLength={30} onChange={(e) => patchBlock(b.id, { placeholder: e.target.value })} /></label>
-                          </div>
-                        </>
-                      )}
+                      <BlockEditor
+                        block={b}
+                        selectedKey={selectedKey}
+                        onPatchBlock={(patch) => patchBlock(b.id, patch)}
+                        onAddProduct={() => addProduct(b.id)}
+                        onAddLink={addLink}
+                        onAddTiktok={addTiktok}
+                        onDeleteBlock={() => deleteBlock(b.id)}
+                        onOpenProduct={(productId) => openProductEditor(b.id, productId)}
+                        onEditInPage={editInPage}
+                      />
                     </div>
                   )}
                 </li>
@@ -514,7 +557,7 @@ export function Designer({ designer, username, saveState, publishedAt, onPatch, 
               ))}
             <button type="button" className="cs-addbtn" onClick={() => addProduct()}><Plus size={14} /> Product</button>
           </Group>
-        </div>
+        </div>)}
 
         {/* Right live preview */}
         <div className="cs-preview">
@@ -550,6 +593,109 @@ export function Designer({ designer, username, saveState, publishedAt, onPatch, 
         )}
       </div>
     </div>
+  );
+}
+
+function BlockEditor({
+  block: b,
+  selectedKey,
+  onPatchBlock,
+  onAddProduct,
+  onAddLink,
+  onAddTiktok,
+  onDeleteBlock,
+  onOpenProduct,
+  onEditInPage,
+}: {
+  block: Block;
+  selectedKey: string | null;
+  onPatchBlock: (patch: Partial<Block>) => void;
+  onAddProduct: () => void;
+  onAddLink: () => void;
+  onAddTiktok: () => void;
+  onDeleteBlock: () => void;
+  onOpenProduct: (productId: string) => void;
+  onEditInPage: () => void;
+}) {
+  return (
+    <>
+      {b.type !== 'profile' && (
+        <label className="cs-label">
+          Block title
+          <input value={b.title} maxLength={30} onChange={(e) => onPatchBlock({ title: e.target.value })} />
+        </label>
+      )}
+      {b.type === 'profile' && (
+        <button type="button" className="cs-chipbtn" onClick={onEditInPage}>
+          Edit profile in Page
+        </button>
+      )}
+      {b.type === 'products' && (
+        <>
+          {(b.products ?? []).length > 0 && (
+            <div className="cs-picklist">
+              {(b.products ?? []).map((p) => (
+                <button key={p.id} type="button" onClick={() => onOpenProduct(p.id)}>
+                  {p.title} · {p.price}
+                </button>
+              ))}
+            </div>
+          )}
+          <button type="button" className="cs-addbtn" onClick={onAddProduct}><Plus size={13} /> Add product here</button>
+        </>
+      )}
+      {b.type === 'links' && (
+        <LinkFields
+          items={b.links ?? []}
+          selectedKey={selectedKey}
+          onAdd={onAddLink}
+          onPatch={(id, patch) => onPatchBlock({ links: (b.links ?? []).map((l) => (l.id === id ? { ...l, ...patch } : l)) })}
+          onDelete={(id) => onPatchBlock({ links: (b.links ?? []).filter((l) => l.id !== id) })}
+        />
+      )}
+      {b.type === 'tiktok' && (
+        <TiktokFields
+          items={b.videos ?? []}
+          selectedKey={selectedKey}
+          onAdd={onAddTiktok}
+          onPatch={(id, patch) => onPatchBlock({ videos: (b.videos ?? []).map((v) => (v.id === id ? { ...v, ...patch } : v)) })}
+          onDelete={(id) => onPatchBlock({ videos: (b.videos ?? []).filter((v) => v.id !== id) })}
+        />
+      )}
+      {b.type === 'video' && (
+        <>
+          <label className="cs-label">Video URL<input value={b.url ?? ''} placeholder="https://…" inputMode="url" onChange={(e) => onPatchBlock({ url: e.target.value })} /></label>
+          <label className="cs-label">Thumbnail URL<input value={b.image ?? ''} placeholder="https://…" inputMode="url" onChange={(e) => onPatchBlock({ image: e.target.value })} /></label>
+          <label className="cs-label">Caption<input value={b.caption ?? ''} maxLength={80} onChange={(e) => onPatchBlock({ caption: e.target.value })} /></label>
+        </>
+      )}
+      {b.type === 'image' && (
+        <>
+          <label className="cs-label">Image URL<input value={b.image ?? ''} placeholder="https://…" inputMode="url" onChange={(e) => onPatchBlock({ image: e.target.value })} /></label>
+          <label className="cs-label">Caption<input value={b.caption ?? ''} maxLength={80} onChange={(e) => onPatchBlock({ caption: e.target.value })} /></label>
+          <label className="cs-label">Link URL (optional)<input value={b.url ?? ''} placeholder="https://…" inputMode="url" onChange={(e) => onPatchBlock({ url: e.target.value })} /></label>
+        </>
+      )}
+      {b.type === 'text' && (
+        <>
+          <label className="cs-label">Heading<input value={b.heading ?? ''} maxLength={60} onChange={(e) => onPatchBlock({ heading: e.target.value })} /></label>
+          <label className="cs-label">Body<textarea value={b.body ?? ''} rows={3} maxLength={280} onChange={(e) => onPatchBlock({ body: e.target.value })} /></label>
+        </>
+      )}
+      {b.type === 'newsletter' && (
+        <>
+          <label className="cs-label">Heading<input value={b.heading ?? ''} maxLength={60} onChange={(e) => onPatchBlock({ heading: e.target.value })} /></label>
+          <label className="cs-label">Subtext<textarea value={b.subtext ?? ''} rows={2} maxLength={140} onChange={(e) => onPatchBlock({ subtext: e.target.value })} /></label>
+          <div className="cs-grid2">
+            <label className="cs-label">Button label<input value={b.buttonLabel ?? ''} maxLength={20} onChange={(e) => onPatchBlock({ buttonLabel: e.target.value })} /></label>
+            <label className="cs-label">Placeholder<input value={b.placeholder ?? ''} maxLength={30} onChange={(e) => onPatchBlock({ placeholder: e.target.value })} /></label>
+          </div>
+        </>
+      )}
+      {b.type !== 'profile' && (
+        <button type="button" className="cs-danger" onClick={onDeleteBlock}><Trash2 size={13} /> Remove section</button>
+      )}
+    </>
   );
 }
 
