@@ -114,7 +114,7 @@ export interface CreatorStorePersisted {
   ui: CreatorStoreUi;
 }
 
-export type GroupId = 'page' | 'design' | 'content' | 'products';
+export type GroupId = 'design' | 'content' | 'products';
 
 export interface CreatorStoreUi {
   open: Record<GroupId, boolean>;
@@ -125,7 +125,7 @@ export interface CreatorStoreUi {
 
 export function defaultUi(): CreatorStoreUi {
   return {
-    open: { page: true, design: false, content: true, products: false },
+    open: { design: false, content: true, products: false },
     expanded: null,
     focusKey: null,
     phonePos: { x: 0, y: 0 },
@@ -373,7 +373,11 @@ export function loadPersisted(): CreatorStorePersisted {
         ui: {
           ...base.ui,
           ...ui,
-          open: { ...base.ui.open, ...(ui.open ?? {}) },
+          open: {
+            design: (ui.open as Record<string, boolean> | undefined)?.design ?? base.ui.open.design,
+            content: (ui.open as Record<string, boolean> | undefined)?.content ?? base.ui.open.content,
+            products: (ui.open as Record<string, boolean> | undefined)?.products ?? base.ui.open.products,
+          },
           phonePos: ui.phonePos ?? base.ui.phonePos,
         },
       };

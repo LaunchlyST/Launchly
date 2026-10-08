@@ -50,6 +50,11 @@ export function PhonePreview({
   const [subscribed, setSubscribed] = useState(false);
   const [dragId, setDragId] = useState<string | null>(null);
   const [dropId, setDropId] = useState<string | null>(null);
+  // Horizontal page pan inside the phone (mouse drag moves page left/right,
+  // snaps back on release). Vertical stays native scroll.
+  const [panX, setPanX] = useState(0);
+  const [panning, setPanning] = useState(false);
+  const panRef = useRef<{ startX: number; moved: boolean; pointerId: number } | null>(null);
   const dragMoved = useRef(false);
   const suppressPick = useRef(false);
   const dropRef = useRef<string | null>(null);
@@ -109,6 +114,37 @@ export function PhonePreview({
   function setDrop(v: string | null) {
     dropRef.current = v;
     setDropId(v);
+  }
+
+  /** Page pan: drag inside the screen moves the page left/right (snaps back).
+      Vertical stays native scroll — touch-action: pan-y keeps it native. */
+  function onScreenPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    if (e.button !== 0) return;
+    if ((e.target as HTMLElement).closest('input, textarea, select, button, a, .pv-grip')) return;
+    panRef.current = { startX: e.clientX, moved: false, pointerId: e.pointerId };
+    setPanning(true);
+  }
+
+  function onScreenPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    const p = panRef.current;
+    if (!p || e.pointerId !== p.pointerId) return;
+    const dx = e.clientX - p.startX;
+    if (Math.abs(dx) > 6) p.moved = true;
+    if (p.moved) setPanX(Math.max(-72, Math.min(72, dx)));
+  }
+
+  function endScreenPan(e: React.PointerEvent<HTMLDivElement>) {
+    const p = panRef.current;
+    if (!p || e.pointerId !== p.pointerId) return;
+    panRef.current = null;
+    setPanning(false);
+    setPanX(0);
+    if (p.moved) {
+      suppressPick.current = true;
+      window.setTimeout(() => {
+        suppressPick.current = false;
+      }, 0);
+    }
   }
 
   function gripDown(e: React.PointerEvent, id: string) {
@@ -372,11 +408,20 @@ export function PhonePreview({
   return (
     <div className={`pv-phone${dragId ? ' is-dragging' : ''}`} aria-label="Live preview of your public page">
       <div className="pv-notch" aria-hidden="true" />
-      <div className={`pv-screen${t.bgAnimated && t.bgMode === 'gradient' ? ' is-animated' : ''}`} style={{ fontFamily: font, color: t.textColor }}>
+      <div
+        className={`pv-screen${t.bgAnimated && t.bgMode === 'gradient' ? ' is-animated' : ''}${panning ? ' is-panning' : ''}`}
+        style={{ fontFamily: font, color: t.textColor }}
+        onPointerDown={onScreenPointerDown}
+        onPointerMove={onScreenPointerMove}
+        onPointerUp={endScreenPan}
+        onPointerCancel={endScreenPan}
+      >
         <div className="pv-bg" style={bgLayerStyle} aria-hidden="true" />
         <div
           className="pv-content"
+          style={panX !== 0 || panning ? { transform: `translateX(${panX}px)`, transition: panning ? 'none' : 'transform 0.25s ease' } : undefined}
           onClick={() => {
+            if (suppressPick.current) return;
             if (interactive) onClear?.();
           }}
         >

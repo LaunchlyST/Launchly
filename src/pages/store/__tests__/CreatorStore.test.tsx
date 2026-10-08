@@ -34,13 +34,16 @@ describe('CreatorStorePage', () => {
     expect(screen.getByText(/LAUNCHLY-/)).toBeTruthy();
   });
 
-  it('opens the builder directly when a connected store is saved', () => {
+  it('shows one Editor Tools box with a divider and no accordion sections', () => {
     seedConnected();
-    render(<CreatorStorePage />);
-    expect(screen.getByText('Page')).toBeTruthy();
-    expect(screen.getByText('Design')).toBeTruthy();
-    expect(screen.getByText('Content')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Products' })).toBeTruthy();
+    const { container } = render(<CreatorStorePage />);
+    expect(screen.getByText('Editor Tools')).toBeTruthy();
+    expect(container.querySelectorAll('.cs-editor-tools').length).toBe(1);
+    expect(container.querySelector('.cs-divider')).toBeTruthy();
+    expect(screen.queryByText('Page')).toBeNull();
+    expect(screen.queryByText('Design')).toBeNull();
+    expect(screen.queryByText('Content')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Products' })).toBeNull();
     expect(screen.getByRole('status')).toBeTruthy(); // Saved indicator
     expect(screen.getByLabelText('Live preview of your public page')).toBeTruthy();
     expect(screen.getByRole('button', { name: /Publish/ })).toBeTruthy();
@@ -49,66 +52,54 @@ describe('CreatorStorePage', () => {
   it('stays in the builder after a refresh once connected', () => {
     seedConnected();
     const first = render(<CreatorStorePage />);
-    expect(screen.getByText('Design')).toBeTruthy();
+    expect(screen.getByText('Editor Tools')).toBeTruthy();
     first.unmount();
     cleanup();
     render(<CreatorStorePage />);
-    expect(screen.getByText('Design')).toBeTruthy();
+    expect(screen.getByText('Editor Tools')).toBeTruthy();
     expect(screen.queryByLabelText('TikTok username')).toBeNull();
   });
 
-  it('switch account returns to setup without redoing anything else', () => {
+  it('edits a product by clicking it in the phone preview', () => {
     seedConnected();
     render(<CreatorStorePage />);
-    fireEvent.click(screen.getByRole('button', { name: /Switch account/ }));
-    expect(screen.getByLabelText('TikTok username')).toBeTruthy();
-  });
-
-  it('adds a product from the content controls and edits it', () => {
-    seedConnected();
-    render(<CreatorStorePage />);
-    fireEvent.click(screen.getByRole('button', { name: 'Product' }));
+    fireEvent.click(screen.getByText('Viral Preset Pack'));
     expect(screen.getByLabelText('Product image URL')).toBeTruthy();
     fireEvent.change(screen.getByLabelText('Product name'), { target: { value: 'Test Ebook' } });
     expect(screen.getAllByText('Test Ebook').length).toBeGreaterThan(0);
   });
 
-  it('shows one focused box when clicking the preview, back returns to all controls', () => {
-    seedConnected();
-    render(<CreatorStorePage />);
-    fireEvent.click(screen.getByText('Viral Preset Pack'));
-    expect(screen.getByLabelText('Product image URL')).toBeTruthy();
-    expect(screen.queryByText('Design')).toBeNull();
-    expect(screen.queryByText('Content')).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: /All controls/ }));
-    expect(screen.getByText('Design')).toBeTruthy();
-    expect(screen.getByText('Content')).toBeTruthy();
-  });
-
-  it('keeps only one inline editor open at a time', () => {
-    seedConnected();
-    render(<CreatorStorePage />);
-    fireEvent.click(screen.getByRole('button', { name: 'Shop' }));
-    expect(screen.getByLabelText('Block title')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Products' }));
-    fireEvent.click(screen.getByRole('button', { name: /Viral Preset Pack/ }));
-    expect(screen.getByLabelText('Product image URL')).toBeTruthy();
-    expect(screen.queryByLabelText('Block title')).toBeNull();
-  });
-
-  it('opens the background editor when clicking empty preview space', () => {
+  it('updates the same Editor Tools box when clicking different preview items', () => {
     seedConnected();
     const { container } = render(<CreatorStorePage />);
+    fireEvent.click(screen.getByText('Viral Preset Pack'));
+    expect(screen.getByLabelText('Product image URL')).toBeTruthy();
+    fireEvent.click(screen.getByText('My latest video'));
+    expect(screen.queryByLabelText('Product image URL')).toBeNull();
+    expect(screen.getByLabelText('Label')).toBeTruthy();
+    // Still exactly one box on the left.
+    expect(container.querySelectorAll('.cs-editor-tools').length).toBe(1);
+    expect(screen.getByText('Editor Tools')).toBeTruthy();
+  });
+
+  it('clears back to the default Editor Tools box when clicking empty preview space', () => {
+    seedConnected();
+    const { container } = render(<CreatorStorePage />);
+    fireEvent.click(screen.getByText('Viral Preset Pack'));
+    expect(screen.getByLabelText('Product image URL')).toBeTruthy();
     const content = container.querySelector('.pv-content');
     expect(content).toBeTruthy();
     fireEvent.click(content!);
-    expect(screen.getByText('Glass cards')).toBeTruthy();
-    expect(screen.queryByText('Design')).toBeNull();
+    expect(screen.queryByLabelText('Product image URL')).toBeNull();
+    expect(screen.getByText('Editor Tools')).toBeTruthy();
+    expect(container.querySelectorAll('.cs-editor-tools').length).toBe(1);
   });
 
   it('undoes a display name change', () => {
     seedConnected();
     render(<CreatorStorePage />);
+    // Profile fields appear in Editor Tools after clicking the profile in the preview.
+    fireEvent.click(screen.getByText('Your Studio'));
     const input = screen.getByLabelText('Display name') as HTMLInputElement;
     const before = input.value;
     fireEvent.change(input, { target: { value: 'Changed Name' } });
@@ -117,10 +108,11 @@ describe('CreatorStorePage', () => {
     expect((screen.getByLabelText('Display name') as HTMLInputElement).value).toBe(before);
   });
 
-  it('adds a TikTok block from the content controls', () => {
+  it('adds a TikTok video from the preview block editor', () => {
     seedConnected();
     render(<CreatorStorePage />);
-    fireEvent.click(screen.getByRole('button', { name: 'TikTok' }));
+    fireEvent.click(screen.getByText(/No videos yet/));
+    fireEvent.click(screen.getByRole('button', { name: 'Add TikTok' }));
     expect(screen.getByLabelText('TikTok URL')).toBeTruthy();
   });
 });
