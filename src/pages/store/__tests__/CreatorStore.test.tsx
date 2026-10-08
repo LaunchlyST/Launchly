@@ -85,6 +85,38 @@ describe('CreatorStorePage', () => {
     expect(screen.getByText('Content')).toBeTruthy();
   });
 
+  it('keeps only one inline editor open at a time', () => {
+    seedConnected();
+    render(<CreatorStorePage />);
+    fireEvent.click(screen.getByRole('button', { name: 'Shop' }));
+    expect(screen.getByLabelText('Block title')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Products' }));
+    fireEvent.click(screen.getByRole('button', { name: /Viral Preset Pack/ }));
+    expect(screen.getByLabelText('Product image URL')).toBeTruthy();
+    expect(screen.queryByLabelText('Block title')).toBeNull();
+  });
+
+  it('opens the background editor when clicking empty preview space', () => {
+    seedConnected();
+    const { container } = render(<CreatorStorePage />);
+    const content = container.querySelector('.pv-content');
+    expect(content).toBeTruthy();
+    fireEvent.click(content!);
+    expect(screen.getByText('Glass cards')).toBeTruthy();
+    expect(screen.queryByText('Design')).toBeNull();
+  });
+
+  it('undoes a display name change', () => {
+    seedConnected();
+    render(<CreatorStorePage />);
+    const input = screen.getByLabelText('Display name') as HTMLInputElement;
+    const before = input.value;
+    fireEvent.change(input, { target: { value: 'Changed Name' } });
+    expect(input.value).toBe('Changed Name');
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+    expect((screen.getByLabelText('Display name') as HTMLInputElement).value).toBe(before);
+  });
+
   it('adds a TikTok block from the content controls', () => {
     seedConnected();
     render(<CreatorStorePage />);

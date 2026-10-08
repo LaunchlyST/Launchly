@@ -40,25 +40,70 @@ export function CreatorStorePage() {
     []
   );
 
-  function persist(next: CreatorStorePersisted) {
+  /** Single commit path: ref mirror updates synchronously so back-to-back
+      writes in one handler compose instead of clobbering each other. */
+  function commit(next: CreatorStorePersisted) {
+    dataRef.current = next;
     setData(next);
-    // Write synchronously so a refresh never loses your place.
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     } catch {
       /* session-only when storage is unavailable */
     }
+  }
+
+  function persist(next: CreatorStorePersisted) {
+    commit(next);
     setSaveState('saving');
     if (saveTimer.current) window.clearTimeout(saveTimer.current);
     saveTimer.current = window.setTimeout(() => setSaveState('saved'), 800);
   }
+
+  /** Quiet write for panel-layout state (no save indicator flicker). */
+  function persistQuiet(next: CreatorStorePersisted) {
+    commit(next);
+  }
+
+  function patchUi(patch: Partial<CreatorStorePersisted['ui']>) {
+    persistQuiet({ ...dataRef.current, ui: { ...dataRef.current.ui, ...patch } });
+  }
+
+  // Undo/redo history over designer snapshots (coalesces rapid keystrokes).
+  const history = useRef<{ past: DesignerState[]; future: DesignerState[] }>({ past: [], future: [] });
+  const lastPush = useRef(0);
 
   function patchSetup(patch: Partial<SetupState>) {
     persist({ ...data, setup: { ...data.setup, ...patch } });
   }
 
   function patchDesigner(patch: Partial<DesignerState>) {
-    persist({ ...data, designer: { ...data.designer, ...patch } });
+    const prev = dataRef.current.designer;
+    const now = Date.now();
+    if (now - lastPush.current > 1200 || history.current.past.length === 0) {
+      history.current.past.push(prev);
+      if (history.current.past.length > 40) history.current.past.shift();
+      lastPush.current = now;
+    }
+    history.current.future = [];
+    persist({ ...dataRef.current, designer: { ...prev, ...patch } });
+  }
+
+  function undo() {
+    const h = history.current;
+    const prev = h.past.pop();
+    if (!prev) return;
+    h.future.push(dataRef.current.designer);
+    lastPush.current = 0;
+    persist({ ...dataRef.current, designer: prev });
+  }
+
+  function redo() {
+    const h = history.current;
+    const next = h.future.pop();
+    if (!next) return;
+    h.past.push(dataRef.current.designer);
+    lastPush.current = 0;
+    persist({ ...dataRef.current, designer: next });
   }
 
   function next() {
@@ -154,9 +199,15 @@ export function CreatorStorePage() {
           username={data.setup.username}
           saveState={saveState}
           publishedAt={data.publishedAt}
+          ui={data.ui}
           onPatch={patchDesigner}
+          onPatchUi={patchUi}
           onPublish={publish}
           onDisconnect={disconnect}
+          onUndo={undo}
+          onRedo={redo}
+          canUndo={history.current.past.length > 0}
+          canRedo={history.current.future.length > 0}
         />
       )}
     </div>

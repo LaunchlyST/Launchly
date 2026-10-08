@@ -25,6 +25,10 @@ export interface Block {
   subtext?: string;
   buttonLabel?: string;
   placeholder?: string;
+  /** Per-block text overrides (text blocks). */
+  fontSize?: number;
+  align?: 'left' | 'center' | 'right';
+  color?: string;
 }
 
 export interface Product {
@@ -107,6 +111,25 @@ export interface CreatorStorePersisted {
   setup: SetupState;
   designer: DesignerState;
   publishedAt: string | null;
+  ui: CreatorStoreUi;
+}
+
+export type GroupId = 'page' | 'design' | 'content' | 'products';
+
+export interface CreatorStoreUi {
+  open: Record<GroupId, boolean>;
+  expanded: { area: 'block' | 'product'; id: string } | null;
+  focusKey: string | null;
+  phonePos: { x: number; y: number };
+}
+
+export function defaultUi(): CreatorStoreUi {
+  return {
+    open: { page: true, design: false, content: true, products: false },
+    expanded: null,
+    focusKey: null,
+    phonePos: { x: 0, y: 0 },
+  };
 }
 
 export const STORAGE_KEY = 'launchly.creator-store-v3';
@@ -206,7 +229,7 @@ export function blankBlock(type: BlockType): Block {
     case 'image':
       return { ...base, title: 'Image', image: '', caption: '', url: '' };
     case 'text':
-      return { ...base, title: 'Heading', heading: 'New section', body: '' };
+      return { ...base, title: 'Heading', heading: 'New section', body: '', fontSize: 15, align: 'center' as const };
     case 'newsletter':
       return {
         ...base,
@@ -283,7 +306,7 @@ export function defaultSetup(): SetupState {
 }
 
 export function defaultPersisted(): CreatorStorePersisted {
-  return { setup: defaultSetup(), designer: defaultDesigner(), publishedAt: null };
+  return { setup: defaultSetup(), designer: defaultDesigner(), publishedAt: null, ui: defaultUi() };
 }
 
 /** Best-effort upgrade of the previous persisted shape into blocks. */
@@ -325,6 +348,7 @@ function migrateV2(raw: any): CreatorStorePersisted {
         theme: { ...base.designer.theme, ...(d.theme ?? {}), buttonColor: d.theme?.buttonColor ?? base.designer.theme.buttonColor },
       },
       publishedAt: raw.publishedAt ?? null,
+      ui: base.ui,
     };
   } catch {
     return base;
@@ -337,6 +361,7 @@ export function loadPersisted(): CreatorStorePersisted {
     if (raw) {
       const parsed = JSON.parse(raw);
       const base = defaultPersisted();
+      const ui = parsed.ui && typeof parsed.ui === 'object' ? parsed.ui : {};
       return {
         setup: { ...base.setup, ...(parsed.setup ?? {}) },
         designer: {
@@ -345,6 +370,12 @@ export function loadPersisted(): CreatorStorePersisted {
           theme: { ...base.designer.theme, ...(parsed.designer?.theme ?? {}) },
         },
         publishedAt: parsed.publishedAt ?? null,
+        ui: {
+          ...base.ui,
+          ...ui,
+          open: { ...base.ui.open, ...(ui.open ?? {}) },
+          phonePos: ui.phonePos ?? base.ui.phonePos,
+        },
       };
     }
     const legacy = localStorage.getItem(LEGACY_KEY);

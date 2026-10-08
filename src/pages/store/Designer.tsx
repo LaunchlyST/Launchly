@@ -1,6 +1,10 @@
 import { useRef, useState } from 'react';
 import {
+  AlignCenter,
+  AlignLeft,
+  AlignRight,
   ArrowLeft,
+  Blocks,
   Check,
   ChevronDown,
   Eye,
@@ -8,15 +12,23 @@ import {
   GripVertical,
   Link2,
   LogOut,
+  Palette,
   Plus,
+  Redo2,
+  RotateCcw,
   Share2,
+  ShoppingBag,
   Trash2,
+  Undo2,
+  User,
   X,
 } from 'lucide-react';
 import type {
   Block,
   BlockType,
+  CreatorStoreUi,
   DesignerState,
+  GroupId,
   LinkItem,
   Product,
   SocialItem,
@@ -25,8 +37,6 @@ import type {
 } from './store';
 import { GRADIENTS, SOLID_COLORS, THEME_PRESETS, blankBlock, newId, storeShareUrl } from './store';
 import { PhonePreview } from './PhonePreview';
-
-type GroupId = 'page' | 'design' | 'content' | 'products';
 
 const BLOCK_LABEL: Record<BlockType, string> = {
   profile: 'Profile',
@@ -45,22 +55,38 @@ interface DesignerProps {
   username: string;
   saveState: 'saved' | 'saving';
   publishedAt: string | null;
+  ui: CreatorStoreUi;
   onPatch: (patch: Partial<DesignerState>) => void;
+  onPatchUi: (patch: Partial<CreatorStoreUi>) => void;
   onPublish: () => void;
   onDisconnect: () => void;
+  onUndo: () => void;
+  onRedo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
 }
 
-export function Designer({ designer, username, saveState, publishedAt, onPatch, onPublish, onDisconnect }: DesignerProps) {
-  const [open, setOpen] = useState<Record<GroupId, boolean>>({ page: true, design: false, content: true, products: false });
-  const [expandedBlockId, setExpandedBlockId] = useState<string | null>(null);
-  const [expandedProductId, setExpandedProductId] = useState<string | null>(null);
+export function Designer({ designer, username, saveState, publishedAt, ui, onPatch, onPatchUi, onPublish, onDisconnect, onUndo, onRedo, canUndo, canRedo }: DesignerProps) {
+  // Panel layout persists across refreshes, so the builder looks
+  // exactly as you left it.
+  const open = ui.open;
+  const expanded = ui.expanded;
+  const focusKey = ui.focusKey;
+  const phonePos = ui.phonePos;
+  const setOpen = (next: Record<GroupId, boolean> | ((o: Record<GroupId, boolean>) => Record<GroupId, boolean>)) =>
+    onPatchUi({ open: typeof next === 'function' ? next(ui.open) : next });
+  const setExpanded = (next: CreatorStoreUi['expanded']) => onPatchUi({ expanded: next });
+  const setFocusKey = (next: string | null) => onPatchUi({ focusKey: next });
+  const setPhonePos = (next: { x: number; y: number }) => onPatchUi({ phonePos: next });
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [hoverKey, setHoverKey] = useState<string | null>(null);
-  // Focus mode: clicking the preview shows ONE editing box instead of the full panel.
-  const [focusKey, setFocusKey] = useState<string | null>(null);
   const [toast, setToast] = useState('');
   const [previewOpen, setPreviewOpen] = useState(false);
   const [published, setPublished] = useState(false);
+  // Draggable phone preview position (persisted).
+  const [draggingPhone, setDraggingPhone] = useState(false);
+  const phoneDrag = useRef<{ startX: number; startY: number; baseX: number; baseY: number; moved: boolean } | null>(null);
+  const suppressPick = useRef(false);
   const dragIndex = useRef<number | null>(null);
   const toastTimer = useRef<number | null>(null);
 
@@ -79,12 +105,49 @@ export function Designer({ designer, username, saveState, publishedAt, onPatch, 
 
   function scrollToEdit(id: string) {
     window.setTimeout(() => {
+      if (typeof document === 'undefined') return;
       document.getElementById(`cs-edit-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }, 60);
   }
 
+  /** Phone dragging: moves freely; a real drag never triggers selection. */
+  function onPhonePointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    if (e.button !== 0) return;
+    if ((e.target as HTMLElement).closest('input, textarea, select, button, a')) return;
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    phoneDrag.current = { startX: e.clientX, startY: e.clientY, baseX: phonePos.x, baseY: phonePos.y, moved: false };
+    setDraggingPhone(true);
+  }
+
+  function onPhonePointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    const d = phoneDrag.current;
+    if (!d) return;
+    const dx = e.clientX - d.startX;
+    const dy = e.clientY - d.startY;
+    if (Math.abs(dx) + Math.abs(dy) > 6) d.moved = true;
+    if (d.moved) {
+      setPhonePos({
+        x: Math.max(-420, Math.min(420, d.baseX + dx)),
+        y: Math.max(-160, Math.min(500, d.baseY + dy)),
+      });
+    }
+  }
+
+  function onPhonePointerUp() {
+    const d = phoneDrag.current;
+    phoneDrag.current = null;
+    setDraggingPhone(false);
+    if (d?.moved) {
+      suppressPick.current = true;
+      window.setTimeout(() => {
+        suppressPick.current = false;
+      }, 0);
+    }
+  }
+
   /** Clicking the preview opens ONE focused editing box on the left. */
   function pick(key: string) {
+    if (suppressPick.current) return;
     const [kind, id] = key.split(':');
     const exists =
       kind === 'product'
@@ -106,14 +169,8 @@ export function Designer({ designer, username, saveState, publishedAt, onPatch, 
   function openProductEditor(blockId: string, productId: string) {
     setFocusKey(null);
     setOpen({ page: false, design: false, content: false, products: true });
-    setExpandedProductId(productId);
+    setExpanded({ area: 'product', id: productId });
     scrollToEdit(productId);
-  }
-
-  function editInPage() {
-    setFocusKey(null);
-    setOpen({ page: true, design: false, content: false, products: false });
-    scrollToEdit('page');
   }
 
   function patchBlock(id: string, patch: Partial<Block>) {
@@ -128,9 +185,30 @@ export function Designer({ designer, username, saveState, publishedAt, onPatch, 
     onPatch({ blocks });
   }
 
+  function resetBlock(id: string) {
+    const b = designer.blocks.find((x) => x.id === id);
+    if (!b) return;
+    const blank = blankBlock(b.type);
+    patchBlock(id, { ...blank, id: b.id, title: b.title });
+  }
+
+  function resetProduct(blockId: string, productId: string) {
+    patchProduct(blockId, productId, { title: 'New product', description: '', price: '$9', image: '', link: '', cta: 'Get it' });
+  }
+
+  function moveBlockTo(dragId: string, targetId: string) {
+    const from = designer.blocks.findIndex((b) => b.id === dragId);
+    const to = designer.blocks.findIndex((b) => b.id === targetId);
+    if (from < 0 || to < 0 || from === to) return;
+    const blocks = [...designer.blocks];
+    const [moved] = blocks.splice(from, 1);
+    blocks.splice(to, 0, moved);
+    onPatch({ blocks });
+  }
+
   function deleteBlock(id: string) {
     onPatch({ blocks: designer.blocks.filter((b) => b.id !== id) });
-    if (expandedBlockId === id) setExpandedBlockId(null);
+    if (expanded?.area === 'block' && expanded.id === id) setExpanded(null);
   }
 
   function productsBlock(): Block | undefined {
@@ -153,7 +231,7 @@ export function Designer({ designer, username, saveState, publishedAt, onPatch, 
     if (!target || target.type !== 'products') return;
     patchBlock(target.id, { products: [...(target.products ?? []), item] });
     setOpen((o) => ({ ...o, products: true }));
-    setExpandedProductId(item.id);
+    setExpanded({ area: 'product', id: item.id });
     scrollToEdit(item.id);
   }
 
@@ -161,7 +239,7 @@ export function Designer({ designer, username, saveState, publishedAt, onPatch, 
     const block = designer.blocks.find((b) => b.id === blockId);
     if (!block) return;
     patchBlock(blockId, { products: (block.products ?? []).filter((p) => p.id !== productId) });
-    if (expandedProductId === productId) setExpandedProductId(null);
+    if (expanded?.area === 'product' && expanded.id === productId) setExpanded(null);
   }
 
   function patchProduct(blockId: string, productId: string, patch: Partial<Product>) {
@@ -179,8 +257,8 @@ export function Designer({ designer, username, saveState, publishedAt, onPatch, 
     const item: LinkItem = { id: newId('link'), label: 'New link', url: 'https://' };
     if (!linksBlock()) onPatch({ blocks: [...designer.blocks, { ...target, links: [item] }] });
     else patchBlock(target.id, { links: [...(target.links ?? []), item] });
-    setOpen((o) => ({ ...o, content: true }));
-    setExpandedBlockId(target.id);
+    setOpen({ page: false, design: false, content: true, products: false });
+    setExpanded({ area: 'block', id: target.id });
     setSelectedKey(`link:${item.id}`);
     scrollToEdit(item.id);
   }
@@ -190,13 +268,13 @@ export function Designer({ designer, username, saveState, publishedAt, onPatch, 
     const item: TiktokVideo = { id: newId('tiktok'), url: 'https://tiktok.com/@', thumb: '', views: '' };
     if (existing) {
       patchBlock(existing.id, { videos: [...(existing.videos ?? []), item] });
-      setExpandedBlockId(existing.id);
+      setExpanded({ area: 'block', id: existing.id });
     } else {
       const block = { ...blankBlock('tiktok'), videos: [item] };
       onPatch({ blocks: [...designer.blocks, block] });
-      setExpandedBlockId(block.id);
+      setExpanded({ area: 'block', id: block.id });
     }
-    setOpen((o) => ({ ...o, content: true }));
+    setOpen({ page: false, design: false, content: true, products: false });
     setSelectedKey(`tiktok:${item.id}`);
     scrollToEdit(item.id);
   }
@@ -204,8 +282,8 @@ export function Designer({ designer, username, saveState, publishedAt, onPatch, 
   function addBlock(type: BlockType) {
     const block = blankBlock(type);
     onPatch({ blocks: [...designer.blocks, block] });
-    setOpen((o) => ({ ...o, content: true }));
-    setExpandedBlockId(block.id);
+    setOpen({ page: false, design: false, content: true, products: false });
+    setExpanded({ area: 'block', id: block.id });
     scrollToEdit(block.id);
   }
 
@@ -262,6 +340,7 @@ export function Designer({ designer, username, saveState, publishedAt, onPatch, 
         <ProductFields
           product={product}
           onPatch={(patch) => patchProduct(block.id, product.id, patch)}
+          onReset={() => resetProduct(block.id, product.id)}
           onDelete={() => {
             deleteProduct(block.id, product.id);
             exitFocus();
@@ -275,16 +354,29 @@ export function Designer({ designer, username, saveState, publishedAt, onPatch, 
       if (!block || !link) return null;
       return wrap(
         'Edit link',
-        <LinkFields
-          items={[link]}
-          selectedKey={selectedKey}
-          onAdd={addLink}
-          onPatch={(lid, patch) => patchBlock(block.id, { links: (block.links ?? []).map((l) => (l.id === lid ? { ...l, ...patch } : l)) })}
-          onDelete={(lid) => {
-            patchBlock(block.id, { links: (block.links ?? []).filter((l) => l.id !== lid) });
-            exitFocus();
-          }}
-        />
+        <>
+          <label className="cs-label">
+            Section title
+            <input value={block.title} maxLength={30} onChange={(e) => patchBlock(block.id, { title: e.target.value })} />
+          </label>
+          <LinkFields
+            items={[link]}
+            selectedKey={selectedKey}
+            onAdd={addLink}
+            onPatch={(lid, patch) => patchBlock(block.id, { links: (block.links ?? []).map((l) => (l.id === lid ? { ...l, ...patch } : l)) })}
+            onDelete={(lid) => {
+              patchBlock(block.id, { links: (block.links ?? []).filter((l) => l.id !== lid) });
+              exitFocus();
+            }}
+          />
+          <div className="cs-seg" role="group" aria-label="Button style">
+            {(['filled', 'soft', 'outline'] as const).map((s) => (
+              <button key={s} type="button" className={t.buttonStyle === s ? 'is-on' : ''} onClick={() => patchTheme({ buttonStyle: s })}>
+                {s[0].toUpperCase() + s.slice(1)}
+              </button>
+            ))}
+          </div>
+        </>
       );
     }
     if (kind === 'tiktok') {
@@ -305,14 +397,23 @@ export function Designer({ designer, username, saveState, publishedAt, onPatch, 
         />
       );
     }
+    if (kind === 'design') {
+      return wrap(
+        'Background',
+        <BackgroundFields theme={t} onPatchTheme={patchTheme} />
+      );
+    }
     const block = designer.blocks.find((b) => b.id === id);
     if (!block) return null;
     return wrap(
       `${BLOCK_LABEL[block.type]} block`,
       <BlockEditor
         block={block}
+        designer={designer}
+        usernamePlaceholder={username}
         selectedKey={selectedKey}
         onPatchBlock={(patch) => patchBlock(block.id, patch)}
+        onPatchDesigner={onPatch}
         onAddProduct={() => addProduct(block.id)}
         onAddLink={addLink}
         onAddTiktok={addTiktok}
@@ -320,8 +421,8 @@ export function Designer({ designer, username, saveState, publishedAt, onPatch, 
           deleteBlock(block.id);
           exitFocus();
         }}
+        onResetBlock={() => resetBlock(block.id)}
         onOpenProduct={(productId) => openProductEditor(block.id, productId)}
-        onEditInPage={editInPage}
       />
     );
   }
@@ -334,6 +435,12 @@ export function Designer({ designer, username, saveState, publishedAt, onPatch, 
       <div className="cs-topbar">
         <strong>Creator Store</strong>
         <div className="cs-topbar__right">
+          <button type="button" className="cs-toolbtn cs-toolbtn--icon" aria-label="Undo" title="Undo" disabled={!canUndo} onClick={onUndo}>
+            <Undo2 size={14} />
+          </button>
+          <button type="button" className="cs-toolbtn cs-toolbtn--icon" aria-label="Redo" title="Redo" disabled={!canRedo} onClick={onRedo}>
+            <Redo2 size={14} />
+          </button>
           <span className={`cs-savestate cs-savestate--${saveState}`} role="status">
             <i aria-hidden="true" />
             {saveState === 'saved' ? 'Saved ✓' : 'Saving…'}
@@ -353,31 +460,9 @@ export function Designer({ designer, username, saveState, publishedAt, onPatch, 
       <div className="cs-designer">
         {/* Left editor: one focused box, or the full panel */}
         {focusView ?? (<div className="cs-controls">
-          <Group id="page" title="Page" open={open} onToggle={toggleGroup}>
+          <Group id="page" title="Page" icon={User} open={open} onToggle={toggleGroup}>
             <div id="cs-edit-page">
-              <label className="cs-label">
-                Profile photo URL
-                <input value={designer.avatar} placeholder="https://…" inputMode="url" onChange={(e) => onPatch({ avatar: e.target.value })} />
-              </label>
-              <div className="cs-grid2">
-                <label className="cs-label">
-                  Display name
-                  <input value={designer.displayName} maxLength={40} onChange={(e) => onPatch({ displayName: e.target.value })} />
-                </label>
-                <label className="cs-label">
-                  Username
-                  <input
-                    value={designer.username}
-                    maxLength={24}
-                    placeholder={username}
-                    onChange={(e) => onPatch({ username: e.target.value.replace(/[^a-zA-Z0-9_.]/g, '') })}
-                  />
-                </label>
-              </div>
-              <label className="cs-label">
-                Bio
-                <textarea value={designer.bio} rows={3} maxLength={140} onChange={(e) => onPatch({ bio: e.target.value })} />
-              </label>
+              <ProfileFields designer={designer} usernamePlaceholder={username} onPatch={onPatch} />
               <SocialEditor designer={designer} onPatch={onPatch} />
               <button type="button" className="cs-danger" onClick={onDisconnect}>
                 <LogOut size={13} /> Switch account
@@ -385,7 +470,7 @@ export function Designer({ designer, username, saveState, publishedAt, onPatch, 
             </div>
           </Group>
 
-          <Group id="design" title="Design" open={open} onToggle={toggleGroup}>
+          <Group id="design" title="Design" icon={Palette} open={open} onToggle={toggleGroup}>
             <div className="cs-label">
               <span>Theme presets</span>
               <div className="cs-picklist">
@@ -396,56 +481,7 @@ export function Designer({ designer, username, saveState, publishedAt, onPatch, 
                 ))}
               </div>
             </div>
-            <div className="cs-seg" role="group" aria-label="Background type">
-              {(['color', 'gradient', 'image'] as const).map((m) => (
-                <button key={m} type="button" className={t.bgMode === m ? 'is-on' : ''} onClick={() => patchTheme({ bgMode: m })}>
-                  {m === 'color' ? 'Colour' : m === 'gradient' ? 'Gradient' : 'Image'}
-                </button>
-              ))}
-            </div>
-            {t.bgMode === 'color' && (
-              <div className="cs-swatches">
-                {SOLID_COLORS.map((c) => (
-                  <button key={c} type="button" aria-label={`Background ${c}`} className={t.bgColor === c ? 'is-on' : ''} style={{ background: c }} onClick={() => patchTheme({ bgColor: c })} />
-                ))}
-                <input aria-label="Custom background colour" type="color" value={t.bgColor} onChange={(e) => patchTheme({ bgColor: e.target.value })} />
-              </div>
-            )}
-            {t.bgMode === 'gradient' && (
-              <div className="cs-gradients">
-                {GRADIENTS.map((g) => (
-                  <button key={g} type="button" aria-label="Gradient preset" className={t.gradient === g ? 'is-on' : ''} style={{ background: g }} onClick={() => patchTheme({ gradient: g })} />
-                ))}
-              </div>
-            )}
-            {t.bgMode === 'image' && (
-              <>
-                <label className="cs-label">
-                  Background image URL
-                  <input value={t.bgImage} placeholder="https://…" inputMode="url" onChange={(e) => patchTheme({ bgImage: e.target.value })} />
-                </label>
-                <div className="cs-grid2">
-                  <label className="cs-label">
-                    Fit
-                    <select value={t.bgSize} onChange={(e) => patchTheme({ bgSize: e.target.value as 'cover' | 'contain' })}>
-                      <option value="cover">Cover</option>
-                      <option value="contain">Contain</option>
-                    </select>
-                  </label>
-                  <label className="cs-label">
-                    Position
-                    <select value={t.bgPosition} onChange={(e) => patchTheme({ bgPosition: e.target.value })}>
-                      <option value="center">Center</option>
-                      <option value="top">Top</option>
-                      <option value="bottom">Bottom</option>
-                    </select>
-                  </label>
-                </div>
-                <Toggle label="Blurred background" on={t.bgBlur} onChange={(v) => patchTheme({ bgBlur: v })} />
-              </>
-            )}
-            <Toggle label="Glass cards" on={t.bgGlass} onChange={(v) => patchTheme({ bgGlass: v })} />
-            <Toggle label="Animated gradient" on={t.bgAnimated} onChange={(v) => patchTheme({ bgAnimated: v })} />
+            <BackgroundFields theme={t} onPatchTheme={patchTheme} />
             <div className="cs-seg" role="group" aria-label="Button style">
               {(['filled', 'soft', 'outline'] as const).map((s) => (
                 <button key={s} type="button" className={t.buttonStyle === s ? 'is-on' : ''} onClick={() => patchTheme({ buttonStyle: s })}>
@@ -479,7 +515,7 @@ export function Designer({ designer, username, saveState, publishedAt, onPatch, 
             </div>
           </Group>
 
-          <Group id="content" title="Content" open={open} onToggle={toggleGroup}>
+          <Group id="content" title="Content" icon={Blocks} open={open} onToggle={toggleGroup}>
             <div className="cs-addgrid">
               <button type="button" className="cs-addbtn" onClick={() => addProduct()}><Plus size={14} /> Product</button>
               <button type="button" className="cs-addbtn" onClick={addLink}><Plus size={14} /> Link</button>
@@ -498,11 +534,11 @@ export function Designer({ designer, username, saveState, publishedAt, onPatch, 
                   onDragStart={() => { dragIndex.current = i; }}
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={() => { if (dragIndex.current != null) moveBlock(dragIndex.current, i); dragIndex.current = null; }}
-                  className={expandedBlockId === b.id ? 'is-expanded' : ''}
+                  className={expanded?.area === 'block' && expanded.id === b.id ? 'is-expanded' : ''}
                 >
                   <div className="cs-blockrow" id={`cs-edit-${b.id}`}>
                     <GripVertical size={14} aria-hidden="true" />
-                    <button type="button" className="cs-blockrow__title" onClick={() => setExpandedBlockId(expandedBlockId === b.id ? null : b.id)}>
+                    <button type="button" className="cs-blockrow__title" onClick={() => setExpanded(expanded?.area === 'block' && expanded.id === b.id ? null : { area: 'block', id: b.id })}>
                       {b.type === 'text' ? b.heading || b.title || 'Text' : b.title || BLOCK_LABEL[b.type]}
                     </button>
                     <em>{BLOCK_LABEL[b.type]}</em>
@@ -512,18 +548,21 @@ export function Designer({ designer, username, saveState, publishedAt, onPatch, 
                       </button>
                     )}
                   </div>
-                  {expandedBlockId === b.id && (
+                  {expanded?.area === 'block' && expanded.id === b.id && (
                     <div className="cs-blockedit">
                       <BlockEditor
                         block={b}
+                        designer={designer}
+                        usernamePlaceholder={username}
                         selectedKey={selectedKey}
                         onPatchBlock={(patch) => patchBlock(b.id, patch)}
+                        onPatchDesigner={onPatch}
                         onAddProduct={() => addProduct(b.id)}
                         onAddLink={addLink}
                         onAddTiktok={addTiktok}
                         onDeleteBlock={() => deleteBlock(b.id)}
+                        onResetBlock={() => resetBlock(b.id)}
                         onOpenProduct={(productId) => openProductEditor(b.id, productId)}
-                        onEditInPage={editInPage}
                       />
                     </div>
                   )}
@@ -532,7 +571,7 @@ export function Designer({ designer, username, saveState, publishedAt, onPatch, 
             </ul>
           </Group>
 
-          <Group id="products" title="Products" open={open} onToggle={toggleGroup}>
+          <Group id="products" title="Products" icon={ShoppingBag} open={open} onToggle={toggleGroup}>
             {designer.blocks.filter((b) => b.type === 'products').every((b) => (b.products ?? []).length === 0) && (
               <p className="cs-card__hint">No products yet — add your first one.</p>
             )}
@@ -540,16 +579,17 @@ export function Designer({ designer, username, saveState, publishedAt, onPatch, 
               .filter((b) => b.type === 'products')
               .flatMap((b) => (b.products ?? []).map((p) => ({ block: b, product: p })))
               .map(({ block, product: p }) => (
-                <div key={p.id} id={`cs-edit-${p.id}`} className={`cs-productedit${expandedProductId === p.id ? ' is-open' : ''}`}>
-                  <button type="button" className="cs-productedit__head" onClick={() => setExpandedProductId(expandedProductId === p.id ? null : p.id)}>
+                <div key={p.id} id={`cs-edit-${p.id}`} className={`cs-productedit${expanded?.area === 'product' && expanded.id === p.id ? ' is-open' : ''}`}>
+                  <button type="button" className="cs-productedit__head" onClick={() => setExpanded(expanded?.area === 'product' && expanded.id === p.id ? null : { area: 'product', id: p.id })}>
                     <span>{p.title || 'Untitled product'}</span>
                     <em>{p.price}</em>
                     <ChevronDown size={14} aria-hidden="true" />
                   </button>
-                  {expandedProductId === p.id && (
+                  {expanded?.area === 'product' && expanded.id === p.id && (
                     <ProductFields
                       product={p}
                       onPatch={(patch) => patchProduct(block.id, p.id, patch)}
+                      onReset={() => resetProduct(block.id, p.id)}
                       onDelete={() => deleteProduct(block.id, p.id)}
                     />
                   )}
@@ -559,29 +599,56 @@ export function Designer({ designer, username, saveState, publishedAt, onPatch, 
           </Group>
         </div>)}
 
-        {/* Right live preview */}
+        {/* Right live preview (drag to move, double-click to reset) */}
         <div className="cs-preview">
-          <PhonePreview
-            designer={designer}
-            username={handle || username}
-            selectedKey={selectedKey}
-            hoverKey={hoverKey}
-            onHover={setHoverKey}
-            onPick={pick}
-            onClear={() => setSelectedKey(null)}
-          />
-          <p className="cs-preview__cap">
-            <Link2 size={12} /> Live preview · {storeShareUrl(handle || username)}
-          </p>
+          <div
+            className={`cs-preview__drag${draggingPhone ? ' is-dragging' : ''}`}
+            style={{ transform: `translate(${phonePos.x}px, ${phonePos.y}px)` }}
+            onPointerDown={onPhonePointerDown}
+            onPointerMove={onPhonePointerMove}
+            onPointerUp={onPhonePointerUp}
+            onPointerCancel={onPhonePointerUp}
+            onDoubleClick={() => setPhonePos({ x: 0, y: 0 })}
+            title="Drag to move · Double-click to reset"
+          >
+            <PhonePreview
+              designer={designer}
+              username={handle || username}
+              selectedKey={selectedKey}
+              hoverKey={hoverKey}
+              onHover={setHoverKey}
+              onPick={pick}
+              onClear={() => {
+                setSelectedKey(null);
+                setFocusKey('design:background');
+              }}
+              onMoveBlock={moveBlockTo}
+            />
+            <p className="cs-preview__cap">
+              <Link2 size={12} /> Live preview · {storeShareUrl(handle || username)}
+            </p>
+          </div>
         </div>
 
         {previewOpen && (
           <div className="cs-modal" role="dialog" aria-label="Store preview" onClick={() => setPreviewOpen(false)}>
-            <div className="cs-modal__inner" onClick={(e) => e.stopPropagation()}>
+            <div className="cs-modal__inner cs-modal__inner--left" onClick={(e) => e.stopPropagation()}>
               <button type="button" className="cs-modal__close" aria-label="Close preview" onClick={() => setPreviewOpen(false)}>
                 <X size={16} />
               </button>
               <PhonePreview designer={designer} username={handle || username} selectedKey={null} hoverKey={null} interactive={false} />
+              <div className="cs-modal__actions">
+                <span className={`cs-savestate cs-savestate--${saveState}`} role="status">
+                  <i aria-hidden="true" />
+                  {saveState === 'saved' ? 'Saved ✓' : 'Saving…'}
+                </span>
+                <button type="button" className="cs-toolbtn" onClick={share}>
+                  <Share2 size={14} /> Share
+                </button>
+                <button type="button" className="cs-toolbtn cs-toolbtn--primary" onClick={publish}>
+                  <Globe size={14} /> {published || publishedAt ? 'Published ✓' : 'Publish'}
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -596,26 +663,95 @@ export function Designer({ designer, username, saveState, publishedAt, onPatch, 
   );
 }
 
+function BackgroundFields({
+  theme: t,
+  onPatchTheme: patchTheme,
+}: {
+  theme: DesignerState['theme'];
+  onPatchTheme: (patch: Partial<DesignerState['theme']>) => void;
+}) {
+  return (
+    <>
+      <div className="cs-seg" role="group" aria-label="Background type">
+        {(['color', 'gradient', 'image'] as const).map((m) => (
+          <button key={m} type="button" className={t.bgMode === m ? 'is-on' : ''} onClick={() => patchTheme({ bgMode: m })}>
+            {m === 'color' ? 'Colour' : m === 'gradient' ? 'Gradient' : 'Image'}
+          </button>
+        ))}
+      </div>
+      {t.bgMode === 'color' && (
+        <div className="cs-swatches">
+          {SOLID_COLORS.map((c) => (
+            <button key={c} type="button" aria-label={`Background ${c}`} className={t.bgColor === c ? 'is-on' : ''} style={{ background: c }} onClick={() => patchTheme({ bgColor: c })} />
+          ))}
+          <input aria-label="Custom background colour" type="color" value={t.bgColor} onChange={(e) => patchTheme({ bgColor: e.target.value })} />
+        </div>
+      )}
+      {t.bgMode === 'gradient' && (
+        <div className="cs-gradients">
+          {GRADIENTS.map((g) => (
+            <button key={g} type="button" aria-label="Gradient preset" className={t.gradient === g ? 'is-on' : ''} style={{ background: g }} onClick={() => patchTheme({ gradient: g })} />
+          ))}
+        </div>
+      )}
+      {t.bgMode === 'image' && (
+        <>
+          <label className="cs-label">
+            Background image URL
+            <input value={t.bgImage} placeholder="https://…" inputMode="url" onChange={(e) => patchTheme({ bgImage: e.target.value })} />
+          </label>
+          <div className="cs-grid2">
+            <label className="cs-label">
+              Fit
+              <select value={t.bgSize} onChange={(e) => patchTheme({ bgSize: e.target.value as 'cover' | 'contain' })}>
+                <option value="cover">Cover</option>
+                <option value="contain">Contain</option>
+              </select>
+            </label>
+            <label className="cs-label">
+              Position
+              <select value={t.bgPosition} onChange={(e) => patchTheme({ bgPosition: e.target.value })}>
+                <option value="center">Center</option>
+                <option value="top">Top</option>
+                <option value="bottom">Bottom</option>
+              </select>
+            </label>
+          </div>
+          <Toggle label="Blurred background" on={t.bgBlur} onChange={(v) => patchTheme({ bgBlur: v })} />
+        </>
+      )}
+      <Toggle label="Glass cards" on={t.bgGlass} onChange={(v) => patchTheme({ bgGlass: v })} />
+      <Toggle label="Animated gradient" on={t.bgAnimated} onChange={(v) => patchTheme({ bgAnimated: v })} />
+    </>
+  );
+}
+
 function BlockEditor({
   block: b,
+  designer,
+  usernamePlaceholder,
   selectedKey,
   onPatchBlock,
+  onPatchDesigner,
   onAddProduct,
   onAddLink,
   onAddTiktok,
   onDeleteBlock,
+  onResetBlock,
   onOpenProduct,
-  onEditInPage,
 }: {
   block: Block;
+  designer: DesignerState;
+  usernamePlaceholder: string;
   selectedKey: string | null;
   onPatchBlock: (patch: Partial<Block>) => void;
+  onPatchDesigner: (patch: Partial<DesignerState>) => void;
   onAddProduct: () => void;
   onAddLink: () => void;
   onAddTiktok: () => void;
   onDeleteBlock: () => void;
+  onResetBlock: () => void;
   onOpenProduct: (productId: string) => void;
-  onEditInPage: () => void;
 }) {
   return (
     <>
@@ -626,9 +762,7 @@ function BlockEditor({
         </label>
       )}
       {b.type === 'profile' && (
-        <button type="button" className="cs-chipbtn" onClick={onEditInPage}>
-          Edit profile in Page
-        </button>
+        <ProfileFields designer={designer} usernamePlaceholder={usernamePlaceholder} onPatch={onPatchDesigner} />
       )}
       {b.type === 'products' && (
         <>
@@ -680,6 +814,23 @@ function BlockEditor({
         <>
           <label className="cs-label">Heading<input value={b.heading ?? ''} maxLength={60} onChange={(e) => onPatchBlock({ heading: e.target.value })} /></label>
           <label className="cs-label">Body<textarea value={b.body ?? ''} rows={3} maxLength={280} onChange={(e) => onPatchBlock({ body: e.target.value })} /></label>
+          <label className="cs-label">
+            Text size · {b.fontSize ?? 15}px
+            <input type="range" min={11} max={24} value={b.fontSize ?? 15} onChange={(e) => onPatchBlock({ fontSize: Number(e.target.value) })} />
+          </label>
+          <div className="cs-grid2">
+            <div className="cs-seg" role="group" aria-label="Text alignment">
+              {(['left', 'center', 'right'] as const).map((a) => (
+                <button key={a} type="button" aria-label={`Align ${a}`} className={(b.align ?? 'center') === a ? 'is-on' : ''} onClick={() => onPatchBlock({ align: a })}>
+                  {a === 'left' ? <AlignLeft size={14} /> : a === 'center' ? <AlignCenter size={14} /> : <AlignRight size={14} />}
+                </button>
+              ))}
+            </div>
+            <label className="cs-label cs-label--color">
+              Colour
+              <input type="color" value={b.color ?? '#0f172a'} onChange={(e) => onPatchBlock({ color: e.target.value })} />
+            </label>
+          </div>
         </>
       )}
       {b.type === 'newsletter' && (
@@ -692,9 +843,12 @@ function BlockEditor({
           </div>
         </>
       )}
-      {b.type !== 'profile' && (
-        <button type="button" className="cs-danger" onClick={onDeleteBlock}><Trash2 size={13} /> Remove section</button>
-      )}
+      <div className="cs-card__row">
+        <button type="button" className="cs-chipbtn" onClick={onResetBlock}><RotateCcw size={13} /> Reset</button>
+        {b.type !== 'profile' && (
+          <button type="button" className="cs-danger" onClick={onDeleteBlock}><Trash2 size={13} /> Remove</button>
+        )}
+      </div>
     </>
   );
 }
@@ -702,12 +856,14 @@ function BlockEditor({
 function Group({
   id,
   title,
+  icon: Icon,
   open,
   onToggle,
   children,
 }: {
   id: GroupId;
   title: string;
+  icon: typeof User;
   open: Record<GroupId, boolean>;
   onToggle: (g: GroupId) => void;
   children: React.ReactNode;
@@ -716,11 +872,52 @@ function Group({
   return (
     <div className="cs-card">
       <button type="button" className="cs-acc__head" aria-expanded={isOpen} onClick={() => onToggle(id)}>
-        <span>{title}</span>
+        <span className="cs-acc__title">
+          <Icon size={14} aria-hidden="true" />
+          <span>{title}</span>
+        </span>
         <ChevronDown size={15} aria-hidden="true" className={isOpen ? 'is-open' : ''} />
       </button>
       {isOpen && <div className="cs-acc__body">{children}</div>}
     </div>
+  );
+}
+
+function ProfileFields({
+  designer,
+  usernamePlaceholder,
+  onPatch,
+}: {
+  designer: DesignerState;
+  usernamePlaceholder: string;
+  onPatch: (p: Partial<DesignerState>) => void;
+}) {
+  return (
+    <>
+      <label className="cs-label">
+        Profile photo URL
+        <input value={designer.avatar} placeholder="https://…" inputMode="url" onChange={(e) => onPatch({ avatar: e.target.value })} />
+      </label>
+      <div className="cs-grid2">
+        <label className="cs-label">
+          Display name
+          <input value={designer.displayName} maxLength={40} onChange={(e) => onPatch({ displayName: e.target.value })} />
+        </label>
+        <label className="cs-label">
+          Username
+          <input
+            value={designer.username}
+            maxLength={24}
+            placeholder={usernamePlaceholder}
+            onChange={(e) => onPatch({ username: e.target.value.replace(/[^a-zA-Z0-9_.]/g, '') })}
+          />
+        </label>
+      </div>
+      <label className="cs-label">
+        Bio
+        <textarea value={designer.bio} rows={3} maxLength={140} onChange={(e) => onPatch({ bio: e.target.value })} />
+      </label>
+    </>
   );
 }
 
@@ -772,10 +969,12 @@ function SocialEditor({ designer, onPatch }: { designer: DesignerState; onPatch:
 function ProductFields({
   product: p,
   onPatch,
+  onReset,
   onDelete,
 }: {
   product: Product;
   onPatch: (patch: Partial<Product>) => void;
+  onReset: () => void;
   onDelete: () => void;
 }) {
   return (
@@ -788,7 +987,10 @@ function ProductFields({
       </div>
       <label className="cs-label">Description<textarea value={p.description} rows={2} maxLength={120} onChange={(e) => onPatch({ description: e.target.value })} /></label>
       <label className="cs-label">Product link<input value={p.link} placeholder="https://…" inputMode="url" onChange={(e) => onPatch({ link: e.target.value })} /></label>
-      <button type="button" className="cs-danger" onClick={onDelete}><Trash2 size={13} /> Delete product</button>
+      <div className="cs-card__row">
+        <button type="button" className="cs-chipbtn" onClick={onReset}><RotateCcw size={13} /> Reset</button>
+        <button type="button" className="cs-danger" onClick={onDelete}><Trash2 size={13} /> Delete product</button>
+      </div>
     </div>
   );
 }

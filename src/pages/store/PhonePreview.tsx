@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { ArrowUpRight, AtSign, Camera, Check, Music2, Play } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { ArrowUpRight, AtSign, Camera, Check, GripVertical, Music2, Play } from 'lucide-react';
 import type { Block, DesignerState, SocialNetwork } from './store';
 import { FONTS } from './store';
 
@@ -30,6 +30,7 @@ interface PhonePreviewProps {
   onHover?: (key: string | null) => void;
   onPick?: (key: string) => void;
   onClear?: () => void;
+  onMoveBlock?: (dragId: string, targetId: string) => void;
 }
 
 export function PhonePreview({
@@ -41,11 +42,19 @@ export function PhonePreview({
   onHover,
   onPick,
   onClear,
+  onMoveBlock,
 }: PhonePreviewProps) {
   const t = designer.theme;
   const font = FONTS[t.font];
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dropId, setDropId] = useState<string | null>(null);
+  const dragMoved = useRef(false);
+  const suppressPick = useRef(false);
+  const dropRef = useRef<string | null>(null);
+  const moveRef = useRef(onMoveBlock);
+  moveRef.current = onMoveBlock;
 
   const bgLayerStyle: React.CSSProperties =
     t.bgMode === 'image' && t.bgImage
@@ -91,10 +100,65 @@ export function PhonePreview({
           onMouseLeave: () => onHover?.(null),
           onClick: (e: React.MouseEvent) => {
             e.stopPropagation();
+            if (suppressPick.current) return;
             onPick?.(key);
           },
         }
       : {};
+
+  function setDrop(v: string | null) {
+    dropRef.current = v;
+    setDropId(v);
+  }
+
+  function gripDown(e: React.PointerEvent, id: string) {
+    if (!interactive || !moveRef.current || e.button !== 0) return;
+    e.stopPropagation();
+    e.preventDefault();
+    dragMoved.current = false;
+    setDragId(id);
+    setDrop(null);
+    const startY = e.clientY;
+    const move = (ev: PointerEvent) => {
+      if (Math.abs(ev.clientY - startY) > 6) dragMoved.current = true;
+      if (!dragMoved.current) return;
+      const el = document.elementFromPoint(ev.clientX, ev.clientY)?.closest?.('[data-block-id]');
+      setDrop(el ? ((el as HTMLElement).dataset.blockId ?? null) : null);
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      const target = dropRef.current;
+      if (dragMoved.current && target && target !== id) moveRef.current?.(id, target);
+      setDragId(null);
+      setDrop(null);
+      dragMoved.current = false;
+      suppressPick.current = true;
+      window.setTimeout(() => {
+        suppressPick.current = false;
+      }, 0);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  }
+
+  function BlockWrap({ id, blockKey, extra, children }: { id: string; blockKey: string; extra?: string; children: React.ReactNode }) {
+    return (
+      <div data-block-id={id} className={`${cls(blockKey, extra ?? '')}${dropId === id ? ' is-drop' : ''}`} {...bind(blockKey)}>
+        {interactive && !!moveRef.current && (
+          <span
+            className="pv-grip"
+            aria-hidden="true"
+            onPointerDown={(e) => gripDown(e, id)}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <GripVertical size={12} />
+          </span>
+        )}
+        {children}
+      </div>
+    );
+  }
 
   const handle = (designer.username || username).replace(/^@+/, '');
   const initial = (designer.displayName || 'S').replace(/^@/, '').charAt(0).toUpperCase();
@@ -107,7 +171,7 @@ export function PhonePreview({
     switch (block.type) {
       case 'profile':
         return (
-          <div key={block.id} className={cls(key, 'pv-profile')} {...bind(key)}>
+          <BlockWrap key={block.id} id={block.id} blockKey={key} extra="pv-profile">
             {designer.avatar ? (
               <img className="pv-avatar" src={designer.avatar} alt="" />
             ) : (
@@ -118,12 +182,12 @@ export function PhonePreview({
             <strong className="pv-name">{displayTitle}</strong>
             {showName && handle && <span className="pv-handle">@{handle}</span>}
             {designer.bio && <p className="pv-bio">{designer.bio}</p>}
-          </div>
+          </BlockWrap>
         );
       case 'products': {
         const items = block.products ?? [];
         return (
-          <div key={block.id} className={cls(key)} {...bind(key)}>
+          <BlockWrap key={block.id} id={block.id} blockKey={key}>
             {block.title && <p className="pv-caption">{block.title}</p>}
             {items.length === 0 ? (
               <div className="pv-empty">No products yet</div>
@@ -149,13 +213,13 @@ export function PhonePreview({
                 ))}
               </div>
             )}
-          </div>
+          </BlockWrap>
         );
       }
       case 'links': {
         const items = block.links ?? [];
         return (
-          <div key={block.id} className={cls(key)} {...bind(key)}>
+          <BlockWrap key={block.id} id={block.id} blockKey={key}>
             {block.title && <p className="pv-caption">{block.title}</p>}
             {items.length === 0 ? (
               <div className="pv-empty">No links yet</div>
@@ -169,13 +233,13 @@ export function PhonePreview({
                 ))}
               </div>
             )}
-          </div>
+          </BlockWrap>
         );
       }
       case 'social': {
         const items = (block.socials ?? []).filter((s) => s.url.trim() !== '');
         return (
-          <div key={block.id} className={cls(key)} {...bind(key)}>
+          <BlockWrap key={block.id} id={block.id} blockKey={key}>
             {block.title && <p className="pv-caption">{block.title}</p>}
             {items.length === 0 ? (
               <div className="pv-empty">No socials yet — add profile URLs</div>
@@ -191,13 +255,13 @@ export function PhonePreview({
                 })}
               </div>
             )}
-          </div>
+          </BlockWrap>
         );
       }
       case 'tiktok': {
         const items = block.videos ?? [];
         return (
-          <div key={block.id} className={cls(key)} {...bind(key)}>
+          <BlockWrap key={block.id} id={block.id} blockKey={key}>
             {block.title && <p className="pv-caption">{block.title}</p>}
             {items.length === 0 ? (
               <div className="pv-empty">No videos yet — add your TikToks</div>
@@ -220,12 +284,12 @@ export function PhonePreview({
                 ))}
               </div>
             )}
-          </div>
+          </BlockWrap>
         );
       }
       case 'video':
         return (
-          <div key={block.id} className={cls(key)} {...bind(key)}>
+          <BlockWrap key={block.id} id={block.id} blockKey={key}>
             {block.title && <p className="pv-caption">{block.title}</p>}
             <div className="pv-video" style={cardStyle}>
               {block.image ? (
@@ -237,7 +301,7 @@ export function PhonePreview({
               )}
               {block.caption && <small>{block.caption}</small>}
             </div>
-          </div>
+          </BlockWrap>
         );
       case 'image': {
         const img = block.image ? (
@@ -246,7 +310,7 @@ export function PhonePreview({
           <span className="pv-image__blank" aria-hidden="true" />
         );
         return (
-          <div key={block.id} className={cls(key)} {...bind(key)}>
+          <BlockWrap key={block.id} id={block.id} blockKey={key}>
             {block.url ? (
               <span className="pv-image" style={cardStyle}>
                 {img}
@@ -258,19 +322,26 @@ export function PhonePreview({
                 {block.caption && <small>{block.caption}</small>}
               </div>
             )}
-          </div>
+          </BlockWrap>
         );
       }
-      case 'text':
+      case 'text': {
+        const size = block.fontSize ?? 15;
         return (
-          <div key={block.id} className={cls(key, 'pv-text')} {...bind(key)}>
-            {block.heading && <strong>{block.heading}</strong>}
-            {block.body && <p>{block.body}</p>}
-          </div>
+          <BlockWrap key={block.id} id={block.id} blockKey={key} extra="pv-text">
+            <div
+              className="pv-text__inner"
+              style={{ textAlign: block.align ?? 'center', color: block.color, fontSize: size }}
+            >
+              {block.heading && <strong style={{ fontSize: size + 2 }}>{block.heading}</strong>}
+              {block.body && <p>{block.body}</p>}
+            </div>
+          </BlockWrap>
         );
+      }
       case 'newsletter':
         return (
-          <div key={block.id} className={cls(key)} {...bind(key)}>
+          <BlockWrap key={block.id} id={block.id} blockKey={key}>
             <div className="pv-news" style={cardStyle}>
               {block.heading && <strong>{block.heading}</strong>}
               {block.subtext && <small>{block.subtext}</small>}
@@ -293,13 +364,13 @@ export function PhonePreview({
                 </span>
               )}
             </div>
-          </div>
+          </BlockWrap>
         );
     }
   }
 
   return (
-    <div className="pv-phone" aria-label="Live preview of your public page">
+    <div className={`pv-phone${dragId ? ' is-dragging' : ''}`} aria-label="Live preview of your public page">
       <div className="pv-notch" aria-hidden="true" />
       <div className={`pv-screen${t.bgAnimated && t.bgMode === 'gradient' ? ' is-animated' : ''}`} style={{ fontFamily: font, color: t.textColor }}>
         <div className="pv-bg" style={bgLayerStyle} aria-hidden="true" />
