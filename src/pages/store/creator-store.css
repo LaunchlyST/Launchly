@@ -259,6 +259,20 @@
   box-shadow: 0 10px 26px rgba(15, 23, 42, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.9);
   transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
 }
+.cs-page input,
+.cs-page textarea,
+.cs-page select,
+.cs-page button {
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent;
+}
+.cs-page input:focus,
+.cs-page textarea:focus,
+.cs-page select:focus,
+.cs-page button:focus {
+  outline: none !important;
+  box-shadow: none;
+}
 .cs-fieldrow:focus-within {
   border-color: rgba(15, 23, 42, 0.38);
   box-shadow:
