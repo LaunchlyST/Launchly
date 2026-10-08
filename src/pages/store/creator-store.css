@@ -1260,6 +1260,53 @@
   to { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
+/* ---------- tidy professional left panel (v1): no stacked boxes,
+   just clean divider-separated sections with compact rows ---------- */
+.cs-controls { display: grid; gap: 2px; align-content: start; }
+.cs-controls .cs-card {
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: 0;
+  outline: 0;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 15px 2px;
+}
+.cs-controls .cs-card + .cs-card {
+  border-top: 1px solid rgba(15, 23, 42, 0.09);
+}
+.cs-controls .cs-acc__head {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cs-muted);
+}
+.cs-controls .cs-acc__body { gap: 9px; padding-top: 11px; }
+.cs-controls .cs-card__hint { font-size: 11.5px; }
+.cs-controls .cs-label, .cs-controls .cs-label > span { font-size: 11px; }
+.cs-controls .cs-label input:not([type='color']):not([type='range']):not([type='checkbox']),
+.cs-controls .cs-label textarea,
+.cs-controls .cs-label select {
+  padding: 7px 10px;
+  font-size: 12.5px;
+  background: rgba(255, 255, 255, 0.8);
+}
+.cs-controls .cs-seclist { gap: 1px; }
+.cs-controls .cs-seclist li { background: transparent; border-color: transparent; }
+.cs-controls .cs-seclist li:hover { background: rgba(255, 255, 255, 0.55); border-color: rgba(15, 23, 42, 0.07); }
+.cs-controls .cs-seclist li.is-expanded { background: rgba(255, 255, 255, 0.4); border-color: rgba(15, 23, 42, 0.08); }
+.cs-controls .cs-blockrow { padding: 8px 6px; }
+.cs-controls .cs-blockrow__title { font-size: 12.5px; }
+.cs-controls .cs-blockedit { padding: 0 6px 10px; }
+.cs-controls .cs-itemcard, .cs-controls .cs-productedit { background: transparent; }
+.cs-controls .cs-chipbtn, .cs-controls .cs-addbtn { padding: 8px 6px; font-size: 11.5px; }
+.cs-controls .cs-picklist button { font-size: 12px; padding: 7px 9px; }
+.cs-controls .cs-toggle { font-size: 12px; }
+.cs-controls .cs-danger { font-size: 11.5px; }
+.cs-controls .cs-itemrow input, .cs-controls .cs-itemrow select { padding: 7px 9px; font-size: 12px; }
+
 /* ---------- responsive ---------- */
 @media (max-width: 1080px) {
   .cs-designer { grid-template-columns: minmax(270px, 320px) minmax(0, 1fr); gap: 18px; }

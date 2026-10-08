@@ -258,19 +258,21 @@ export function Designer({ designer, username, saveState, publishedAt, onPatch, 
                 Profile photo URL
                 <input value={designer.avatar} placeholder="https://…" inputMode="url" onChange={(e) => onPatch({ avatar: e.target.value })} />
               </label>
-              <label className="cs-label">
-                Display name
-                <input value={designer.displayName} maxLength={40} onChange={(e) => onPatch({ displayName: e.target.value })} />
-              </label>
-              <label className="cs-label">
-                Username
-                <input
-                  value={designer.username}
-                  maxLength={24}
-                  placeholder={username}
-                  onChange={(e) => onPatch({ username: e.target.value.replace(/[^a-zA-Z0-9_.]/g, '') })}
-                />
-              </label>
+              <div className="cs-grid2">
+                <label className="cs-label">
+                  Display name
+                  <input value={designer.displayName} maxLength={40} onChange={(e) => onPatch({ displayName: e.target.value })} />
+                </label>
+                <label className="cs-label">
+                  Username
+                  <input
+                    value={designer.username}
+                    maxLength={24}
+                    placeholder={username}
+                    onChange={(e) => onPatch({ username: e.target.value.replace(/[^a-zA-Z0-9_.]/g, '') })}
+                  />
+                </label>
+              </div>
               <label className="cs-label">
                 Bio
                 <textarea value={designer.bio} rows={3} maxLength={140} onChange={(e) => onPatch({ bio: e.target.value })} />
