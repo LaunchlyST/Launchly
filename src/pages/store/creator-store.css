@@ -248,15 +248,15 @@
 .cs-fieldrow {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 8px;
   max-width: 340px;
   margin: 0 auto 20px;
-  padding: 5px 5px 5px 17px;
-  background: rgba(255, 255, 255, 0.6);
+  padding: 6px 8px 6px 18px;
+  background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(14px);
-  border: 1px solid rgba(15, 23, 42, 0.12);
-  border-radius: 15px;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  border-radius: 16px;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.9);
   transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
 }
 .cs-fieldrow:focus-within {
@@ -266,7 +266,18 @@
     0 8px 26px rgba(63, 110, 166, 0.18);
   transform: translateY(-1px);
 }
-.cs-at { color: var(--cs-muted); font-weight: 600; font-size: 16px; }
+.cs-at {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.06);
+  color: var(--cs-muted);
+  font-weight: 700;
+  font-size: 14px;
+}
 .cs-input {
   flex: 1;
   min-width: 0;
@@ -304,7 +315,11 @@
   box-shadow: 0 14px 32px rgba(15, 23, 42, 0.34), 0 0 24px rgba(63, 110, 166, 0.25);
 }
 .cs-btn-primary:hover:not(:disabled) svg { transform: translateX(4px); }
-.cs-btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+.cs-btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
 .cs-btn-primary--lg { padding: 13px 34px; }
 
 .cs-btn-ghost {
