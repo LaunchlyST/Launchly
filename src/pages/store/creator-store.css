@@ -1024,10 +1024,7 @@
     0 2px 6px rgba(15, 23, 42, 0.25),
     0 24px 60px rgba(15, 23, 42, 0.28),
     0 0 0 7px rgba(255, 255, 255, 0.35);
-  transform: translateY(-4px);
-  transition: transform 0.3s ease;
 }
-.pv-phone:hover { transform: translateY(-8px); }
 .pv-notch {
   position: absolute;
   top: 21px;
@@ -1048,15 +1045,11 @@
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
-  touch-action: pan-y;
-  cursor: grab;
   scrollbar-width: thin;
   scrollbar-color: rgba(15, 23, 42, 0.25) transparent;
   isolation: isolate;
   background: #fff;
 }
-.pv-screen.is-panning { cursor: grabbing; }
-.pv-screen.is-panning .pv-content { user-select: none; }
 .pv-screen::-webkit-scrollbar { width: 4px; }
 .pv-screen::-webkit-scrollbar-thumb { background: rgba(15, 23, 42, 0.22); border-radius: 4px; }
 .pv-bg {
@@ -1079,8 +1072,6 @@
   gap: 13px;
   padding: 50px 15px 18px;
   min-height: 100%;
-  touch-action: pan-y;
-  will-change: transform;
 }
 .pv-block { position: relative; border-radius: 13px; transition: box-shadow 0.25s ease, outline-color 0.25s ease; outline: 2px solid transparent; outline-offset: 3px; }
 .pv-block.is-hover { outline-color: rgba(47, 124, 246, 0.55); cursor: pointer; }
@@ -1166,9 +1157,7 @@
   padding: 11px 13px;
   font-size: 12.5px;
   font-weight: 600;
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
-.pv-link:hover { transform: translateY(-1px); }
 
 .pv-socials { display: flex; justify-content: center; gap: 9px; }
 .pv-social {
@@ -1178,9 +1167,7 @@
   height: 38px;
   border-radius: 50%;
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
-  transition: transform 0.25s ease;
 }
-.pv-social:hover { transform: translateY(-2px) scale(1.06); }
 .pv-powered { margin: auto 0 0; padding-top: 12px; text-align: center; font-size: 9.5px; opacity: 0.45; }
 
 /* ---------- new preview blocks ---------- */
@@ -1360,6 +1347,10 @@
 .cs-controls .cs-itemrow input, .cs-controls .cs-itemrow select { padding: 7px 9px; font-size: 12px; }
 
 /* ---------- single Editor Tools box ---------- */
+.cs-editor-tools {
+  min-height: 400px;
+  align-content: start;
+}
 .cs-editor-tools__head {
   display: flex;
   align-items: center;

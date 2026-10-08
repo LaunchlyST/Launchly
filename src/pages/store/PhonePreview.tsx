@@ -50,11 +50,6 @@ export function PhonePreview({
   const [subscribed, setSubscribed] = useState(false);
   const [dragId, setDragId] = useState<string | null>(null);
   const [dropId, setDropId] = useState<string | null>(null);
-  // Horizontal page pan inside the phone (mouse drag moves page left/right,
-  // snaps back on release). Vertical stays native scroll.
-  const [panX, setPanX] = useState(0);
-  const [panning, setPanning] = useState(false);
-  const panRef = useRef<{ startX: number; moved: boolean; pointerId: number } | null>(null);
   const dragMoved = useRef(false);
   const suppressPick = useRef(false);
   const dropRef = useRef<string | null>(null);
@@ -114,37 +109,6 @@ export function PhonePreview({
   function setDrop(v: string | null) {
     dropRef.current = v;
     setDropId(v);
-  }
-
-  /** Page pan: drag inside the screen moves the page left/right (snaps back).
-      Vertical stays native scroll — touch-action: pan-y keeps it native. */
-  function onScreenPointerDown(e: React.PointerEvent<HTMLDivElement>) {
-    if (e.button !== 0) return;
-    if ((e.target as HTMLElement).closest('input, textarea, select, button, a, .pv-grip')) return;
-    panRef.current = { startX: e.clientX, moved: false, pointerId: e.pointerId };
-    setPanning(true);
-  }
-
-  function onScreenPointerMove(e: React.PointerEvent<HTMLDivElement>) {
-    const p = panRef.current;
-    if (!p || e.pointerId !== p.pointerId) return;
-    const dx = e.clientX - p.startX;
-    if (Math.abs(dx) > 6) p.moved = true;
-    if (p.moved) setPanX(Math.max(-72, Math.min(72, dx)));
-  }
-
-  function endScreenPan(e: React.PointerEvent<HTMLDivElement>) {
-    const p = panRef.current;
-    if (!p || e.pointerId !== p.pointerId) return;
-    panRef.current = null;
-    setPanning(false);
-    setPanX(0);
-    if (p.moved) {
-      suppressPick.current = true;
-      window.setTimeout(() => {
-        suppressPick.current = false;
-      }, 0);
-    }
   }
 
   function gripDown(e: React.PointerEvent, id: string) {
@@ -209,7 +173,7 @@ export function PhonePreview({
         return (
           <BlockWrap key={block.id} id={block.id} blockKey={key} extra="pv-profile">
             {designer.avatar ? (
-              <img className="pv-avatar" src={designer.avatar} alt="" />
+              <img draggable={false} className="pv-avatar" src={designer.avatar} alt="" />
             ) : (
               <span className="pv-avatar pv-avatar--fallback" style={{ background: designer.avatarColor }}>
                 {initial}
@@ -232,7 +196,7 @@ export function PhonePreview({
                 {items.map((p) => (
                   <div key={p.id} className={cls(`product:${p.id}`, 'pv-product')} style={cardStyle} {...bind(`product:${p.id}`)}>
                     {p.image ? (
-                      <img className="pv-product__img" src={p.image} alt="" />
+                      <img draggable={false} className="pv-product__img" src={p.image} alt="" />
                     ) : (
                       <span className="pv-product__img pv-product__img--blank" style={{ background: designer.avatarColor }} aria-hidden="true">
                         {p.title.charAt(0).toUpperCase()}
@@ -306,7 +270,7 @@ export function PhonePreview({
                 {items.map((v) => (
                   <div key={v.id} className={cls(`tiktok:${v.id}`, 'pv-tiktok')} {...bind(`tiktok:${v.id}`)}>
                     {v.thumb ? (
-                      <img src={v.thumb} alt="" />
+                      <img draggable={false} src={v.thumb} alt="" />
                     ) : (
                       <span className="pv-tiktok__blank" aria-hidden="true">
                         <Music2 size={18} />
@@ -329,7 +293,7 @@ export function PhonePreview({
             {block.title && <p className="pv-caption">{block.title}</p>}
             <div className="pv-video" style={cardStyle}>
               {block.image ? (
-                <img src={block.image} alt="" />
+                <img draggable={false} src={block.image} alt="" />
               ) : (
                 <span className="pv-video__blank" aria-hidden="true">
                   <Play size={22} />
@@ -341,7 +305,7 @@ export function PhonePreview({
         );
       case 'image': {
         const img = block.image ? (
-          <img className="pv-image__img" src={block.image} alt={block.caption || ''} />
+          <img draggable={false} className="pv-image__img" src={block.image} alt={block.caption || ''} />
         ) : (
           <span className="pv-image__blank" aria-hidden="true" />
         );
@@ -409,17 +373,12 @@ export function PhonePreview({
     <div className={`pv-phone${dragId ? ' is-dragging' : ''}`} aria-label="Live preview of your public page">
       <div className="pv-notch" aria-hidden="true" />
       <div
-        className={`pv-screen${t.bgAnimated && t.bgMode === 'gradient' ? ' is-animated' : ''}${panning ? ' is-panning' : ''}`}
+        className={`pv-screen${t.bgAnimated && t.bgMode === 'gradient' ? ' is-animated' : ''}`}
         style={{ fontFamily: font, color: t.textColor }}
-        onPointerDown={onScreenPointerDown}
-        onPointerMove={onScreenPointerMove}
-        onPointerUp={endScreenPan}
-        onPointerCancel={endScreenPan}
       >
         <div className="pv-bg" style={bgLayerStyle} aria-hidden="true" />
         <div
           className="pv-content"
-          style={panX !== 0 || panning ? { transform: `translateX(${panX}px)`, transition: panning ? 'none' : 'transform 0.25s ease' } : undefined}
           onClick={() => {
             if (suppressPick.current) return;
             if (interactive) onClear?.();
