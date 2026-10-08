@@ -24,6 +24,10 @@ export function CreatorStorePage() {
   const saveTimer = useRef<number | null>(null);
   const flowTimer = useRef<number | null>(null);
 
+  // Always read the latest state inside timers.
+  const dataRef = useRef(data);
+  dataRef.current = data;
+
   useEffect(() => {
     document.title = 'Creator Store — Launchly';
   }, []);
@@ -38,16 +42,15 @@ export function CreatorStorePage() {
 
   function persist(next: CreatorStorePersisted) {
     setData(next);
+    // Write synchronously so a refresh never loses your place.
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      /* session-only when storage is unavailable */
+    }
     setSaveState('saving');
     if (saveTimer.current) window.clearTimeout(saveTimer.current);
-    saveTimer.current = window.setTimeout(() => {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-      } catch {
-        /* session-only when storage is unavailable */
-      }
-      setSaveState('saved');
-    }, 800);
+    saveTimer.current = window.setTimeout(() => setSaveState('saved'), 800);
   }
 
   function patchSetup(patch: Partial<SetupState>) {
@@ -96,15 +99,22 @@ export function CreatorStorePage() {
   }
 
   // Always persist from the latest state inside timers.
-  const dataRef = useRef(data);
-  dataRef.current = data;
-
   function enterDesigner() {
     setPhase('leaving');
     flowTimer.current = window.setTimeout(() => {
       persist({ ...dataRef.current, setup: { ...dataRef.current.setup, step: 6 } });
       setPhase('designer');
     }, 420);
+  }
+
+  /** Switch account: back to setup, designer content is kept. */
+  function disconnect() {
+    if (flowTimer.current) window.clearTimeout(flowTimer.current);
+    persist({
+      ...dataRef.current,
+      setup: { step: 1, username: '', code: '', verifying: false, connected: false },
+    });
+    setPhase('setup');
   }
 
   function publish() {
@@ -146,6 +156,7 @@ export function CreatorStorePage() {
           publishedAt={data.publishedAt}
           onPatch={patchDesigner}
           onPublish={publish}
+          onDisconnect={disconnect}
         />
       )}
     </div>

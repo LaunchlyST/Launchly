@@ -6,6 +6,7 @@ import {
   Globe,
   GripVertical,
   Link2,
+  LogOut,
   Plus,
   Share2,
   Trash2,
@@ -45,9 +46,10 @@ interface DesignerProps {
   publishedAt: string | null;
   onPatch: (patch: Partial<DesignerState>) => void;
   onPublish: () => void;
+  onDisconnect: () => void;
 }
 
-export function Designer({ designer, username, saveState, publishedAt, onPatch, onPublish }: DesignerProps) {
+export function Designer({ designer, username, saveState, publishedAt, onPatch, onPublish, onDisconnect }: DesignerProps) {
   const [open, setOpen] = useState<Record<GroupId, boolean>>({ page: true, design: false, content: true, products: false });
   const [expandedBlockId, setExpandedBlockId] = useState<string | null>(null);
   const [expandedProductId, setExpandedProductId] = useState<string | null>(null);
@@ -63,7 +65,7 @@ export function Designer({ designer, username, saveState, publishedAt, onPatch, 
   const handle = (designer.username || username).replace(/^@+/, '');
 
   function toggleGroup(g: GroupId) {
-    setOpen((o) => ({ ...o, [g]: !o[g] }));
+    setOpen((o) => ({ page: false, design: false, content: false, products: false, [g]: !o[g] }));
   }
 
   function flash(message: string) {
@@ -274,6 +276,9 @@ export function Designer({ designer, username, saveState, publishedAt, onPatch, 
                 <textarea value={designer.bio} rows={3} maxLength={140} onChange={(e) => onPatch({ bio: e.target.value })} />
               </label>
               <SocialEditor designer={designer} onPatch={onPatch} />
+              <button type="button" className="cs-danger" onClick={onDisconnect}>
+                <LogOut size={13} /> Switch account
+              </button>
             </div>
           </Group>
 
@@ -518,6 +523,7 @@ export function Designer({ designer, username, saveState, publishedAt, onPatch, 
             hoverKey={hoverKey}
             onHover={setHoverKey}
             onPick={pick}
+            onClear={() => setSelectedKey(null)}
           />
           <p className="cs-preview__cap">
             <Link2 size={12} /> Live preview · {storeShareUrl(handle || username)}

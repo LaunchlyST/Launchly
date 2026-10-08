@@ -29,6 +29,7 @@ interface PhonePreviewProps {
   interactive?: boolean;
   onHover?: (key: string | null) => void;
   onPick?: (key: string) => void;
+  onClear?: () => void;
 }
 
 export function PhonePreview({
@@ -39,6 +40,7 @@ export function PhonePreview({
   interactive = true,
   onHover,
   onPick,
+  onClear,
 }: PhonePreviewProps) {
   const t = designer.theme;
   const font = FONTS[t.font];
@@ -96,6 +98,9 @@ export function PhonePreview({
 
   const handle = (designer.username || username).replace(/^@+/, '');
   const initial = (designer.displayName || 'S').replace(/^@/, '').charAt(0).toUpperCase();
+  // Avoid showing "@handle" twice when the display name equals the handle.
+  const showName = designer.displayName.trim() !== '' && designer.displayName.trim().toLowerCase() !== `@${handle}`.toLowerCase();
+  const displayTitle = showName ? designer.displayName : handle ? `@${handle}` : 'Your Studio';
 
   function renderBlock(block: Block) {
     const key = `block:${block.id}`;
@@ -110,8 +115,8 @@ export function PhonePreview({
                 {initial}
               </span>
             )}
-            <strong className="pv-name">{designer.displayName || 'Your Studio'}</strong>
-            {handle && <span className="pv-handle">@{handle}</span>}
+            <strong className="pv-name">{displayTitle}</strong>
+            {showName && handle && <span className="pv-handle">@{handle}</span>}
             {designer.bio && <p className="pv-bio">{designer.bio}</p>}
           </div>
         );
@@ -168,12 +173,12 @@ export function PhonePreview({
         );
       }
       case 'social': {
-        const items = block.socials ?? [];
+        const items = (block.socials ?? []).filter((s) => s.url.trim() !== '');
         return (
           <div key={block.id} className={cls(key)} {...bind(key)}>
             {block.title && <p className="pv-caption">{block.title}</p>}
             {items.length === 0 ? (
-              <div className="pv-empty">No socials yet</div>
+              <div className="pv-empty">No socials yet — add profile URLs</div>
             ) : (
               <div className="pv-socials">
                 {items.map((s) => {
@@ -298,7 +303,12 @@ export function PhonePreview({
       <div className="pv-notch" aria-hidden="true" />
       <div className={`pv-screen${t.bgAnimated && t.bgMode === 'gradient' ? ' is-animated' : ''}`} style={{ fontFamily: font, color: t.textColor }}>
         <div className="pv-bg" style={bgLayerStyle} aria-hidden="true" />
-        <div className="pv-content">
+        <div
+          className="pv-content"
+          onClick={() => {
+            if (interactive) onClear?.();
+          }}
+        >
           {designer.blocks.map(renderBlock)}
           <p className="pv-powered">Made with Launchly</p>
         </div>

@@ -46,6 +46,24 @@ describe('CreatorStorePage', () => {
     expect(screen.getByRole('button', { name: /Publish/ })).toBeTruthy();
   });
 
+  it('stays in the builder after a refresh once connected', () => {
+    seedConnected();
+    const first = render(<CreatorStorePage />);
+    expect(screen.getByText('Design')).toBeTruthy();
+    first.unmount();
+    cleanup();
+    render(<CreatorStorePage />);
+    expect(screen.getByText('Design')).toBeTruthy();
+    expect(screen.queryByLabelText('TikTok username')).toBeNull();
+  });
+
+  it('switch account returns to setup without redoing anything else', () => {
+    seedConnected();
+    render(<CreatorStorePage />);
+    fireEvent.click(screen.getByRole('button', { name: /Switch account/ }));
+    expect(screen.getByLabelText('TikTok username')).toBeTruthy();
+  });
+
   it('adds a product from the content controls and edits it', () => {
     seedConnected();
     render(<CreatorStorePage />);
