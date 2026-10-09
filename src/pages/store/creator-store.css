@@ -491,7 +491,7 @@
   border-radius: 0;
   padding: clamp(12px, 1.6vw, 22px);
   align-items: stretch;
-  overflow: hidden auto;
+  overflow: auto;
 }
 /* `margin: auto` is what centres and shrink-wraps the builder in the dashboard
    column; in full screen it has to be neutral or the workspace would never
@@ -2039,26 +2039,53 @@ color: var(--cs-ink);
   .pv-phone { width: min(252px, 100%); height: 560px; }
   .cs-preview__cap { max-width: 100%; }
 }
-/* Too narrow for side-by-side: clean stacked layout, no squeezing. */
+/* Narrow windows: the workspace keeps its three panels side by side. It never
+   stacks — the tools, the divider and the phone stay on one row at every width,
+   and the tracks simply shrink. */
 @media (max-width: 860px) {
   .cs-page { padding: 24px 12px; border-radius: 18px; }
   .cs-setup__body { padding: 36px 20px 32px; }
   .cs-progress { padding: 12px 14px 0; }
   .cs-progress__track { top: 25px; left: 34px; right: 34px; }
   .cs-progress__label { font-size: 8px; }
-  .cs-builder { max-width: 560px; grid-template-columns: 1fr; row-gap: 20px; }
-  .cs-topbar__lead,
-  .cs-topbar__right { grid-column: 1; text-align: left; }
-  .cs-topbar__right { justify-content: flex-start; }
-  .cs-controls { grid-column: 1; grid-row: auto; position: static; max-height: none; overflow: visible; }
-  .cs-divider { display: none; }
-  .cs-preview { grid-column: 1; grid-row: auto; position: static; align-items: center; }
-  .cs-preview__fixed { max-width: 340px; margin-left: 0; align-items: center; }
-  .pv-phone { width: min(292px, 100%); height: 600px; }
-  .cs-preview__cap { max-width: 100%; margin: 0 auto; justify-content: center; text-align: center; white-space: normal; }
+  .cs-builder {
+    grid-template-columns: minmax(140px, 200px) minmax(0, 1fr) minmax(330px, 1fr);
+    column-gap: 12px;
+  }
+  .cs-controls { max-height: none; overflow: visible; }
+  .cs-divider { min-height: 320px; }
+  .pv-phone { width: min(228px, 100%); height: 520px; }
+  .cs-preview__cap { max-width: 100%; }
   .cs-pv__bar { height: 54px; }
   .cs-pv__url { display: none; }
   .cs-pv__hint { display: none; }
+}
+/* Phone-sized windows: the same three panels, just smaller again. */
+@media (max-width: 680px) {
+  .cs-builder {
+    grid-template-columns: minmax(110px, 160px) minmax(0, 1fr) minmax(390px, 1fr);
+    column-gap: 8px;
+  }
+  .pv-phone { width: min(184px, 100%); height: 440px; }
+  .cs-divider { min-height: 240px; }
+  .cs-topbar__lead { gap: 6px; }
+  .cs-topbar__right { gap: 4px; }
+  .cs-toolbtn { padding: 5px 8px; font-size: 10.5px; gap: 4px; }
+  .cs-savestate { padding: 5px 8px; font-size: 10px; gap: 5px; }
+}
+/* Phone-sized windows: still three panels, smallest possible. Below this the
+   three columns genuinely cannot fit, so the workspace scrolls sideways rather
+   than clipping a panel in half. */
+@media (max-width: 520px) {
+  .cs-page.is-fullscreen { padding: 6px; }
+  .cs-builder {
+    grid-template-columns: minmax(92px, 126px) minmax(0, 1fr) minmax(292px, 1fr);
+    column-gap: 6px;
+  }
+  .pv-phone { width: min(168px, 100%); height: 400px; }
+  .cs-divider { min-height: 200px; }
+  .cs-toolbtn { padding: 4px 7px; font-size: 9.5px; }
+  .cs-savestate { padding: 4px 7px; font-size: 9px; }
 }
 @media (max-width: 420px) {
   .cs-topbar__right { justify-content: stretch; }
