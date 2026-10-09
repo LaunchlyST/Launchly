@@ -50,10 +50,9 @@ export function PhonePreview({
   const [subscribed, setSubscribed] = useState(false);
   const [dragId, setDragId] = useState<string | null>(null);
   const [dropId, setDropId] = useState<string | null>(null);
-  // Drag-to-resize the phone (builder only) so more of the page fits.
-  // Aspect ratio is locked (292:620) — the phone only ever scales up,
-  // it never stretches into a different shape.
-  const PHONE_ASPECT = 620 / 292;
+  // Drag-to-resize the phone width (builder only) so more of the page fits.
+  // Height stays fixed at 620 — the phone only ever grows left-to-right,
+  // so the page and the boxes around it never get taller.
   const [phoneWidth, setPhoneWidth] = useState<number | null>(null);
   const resizeRef = useRef<{ startX: number; baseW: number; pointerId: number } | null>(null);
   const dragMoved = useRef(false);
@@ -117,7 +116,7 @@ export function PhonePreview({
     setDropId(v);
   }
 
-  /** Edge-drag scales the phone uniformly; proportions never change. */
+  /** Edge-drag resizes the phone width only; height never changes. */
   function onResizeDown(e: React.PointerEvent<HTMLSpanElement>) {
     if (e.button !== 0) return;
     e.stopPropagation();
@@ -400,7 +399,7 @@ export function PhonePreview({
     <div
       className={`pv-phone${dragId ? ' is-dragging' : ''}`}
       aria-label="Live preview of your public page"
-      style={phoneWidth ? { width: phoneWidth, height: Math.round(phoneWidth * PHONE_ASPECT) } : undefined}
+      style={phoneWidth ? { width: phoneWidth } : undefined}
     >
       <div className="pv-notch" aria-hidden="true" />
       <div
