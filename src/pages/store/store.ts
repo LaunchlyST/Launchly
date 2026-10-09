@@ -7,7 +7,27 @@ export type BlockType =
   | 'video'
   | 'image'
   | 'text'
-  | 'newsletter';
+  | 'newsletter'
+  | 'divider';
+
+/** Only one of each may exist on a page (no duplicates). */
+export const SINGLETON_TYPES: BlockType[] = ['profile'];
+
+/**
+ * The TikTok profile block is permanently locked at index 0. This normalizes
+ * any block list (persisted, migrated, or edited) so the profile always comes
+ * first and can never be overlapped by another section.
+ */
+export function ensureProfileFirst(blocks: Block[]): Block[] {
+  if (!Array.isArray(blocks) || blocks.length === 0) return blocks;
+  const idx = blocks.findIndex((b) => b.type === 'profile');
+  if (idx < 0) return blocks;
+  if (idx === 0) return blocks;
+  const next = [...blocks];
+  const [profile] = next.splice(idx, 1);
+  next.unshift(profile);
+  return next;
+}
 
 export interface Block {
   id: string;
@@ -29,6 +49,8 @@ export interface Block {
   fontSize?: number;
   align?: 'left' | 'center' | 'right';
   color?: string;
+  /** Divider / spacer height in px. */
+  height?: number;
 }
 
 export interface Product {
@@ -107,11 +129,70 @@ export interface SetupState {
   connected: boolean;
 }
 
+/** Real TikTok identity mirrored from TikTok Login Kit + Display API.
+    TikTok is the single source of truth — Launchly never invents identity. */
+export interface TikTokProfile {
+  /** Stable TikTok account id. Username changes never break the connection. */
+  openId: string;
+  username: string;
+  displayName: string;
+  avatar: string;
+  bio: string;
+}
+
+/** Sync bookkeeping. Tokens live ONLY on the backend (Worker + Supabase). */
+export interface TikTokSyncState {
+  connected: boolean;
+  openId: string | null;
+  /** Last profile successfully retrieved from TikTok. */
+  profile: TikTokProfile | null;
+  lastSyncAt: string | null;
+  syncing: boolean;
+  /** Non-blocking warning — last good profile is always kept on failure. */
+  syncError: string | null;
+}
+
 export interface CreatorStorePersisted {
   setup: SetupState;
   designer: DesignerState;
   publishedAt: string | null;
   ui: CreatorStoreUi;
+  tiktok: TikTokSyncState;
+}
+
+export function defaultTikTokSync(): TikTokSyncState {
+  return {
+    connected: false,
+    openId: null,
+    profile: null,
+    lastSyncAt: null,
+    syncing: false,
+    syncError: null,
+  };
+}
+
+/**
+ * Merge a TikTok profile into the designer. Only non-empty real values win —
+ * a temporary API failure must NEVER wipe real identity with placeholders.
+ */
+export function applyTikTokProfile(
+  designer: DesignerState,
+  profile: Partial<TikTokProfile> | null | undefined
+): DesignerState {
+  if (!profile) return designer;
+  const next = { ...designer };
+  const text = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
+  const username = text(profile.username).replace(/^@+/, '');
+  const displayName = text(profile.displayName);
+  const avatar = text(profile.avatar);
+  const bio = typeof profile.bio === 'string' ? profile.bio : '';
+  if (username) next.username = username;
+  if (displayName) next.displayName = displayName;
+  if (avatar) next.avatar = avatar;
+  // Bio may legitimately be empty on TikTok — only overwrite when the
+  // payload actually carries the field, so failures keep the last bio.
+  if (profile.bio !== undefined) next.bio = bio;
+  return next;
 }
 
 export type GroupId = 'design' | 'content' | 'products';
@@ -239,6 +320,8 @@ export function blankBlock(type: BlockType): Block {
         buttonLabel: 'Subscribe',
         placeholder: 'you@email.com',
       };
+    case 'divider':
+      return { ...base, title: 'Divider', height: 24 };
   }
 }
 
@@ -306,7 +389,13 @@ export function defaultSetup(): SetupState {
 }
 
 export function defaultPersisted(): CreatorStorePersisted {
-  return { setup: defaultSetup(), designer: defaultDesigner(), publishedAt: null, ui: defaultUi() };
+  return {
+    setup: defaultSetup(),
+    designer: defaultDesigner(),
+    publishedAt: null,
+    ui: defaultUi(),
+    tiktok: defaultTikTokSync(),
+  };
 }
 
 /** Best-effort upgrade of the previous persisted shape into blocks. */
@@ -349,6 +438,7 @@ function migrateV2(raw: any): CreatorStorePersisted {
       },
       publishedAt: raw.publishedAt ?? null,
       ui: base.ui,
+      tiktok: { ...base.tiktok, ...(raw.tiktok ?? {}) },
     };
   } catch {
     return base;
@@ -362,14 +452,28 @@ export function loadPersisted(): CreatorStorePersisted {
       const parsed = JSON.parse(raw);
       const base = defaultPersisted();
       const ui = parsed.ui && typeof parsed.ui === 'object' ? parsed.ui : {};
+      const tiktok = parsed.tiktok && typeof parsed.tiktok === 'object' ? parsed.tiktok : {};
+      const rawBlocks = Array.isArray(parsed.designer?.blocks) ? parsed.designer.blocks : base.designer.blocks;
+      // Permanent lock: the TikTok profile always loads first; restore it
+      // if an older save deleted or reordered it.
+      const blocks = rawBlocks.some((b: Block) => b.type === 'profile')
+        ? ensureProfileFirst(rawBlocks)
+        : [{ ...blankBlock('profile'), id: newId('block') }, ...rawBlocks];
       return {
         setup: { ...base.setup, ...(parsed.setup ?? {}) },
         designer: {
           ...base.designer,
           ...(parsed.designer ?? {}),
+          blocks,
           theme: { ...base.designer.theme, ...(parsed.designer?.theme ?? {}) },
         },
         publishedAt: parsed.publishedAt ?? null,
+        tiktok: {
+          ...base.tiktok,
+          ...tiktok,
+          // Tokens are never persisted on the client.
+          syncing: false,
+        },
         ui: {
           ...base.ui,
           ...ui,

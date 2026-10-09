@@ -95,17 +95,15 @@ describe('CreatorStorePage', () => {
     expect(container.querySelectorAll('.cs-editor-tools').length).toBe(1);
   });
 
-  it('undoes a display name change', () => {
+  it('locks the TikTok profile as read-only with sync controls', () => {
     seedConnected();
     render(<CreatorStorePage />);
-    // Profile fields appear in Editor Tools after clicking the profile in the preview.
+    // Profile block opens the synced read-only panel — never editable inputs.
     fireEvent.click(screen.getByText('Your Studio'));
-    const input = screen.getByLabelText('Display name') as HTMLInputElement;
-    const before = input.value;
-    fireEvent.change(input, { target: { value: 'Changed Name' } });
-    expect(input.value).toBe('Changed Name');
-    fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
-    expect((screen.getByLabelText('Display name') as HTMLInputElement).value).toBe(before);
+    expect(screen.getByText('Synced with TikTok')).toBeTruthy();
+    expect(screen.queryByLabelText('Display name')).toBeNull();
+    expect(screen.queryByLabelText('Profile photo URL')).toBeNull();
+    expect(screen.getByRole('button', { name: /Sync now/i })).toBeTruthy();
   });
 
   it('adds a TikTok video from the preview block editor', () => {
@@ -138,5 +136,187 @@ describe('CreatorStorePage', () => {
     fireEvent.pointerMove(handleEl, { clientX: 2000, clientY: 100, pointerId: 2 });
     fireEvent.pointerUp(handleEl, { pointerId: 2 });
     expect(phone.style.width).toBe('360px');
+  });
+
+  describe('palette drag-and-drop', () => {
+    /** jsdom has no layout, so give the phone content a real box. */
+    function stubContentBox(content: HTMLElement, top = 100, height = 600, left = 100, width = 260) {
+      content.getBoundingClientRect = () =>
+        ({ top, left, width, height, right: left + width, bottom: top + height, x: left, y: top, toJSON: () => ({}) }) as DOMRect;
+    }
+
+    function blockBox(top: number, height: number) {
+      return () =>
+        ({ top, left: 100, width: 260, height, right: 360, bottom: top + height, x: 100, y: top, toJSON: () => ({}) }) as DOMRect;
+    }
+
+    /**
+     * Stubs rects at the prototype level and derives each block's slot from its
+     * *current* DOM order, so the boxes survive the re-render that happens
+     * mid-drag (per-element stubs would be thrown away with the old nodes).
+     */
+    function stubLiveLayout(content: HTMLElement) {
+      const original = Element.prototype.getBoundingClientRect;
+      Element.prototype.getBoundingClientRect = function (this: Element) {
+        if (this === content) {
+          return { top: 100, left: 100, width: 260, height: 600, right: 360, bottom: 700, x: 100, y: 100, toJSON: () => ({}) } as DOMRect;
+        }
+        const el = this as HTMLElement;
+        if (el.dataset && el.dataset.blockId) {
+          const root = content.querySelectorAll('[data-block-id]');
+          const i = Array.from(root).indexOf(el);
+          const top = 100 + Math.max(0, i) * 100;
+          return { top, left: 100, width: 260, height: 90, right: 360, bottom: top + 90, x: 100, y: top, toJSON: () => ({}) } as DOMRect;
+        }
+        return original.call(this);
+      };
+      return () => {
+        Element.prototype.getBoundingClientRect = original;
+      };
+    }
+
+    it('creates a section only when the palette drag is released inside the phone', () => {
+      seedConnected();
+      const { container } = render(<CreatorStorePage />);
+      const content = container.querySelector('.pv-content') as HTMLElement;
+      stubContentBox(content);
+      const before = container.querySelectorAll('[data-block-id]').length;
+
+      const card = screen.getByLabelText('Add Text section');
+      // Drag starts outside the phone and is released outside → nothing added.
+      fireEvent.pointerDown(card, { button: 0, pointerId: 7, clientX: 20, clientY: 20 });
+      fireEvent.pointerMove(window, { pointerId: 7, clientX: 20, clientY: 20 });
+      fireEvent.pointerUp(window, { pointerId: 7, clientX: 20, clientY: 20 });
+      expect(container.querySelectorAll('[data-block-id]').length).toBe(before);
+
+      // Drag released inside the phone → section is created.
+      fireEvent.pointerDown(card, { button: 0, pointerId: 8, clientX: 20, clientY: 20 });
+      fireEvent.pointerMove(window, { pointerId: 8, clientX: 200, clientY: 400 });
+      fireEvent.pointerUp(window, { pointerId: 8, clientX: 200, clientY: 400 });
+      expect(container.querySelectorAll('[data-block-id]').length).toBe(before + 1);
+    });
+
+    it('highlights the phone drop area only while dragging over it', () => {
+      seedConnected();
+      const { container } = render(<CreatorStorePage />);
+      const content = container.querySelector('.pv-content') as HTMLElement;
+      stubContentBox(content);
+      const phone = container.querySelector('.pv-phone') as HTMLElement;
+      const card = screen.getByLabelText('Add Image section');
+
+      fireEvent.pointerDown(card, { button: 0, pointerId: 9, clientX: 10, clientY: 10 });
+      expect(phone.classList.contains('is-palette-drag')).toBe(true);
+      // Pointer still outside the phone content area.
+      expect(container.querySelector('.pv-dropzone')).toBeTruthy();
+      expect(phone.classList.contains('is-drop-over')).toBe(false);
+
+      fireEvent.pointerMove(window, { pointerId: 9, clientX: 200, clientY: 400 });
+      expect(phone.classList.contains('is-drop-over')).toBe(true);
+      fireEvent.pointerUp(window, { pointerId: 9, clientX: 200, clientY: 400 });
+      expect(phone.classList.contains('is-drop-over')).toBe(false);
+    });
+
+    it('does not add a section when the palette card is only clicked', () => {
+      seedConnected();
+      const { container } = render(<CreatorStorePage />);
+      const before = container.querySelectorAll('[data-block-id]').length;
+      // A bare pointerdown/up on the card (no move into the phone) must not add.
+      fireEvent.pointerDown(screen.getByLabelText('Add Video section'), { button: 0, pointerId: 11, clientX: 5, clientY: 5 });
+      fireEvent.pointerUp(window, { pointerId: 11, clientX: 5, clientY: 5 });
+      expect(container.querySelectorAll('[data-block-id]').length).toBe(before);
+    });
+
+    it('never lets the pinned profile be duplicated or displaced', () => {
+      seedConnected();
+      const { container } = render(<CreatorStorePage />);
+      const content = container.querySelector('.pv-content') as HTMLElement;
+      stubContentBox(content);
+      const restore = stubLiveLayout(content);
+      expect(container.querySelectorAll('.pv-profile').length).toBe(1);
+
+      const before = container.querySelectorAll('[data-block-id]').length;
+      const card = screen.getByLabelText('Add Text section');
+      // Drop far above the profile block → must not land above/over it.
+      fireEvent.pointerDown(card, { button: 0, pointerId: 12, clientX: 20, clientY: 20 });
+      fireEvent.pointerMove(window, { pointerId: 12, clientX: 200, clientY: 110 });
+      fireEvent.pointerUp(window, { pointerId: 12, clientX: 200, clientY: 110 });
+      restore();
+      const blocks = container.querySelectorAll('[data-block-id]');
+      expect(blocks.length).toBe(before + 1);
+      expect(blocks[0].classList.contains('pv-profile')).toBe(true);
+    });
+
+    it('reorders an existing section by dragging inside the phone', () => {
+      seedConnected();
+      const { container } = render(<CreatorStorePage />);
+      const content = container.querySelector('.pv-content') as HTMLElement;
+      stubContentBox(content);
+      const ids = Array.from(container.querySelectorAll('[data-block-id]')).map((el) => (el as HTMLElement).dataset.blockId!);
+      const restore = stubLiveLayout(content);
+      // Use the TikTok block: it renders plain markup, so the gesture is not
+      // blocked by an inner form control (the newsletter block has an input).
+      const dragId = ids[1];
+      const dragEl = container.querySelector(`[data-block-id="${dragId}"]`) as HTMLElement;
+
+      // Grab it and drop near the bottom of the phone. pointerType must be
+      // set (real browsers always send it): touch drags require the grip.
+      fireEvent.pointerDown(dragEl, { button: 0, pointerId: 21, pointerType: 'mouse', clientX: 200, clientY: 200 });
+      fireEvent.pointerMove(window, { pointerId: 21, clientX: 200, clientY: 690 });
+      fireEvent.pointerUp(window, { pointerId: 21, clientX: 200, clientY: 690 });
+
+      const after = Array.from(container.querySelectorAll('[data-block-id]')).map((el) => (el as HTMLElement).dataset.blockId!);
+      restore();
+      expect(after.length).toBe(ids.length);
+      expect(after[0]).toBe(ids[0]); // profile stays pinned at the top
+      expect(after[1]).not.toBe(dragId); // it left its original slot
+      expect(after[after.length - 1]).toBe(dragId); // and landed at the bottom
+    });
+
+    it('persists a dropped section across a remount', () => {
+      seedConnected();
+      const first = render(<CreatorStorePage />);
+      const content = first.container.querySelector('.pv-content') as HTMLElement;
+      stubContentBox(content);
+      const before = first.container.querySelectorAll('[data-block-id]').length;
+      fireEvent.pointerDown(screen.getByLabelText('Add Newsletter section'), { button: 0, pointerId: 31, clientX: 10, clientY: 10 });
+      fireEvent.pointerMove(window, { pointerId: 31, clientX: 200, clientY: 400 });
+      fireEvent.pointerUp(window, { pointerId: 31, clientX: 200, clientY: 400 });
+      expect(first.container.querySelectorAll('[data-block-id]').length).toBe(before + 1);
+
+      first.unmount();
+      cleanup();
+      const second = render(<CreatorStorePage />);
+      expect(second.container.querySelectorAll('[data-block-id]').length).toBe(before + 1);
+    });
+
+    it('undoes and redoes a palette drop', () => {
+      seedConnected();
+      const { container } = render(<CreatorStorePage />);
+      const content = container.querySelector('.pv-content') as HTMLElement;
+      stubContentBox(content);
+      const before = container.querySelectorAll('[data-block-id]').length;
+
+      fireEvent.pointerDown(screen.getByLabelText('Add Text section'), { button: 0, pointerId: 41, clientX: 10, clientY: 10 });
+      fireEvent.pointerMove(window, { pointerId: 41, clientX: 200, clientY: 400 });
+      fireEvent.pointerUp(window, { pointerId: 41, clientX: 200, clientY: 400 });
+      expect(container.querySelectorAll('[data-block-id]').length).toBe(before + 1);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+      expect(container.querySelectorAll('[data-block-id]').length).toBe(before);
+      fireEvent.click(screen.getByRole('button', { name: 'Redo' }));
+      expect(container.querySelectorAll('[data-block-id]').length).toBe(before + 1);
+    });
+
+    it('offers a Divider / Spacer palette card that creates a divider block', () => {
+      seedConnected();
+      const { container } = render(<CreatorStorePage />);
+      const content = container.querySelector('.pv-content') as HTMLElement;
+      stubContentBox(content);
+      expect(screen.getByLabelText('Add Divider / Spacer section')).toBeTruthy();
+      fireEvent.pointerDown(screen.getByLabelText('Add Divider / Spacer section'), { button: 0, pointerId: 51, clientX: 10, clientY: 10 });
+      fireEvent.pointerMove(window, { pointerId: 51, clientX: 200, clientY: 400 });
+      fireEvent.pointerUp(window, { pointerId: 51, clientX: 200, clientY: 400 });
+      expect(container.querySelectorAll('.pv-divider').length).toBe(1);
+    });
   });
 });

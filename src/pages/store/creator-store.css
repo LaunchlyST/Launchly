@@ -1165,6 +1165,10 @@
 }
 .pv-grip:active { cursor: grabbing; }
 .pv-block.is-hover .pv-grip, .pv-block.is-selected .pv-grip { display: grid; }
+/* Locked TikTok profile: pinned to the top, never draggable. Still clickable
+   to edit, but shows a default cursor and never a drag grip. */
+.pv-block.is-locked { cursor: default; }
+.pv-block.is-locked .pv-grip { display: none !important; }
 
 /* ---------- flexible drag-and-drop: insertion line + floating ghost ---------- */
 .pv-drop-line {
@@ -1220,6 +1224,59 @@
   transform: rotate(-1deg) scale(1.02);
 }
 .pv-ghost span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* ---------- palette → phone drop target ---------- */
+.pv-dropzone {
+  position: absolute;
+  inset: 8px;
+  z-index: 4;
+  display: grid;
+  place-items: end center;
+  padding-bottom: 14px;
+  border-radius: 26px;
+  border: 2px dashed rgba(47, 124, 246, 0.55);
+  background: rgba(47, 124, 246, 0.07);
+  backdrop-filter: blur(2px);
+  pointer-events: none;
+  animation: pv-dz-in 0.2s ease both;
+}
+.pv-phone.is-drop-over .pv-dropzone {
+  border-color: #2f7cf6;
+  background: rgba(47, 124, 246, 0.13);
+  box-shadow: inset 0 0 0 3px rgba(47, 124, 246, 0.16);
+}
+.pv-dropzone span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 13px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(47, 124, 246, 0.4);
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.22);
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #2f567f;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@keyframes pv-dz-in { from { opacity: 0; } to { opacity: 1; } }
+.pv-content.is-receiving { min-height: 60%; }
+.pv-drop-hint {
+  border: 1.5px dashed rgba(47, 124, 246, 0.45);
+  background: rgba(47, 124, 246, 0.06);
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  color: #2f567f;
+}
+.pv-drop-line--new i { background: linear-gradient(90deg, #2f7cf6, #38bdf8); }
+.pv-divider { display: flex; align-items: center; justify-content: center; }
+.pv-divider > span { display: block; width: 100%; }
+
 .pv-empty-drop {
   border: 1.5px dashed rgba(47, 124, 246, 0.5);
   background: rgba(47, 124, 246, 0.06);
@@ -1243,6 +1300,9 @@
 .cs-addcard svg { color: #2f567f; }
 .cs-addcard__label { font-size: 12.5px; font-weight: 700; color: var(--cs-ink); }
 .cs-addcard small { font-size: 10.5px; font-weight: 500; color: var(--cs-muted); line-height: 1.4; }
+/* Palette cards are drag sources: grab cursor, no click-to-add flash. */
+.cs-addcard { cursor: grab; touch-action: none; }
+.cs-addcard:active { cursor: grabbing; transform: scale(0.97); }
 
 .pv-profile { text-align: center; padding: 6px 4px; }
 .pv-avatar {
@@ -1559,6 +1619,86 @@
   from { opacity: 0; transform: translateX(-50%) translateY(12px); }
   to { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
+
+/* ---------- TikTok-synced profile (read-only identity, same glass style) ---------- */
+.cs-sync { display: grid; gap: 10px; }
+.cs-sync__profile {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 10px;
+  align-items: center;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(15, 23, 42, 0.09);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+.cs-sync__avatar {
+  grid-row: span 2;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.18);
+}
+.cs-sync__avatar--fallback {
+  display: inline-grid;
+  place-items: center;
+  color: #fff;
+  font-size: 19px;
+  font-weight: 700;
+}
+.cs-sync__id { min-width: 0; display: grid; gap: 1px; }
+.cs-sync__id strong {
+  font-size: 13.5px;
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cs-sync__id span { font-size: 11.5px; color: var(--cs-muted); }
+.cs-sync__badge {
+  grid-column: 1 / -1;
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 6px;
+  padding: 4px 10px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #2f567f;
+  background: rgba(63, 110, 166, 0.1);
+  border: 1px solid rgba(63, 110, 166, 0.3);
+  border-radius: 999px;
+}
+.cs-sync__bio {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--cs-muted);
+  padding: 0 2px;
+}
+.cs-sync__note { margin: 0; font-size: 11.5px; line-height: 1.6; color: var(--cs-faint); padding: 0 2px; }
+.cs-sync__row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.cs-sync__row .cs-chipbtn { flex: 0 1 auto; padding: 8px 14px; }
+.cs-sync__time { font-size: 11px; color: var(--cs-faint); font-variant-numeric: tabular-nums; }
+.cs-sync__warn {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin: 0;
+  padding: 9px 11px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: #92400e;
+  background: rgba(217, 119, 6, 0.08);
+  border: 1px solid rgba(217, 119, 6, 0.3);
+  border-radius: 10px;
+}
+.cs-sync__warn > svg { flex-shrink: 0; margin-top: 1px; }
 
 /* ---------- tidy professional left panel (v1): no stacked boxes,
    just clean divider-separated sections with compact rows ---------- */

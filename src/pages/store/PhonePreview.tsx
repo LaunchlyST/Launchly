@@ -1,6 +1,6 @@
-import { useRef, useState } from 'react';
-import { ArrowUpRight, AtSign, Camera, Check, GripVertical, Music2, Play } from 'lucide-react';
-import type { Block, DesignerState, SocialNetwork } from './store';
+import { useEffect, useRef, useState } from 'react';
+import { ArrowUpRight, AtSign, Camera, Check, GripVertical, Music2, Play, Plus } from 'lucide-react';
+import type { Block, BlockType, DesignerState, SocialNetwork } from './store';
 import { FONTS } from './store';
 
 const SOCIAL_ICON: Record<SocialNetwork, typeof Music2> = {
@@ -38,6 +38,8 @@ interface PhonePreviewProps {
   /** Preferred reorder path: move dragged block to this index in the
       post-removal list (0 = top, length = bottom). */
   onMoveBlockAt?: (dragId: string, toIndex: number) => void;
+  /** Create a section dropped from the left palette at this index. */
+  onInsertBlock?: (type: BlockType, toIndex: number) => void;
 }
 
 export function PhonePreview({
@@ -53,6 +55,7 @@ export function PhonePreview({
   onClear,
   onMoveBlock,
   onMoveBlockAt,
+  onInsertBlock,
 }: PhonePreviewProps) {
   const t = designer.theme;
   const font = FONTS[t.font];
@@ -64,6 +67,12 @@ export function PhonePreview({
   const [dragId, setDragId] = useState<string | null>(null);
   const [insertIndex, setInsertIndex] = useState<number | null>(null);
   const [ghost, setGhost] = useState<{ x: number; y: number; w: number; label: string } | null>(null);
+  // Palette drag: a section type being dragged in from the left panel.
+  // `overPhone` highlights the drop area; `paletteIndex` is the insertion
+  // slot the pointer is currently hovering.
+  const [paletteDrag, setPaletteDrag] = useState<{ type: BlockType; label: string } | null>(null);
+  const [overPhone, setOverPhone] = useState(false);
+  const [paletteIndex, setPaletteIndex] = useState<number | null>(null);
   // Drag-to-resize the phone width (builder only) so more of the page fits.
   // Height stays fixed at 620 — the phone only ever grows left-to-right,
   // so the page and the boxes around it never get taller.
@@ -81,11 +90,97 @@ export function PhonePreview({
     label: string;
     w: number;
   } | null>(null);
-  const insertRef = useRef<number | null>(null);
+  const insertPosRef = useRef<number | null>(null);
   const moveAtRef = useRef(onMoveBlockAt);
   moveAtRef.current = onMoveBlockAt;
   const moveRef = useRef(onMoveBlock);
   moveRef.current = onMoveBlock;
+  const insertBlockRef = useRef(onInsertBlock);
+  insertBlockRef.current = onInsertBlock;
+  const paletteRef = useRef<{ type: BlockType; label: string; pointerId: number } | null>(null);
+  const overRef = useRef(false);
+  const palIndexRef = useRef<number | null>(null);
+
+  // The TikTok profile (avatar / username / bio) is permanently pinned to
+  // the top of the phone preview. It can be clicked to edit but never
+  // dragged, and nothing may be dropped above or over it.
+  const profileId = designer.blocks.find((b) => b.type === 'profile')?.id ?? null;
+  const lockedTopCount = profileId ? 1 : 0;
+  const lockedTopRef = useRef(lockedTopCount);
+  lockedTopRef.current = lockedTopCount;
+
+  /** Starts a palette drag. Called from the left panel on pointer down so the
+      whole gesture (cross-panel) is tracked in one place. */
+  useEffect(() => {
+    const move = (ev: PointerEvent) => {
+      const p = paletteRef.current;
+      if (!p || ev.pointerId !== p.pointerId) return;
+      const root = contentRef.current;
+      if (!root) return;
+      const r = root.getBoundingClientRect();
+      // Only treat as "over" when the pointer is inside the content column.
+      const inside =
+        ev.clientX >= r.left - 24 &&
+        ev.clientX <= r.right + 24 &&
+        ev.clientY >= r.top - 24 &&
+        ev.clientY <= r.bottom + 24;
+      const changed = inside !== overRef.current;
+      overRef.current = inside;
+      if (changed) setOverPhone(inside);
+      if (!inside) {
+        palIndexRef.current = null;
+        setPaletteIndex(null);
+        return;
+      }
+      const idx = indexFromPoint(ev.clientY, '');
+      if (idx !== palIndexRef.current) {
+        palIndexRef.current = idx;
+        setPaletteIndex(idx);
+      }
+    };
+    const up = (ev: PointerEvent) => {
+      const p = paletteRef.current;
+      if (!p || ev.pointerId !== p.pointerId) return;
+      paletteRef.current = null;
+      const inside = overRef.current;
+      const idx = palIndexRef.current;
+      overRef.current = false;
+      palIndexRef.current = null;
+      setPaletteDrag(null);
+      setOverPhone(false);
+      setPaletteIndex(null);
+      // Only create when released inside the phone — never above the locked profile.
+      if (inside && insertBlockRef.current) insertBlockRef.current(p.type, Math.max(lockedTopRef.current, idx ?? designer.blocks.length));
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
+    return () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
+    };
+  }, [designer.blocks.length]);
+
+  /** Palette drags start on the left panel, which lives outside the phone, so
+      the pointerdown listener sits on the window and filters to palette cards. */
+  useEffect(() => {
+    const onDown = (e: PointerEvent) => {
+      if (e.button !== 0) return;
+      const card = (e.target as HTMLElement)?.closest?.('[data-palette-type]') as HTMLElement | null;
+      if (!card) return;
+      const type = card.dataset.paletteType as BlockType;
+      const label = card.dataset.paletteLabel || type;
+      paletteRef.current = { type, label, pointerId: e.pointerId };
+      overRef.current = false;
+      palIndexRef.current = null;
+      setPaletteDrag({ type, label });
+      setOverPhone(false);
+      setPaletteIndex(null);
+    };
+    window.addEventListener('pointerdown', onDown);
+    return () => window.removeEventListener('pointerdown', onDown);
+  }, []);
   const blocksRef = useRef<Block[]>(designer.blocks);
   blocksRef.current = designer.blocks;
 
@@ -123,29 +218,33 @@ export function PhonePreview({
     ? { background: 'rgba(255,255,255,.6)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,.7)' }
     : { background: '#fff', border: '1px solid rgba(15,23,42,.08)' };
 
-  const cls = (key: string, extra = '') =>
-    `pv-block ${extra}${hoverKey === key ? ' is-hover' : ''}${selectedKey === key ? ' is-selected' : ''}`.trim();
+  const cls = (key: string, extra = '', locked = false) =>
+    `pv-block ${extra}${hoverKey === key ? ' is-hover' : ''}${selectedKey === key ? ' is-selected' : ''}${locked ? ' is-locked' : ''}`.trim();
 
   const canReorder = interactive && (!!onMoveBlockAt || !!onMoveBlock);
 
   /** Insertion index from the pointer position: first block (excluding the
       dragged one) whose vertical midpoint sits below the pointer wins. */
   function setInsert(v: number | null) {
-    insertRef.current = v;
+    insertPosRef.current = v;
     setInsertIndex(v);
   }
 
   function indexFromPoint(clientY: number, draggedId: string): number {
     const root = contentRef.current;
-    if (!root) return blocksRef.current.filter((b) => b.id !== draggedId).length;
+    const fallback = blocksRef.current.filter((b) => b.id !== draggedId).length;
+    // The locked profile always occupies index 0 — insertion can never
+    // target anything above or overlapping it.
+    const minIndex = lockedTopCount;
+    if (!root) return Math.max(minIndex, fallback);
     const els = Array.from(root.querySelectorAll<HTMLElement>('[data-block-id]')).filter(
       (el) => el.dataset.blockId !== draggedId
     );
     for (let i = 0; i < els.length; i++) {
       const r = els[i].getBoundingClientRect();
-      if (clientY < r.top + r.height / 2) return i;
+      if (clientY < r.top + r.height / 2) return Math.max(minIndex, i);
     }
-    return els.length;
+    return Math.max(minIndex, els.length);
   }
 
   function updateGhost(clientX: number, clientY: number, label: string, w: number) {
@@ -170,11 +269,14 @@ export function PhonePreview({
     else if (clientY > r.bottom - 56) sc.scrollTop += 10;
   }
 
-  /** Pointer-based reorder: any section can be grabbed anywhere (mouse) and
-      dropped at any insertion index. Only the ghost follows the pointer —
-      the page itself never shifts with the mouse. */
+  /** Pointer-based reorder: any section except the locked profile can be
+      grabbed anywhere (mouse) and dropped at any insertion index below the
+      profile. Only the ghost follows the pointer — the page itself never
+      shifts with the mouse. */
   function beginPotentialDrag(e: React.PointerEvent, id: string, label: string) {
     if (!interactive || !canReorder || e.button !== 0) return;
+    // Locked profile: never draggable, by body or by grip.
+    if (id === profileId) return;
     const target = e.target as HTMLElement;
     // Let form controls keep their native behaviour.
     if (target.closest('input, textarea, select, button, a')) {
@@ -226,10 +328,18 @@ export function PhonePreview({
         try {
           to = indexFromPoint(ev.clientY, d.id);
         } catch {
-          to = insertRef.current ?? blocksRef.current.filter((b) => b.id !== d.id).length;
+          to = insertPosRef.current ?? blocksRef.current.filter((b) => b.id !== d.id).length;
+        }
+        // Never allow a drop above or on the locked profile (index 0),
+        // and never allow the locked profile itself to be moved.
+        if (d.id === profileId) {
+          setDragId(null);
+          setInsertIndex(null);
+          setGhost(null);
+          return;
         }
         const without = blocksRef.current.filter((b) => b.id !== d.id);
-        const clamped = Math.max(0, Math.min(to, without.length));
+        const clamped = Math.max(lockedTopCount, Math.min(to, without.length));
         const before = blocksRef.current.map((b) => b.id).join('|');
         const trial = without.map((b) => b.id);
         trial.splice(clamped, 0, d.id);
@@ -304,17 +414,20 @@ export function PhonePreview({
     return b.title || b.type;
   }
 
-  function BlockWrap({ id, blockKey, extra, label, children }: { id: string; blockKey: string; extra?: string; label?: string; children: React.ReactNode }) {
+  function BlockWrap({ id, blockKey, extra, label, locked, children }: { id: string; blockKey: string; extra?: string; label?: string; locked?: boolean; children: React.ReactNode }) {
     const dragLabel = label || blockLabel(blocksRef.current.find((b) => b.id === id) ?? { id, type: 'text' as const, title: id });
+    const isLocked = locked ?? id === profileId;
     return (
       <div
         data-block-id={id}
-        className={cls(blockKey, extra ?? '')}
+        data-locked={isLocked ? 'true' : undefined}
+        title={isLocked ? 'Profile is locked at the top' : undefined}
+        className={cls(blockKey, extra ?? '', isLocked)}
         {...bind(blockKey)}
-        style={canReorder ? { touchAction: 'pan-y' } : undefined}
-        onPointerDown={(e) => beginPotentialDrag(e, id, dragLabel)}
+        style={canReorder && !isLocked ? { touchAction: 'pan-y' } : undefined}
+        onPointerDown={isLocked ? undefined : (e) => beginPotentialDrag(e, id, dragLabel)}
       >
-        {interactive && canReorder && (
+        {interactive && canReorder && !isLocked && (
           <span
             className="pv-grip"
             aria-hidden="true"
@@ -350,7 +463,7 @@ export function PhonePreview({
     switch (block.type) {
       case 'profile':
         return (
-          <BlockWrap key={block.id} id={block.id} blockKey={key} extra="pv-profile">
+          <BlockWrap key={block.id} id={block.id} blockKey={key} extra="pv-profile" locked>
             {designer.avatar ? (
               <img draggable={false} className="pv-avatar" src={designer.avatar} alt="" />
             ) : (
@@ -518,6 +631,12 @@ export function PhonePreview({
           </BlockWrap>
         );
       }
+      case 'divider':
+        return (
+          <BlockWrap key={block.id} id={block.id} blockKey={key} extra="pv-divider">
+            <span style={{ height: Math.max(4, Math.min(160, block.height ?? 24)) }} aria-hidden="true" />
+          </BlockWrap>
+        );
       case 'newsletter':
         return (
           <BlockWrap key={block.id} id={block.id} blockKey={key}>
@@ -551,33 +670,68 @@ export function PhonePreview({
   // Ordered render with a live insertion line while dragging. The dragged
   // block leaves the flow so siblings collapse around the gap.
   function renderBlocksInFlow(): React.ReactNode {
-    if (!dragId || insertIndex === null) return designer.blocks.map(renderBlock);
-    const rest = designer.blocks.filter((b) => b.id !== dragId);
-    const out: React.ReactNode[] = [];
-    const line = (
-      <div key="__drop-line__" className="pv-drop-line" aria-hidden="true">
-        <i />
-        <span>Drop here</span>
-      </div>
-    );
-    for (let i = 0; i <= rest.length; i++) {
-      if (i === insertIndex) out.push(line);
-      if (i < rest.length) out.push(renderBlock(rest[i]));
-    }
-    if (rest.length === 0) {
-      out.push(
-        <div key="__drop-empty__" className="pv-empty-drop">
-          Drag a section here
+    const palLine =
+      paletteDrag && overPhone && paletteIndex !== null ? (
+        <div key="__palette-line__" className="pv-drop-line pv-drop-line--new" aria-hidden="true">
+          <i />
+          <span>Place {paletteDrag.label}</span>
+        </div>
+      ) : null;
+
+    // Reorder an existing section — the drop line can never render above
+    // or overlapping the locked profile.
+    if (dragId && insertIndex !== null) {
+      if (dragId === profileId) return designer.blocks.map(renderBlock);
+      const rest = designer.blocks.filter((b) => b.id !== dragId);
+      const safeInsert = Math.max(lockedTopCount, insertIndex);
+      const out: React.ReactNode[] = [];
+      const line = (
+        <div key="__drop-line__" className="pv-drop-line" aria-hidden="true">
+          <i />
+          <span>Drop here</span>
         </div>
       );
+      for (let i = 0; i <= rest.length; i++) {
+        if (i === safeInsert) out.push(line);
+        if (i < rest.length) out.push(renderBlock(rest[i]));
+      }
+      if (rest.length === 0) {
+        out.push(
+          <div key="__drop-empty__" className="pv-empty-drop">
+            Drag a section here
+          </div>
+        );
+      }
+      return out;
     }
-    return out;
+
+    // Drop a new section from the palette — never above the locked profile.
+    if (palLine) {
+      const safePalette = Math.max(lockedTopCount, paletteIndex);
+      const out: React.ReactNode[] = [];
+      for (let i = 0; i <= designer.blocks.length; i++) {
+        if (i === safePalette) out.push(palLine);
+        if (i < designer.blocks.length) out.push(renderBlock(designer.blocks[i]));
+      }
+      return out;
+    }
+
+    if (paletteDrag && !overPhone) {
+      return [
+        ...designer.blocks.map(renderBlock),
+        <div key="__drop-hint__" className="pv-drop-hint">
+          Drop inside the phone to add “{paletteDrag.label}”
+        </div>,
+      ];
+    }
+
+    return designer.blocks.map(renderBlock);
   }
 
   return (
     <div
       ref={phoneRef}
-      className={`pv-phone${dragId ? ' is-dragging' : ''}`}
+      className={`pv-phone${dragId ? ' is-dragging' : ''}${paletteDrag ? ' is-palette-drag' : ''}${overPhone ? ' is-drop-over' : ''}`}
       aria-label="Live preview of your public page"
       style={width ? { width } : undefined}
     >
@@ -588,12 +742,21 @@ export function PhonePreview({
         style={{ fontFamily: font, color: t.textColor }}
       >
         <div className="pv-bg" style={bgLayerStyle} aria-hidden="true" />
+        {paletteDrag && (
+          <div className="pv-dropzone" aria-hidden="true">
+            <span>
+              <Plus size={15} />
+              {overPhone ? `Release to place “${paletteDrag.label}”` : `Drag “${paletteDrag.label}” into the phone`}
+            </span>
+          </div>
+        )}
         <div
           ref={contentRef}
-          className="pv-content"
+          className={`pv-content${paletteDrag ? ' is-receiving' : ''}`}
           onClick={() => {
             if (suppressPick.current) return;
             if (dragId) return;
+            if (paletteDrag) return;
             if (interactive) onClear?.();
           }}
         >
@@ -606,8 +769,7 @@ export function PhonePreview({
           <GripVertical size={13} />
           <span>{ghost.label}</span>
         </div>
-      )}
-      {interactive && (
+      )}      {interactive && (
         <span
           className="pv-resize"
           title="Drag left or right to resize"

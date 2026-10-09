@@ -3,16 +3,21 @@ import {
   AlignCenter,
   AlignLeft,
   AlignRight,
+  AlertTriangle,
   Check,
   Eye,
   Globe,
   Image as ImageIcon,
   Link2,
+  LoaderCircle,
+  Lock,
   Mail,
+  Minus,
   Music2,
   Play,
   Plus,
   Redo2,
+  RefreshCw,
   RotateCcw,
   Share2,
   ShoppingBag,
@@ -32,9 +37,11 @@ import type {
   SocialItem,
   SocialNetwork,
   TiktokVideo,
+  TikTokSyncState,
 } from './store';
 import { blankBlock, newId, storeShareUrl } from './store';
 import { PhonePreview } from './PhonePreview';
+import { formatLastSync } from './tiktok';
 
 const BLOCK_LABEL: Record<BlockType, string> = {
   profile: 'Profile',
@@ -46,13 +53,27 @@ const BLOCK_LABEL: Record<BlockType, string> = {
   image: 'Image',
   text: 'Text',
   newsletter: 'Newsletter',
+  divider: 'Divider',
 };
 
-/** Sections a user can restore/add. Profile is permanent so it is excluded. */
-const ADDABLE_TYPES: BlockType[] = ['products', 'links', 'image', 'text', 'video', 'tiktok', 'social', 'newsletter'];
+/** Singleton sections can never be duplicated. */
+const SINGLETON: BlockType[] = ['profile'];
+
+/** Every section type offered in the palette, in display order. */
+const PALETTE_TYPES: BlockType[] = [
+  'text',
+  'image',
+  'products',
+  'links',
+  'video',
+  'tiktok',
+  'social',
+  'newsletter',
+  'divider',
+];
 
 const ADD_META: Record<BlockType, { label: string; desc: string; Icon: typeof ShoppingBag }> = {
-  profile: { label: 'Profile', desc: '', Icon: Users },
+  profile: { label: 'Profile', desc: 'Name, photo & bio', Icon: Users },
   products: { label: 'Products', desc: 'Sell presets & orders', Icon: ShoppingBag },
   links: { label: 'Buttons / Links', desc: 'Link buttons stack', Icon: Link2 },
   image: { label: 'Image', desc: 'Photo with caption', Icon: ImageIcon },
@@ -61,6 +82,7 @@ const ADD_META: Record<BlockType, { label: string; desc: string; Icon: typeof Sh
   tiktok: { label: 'TikTok videos', desc: 'Grid of TikToks', Icon: Music2 },
   social: { label: 'Social icons', desc: 'Profile row', Icon: Users },
   newsletter: { label: 'Newsletter', desc: 'Email capture', Icon: Mail },
+  divider: { label: 'Divider / Spacer', desc: 'Add breathing room', Icon: Minus},
 };
 
 export const ADD_SECTION_KEY = '__add__';
@@ -71,17 +93,19 @@ interface DesignerProps {
   saveState: 'saved' | 'saving';
   publishedAt: string | null;
   ui: CreatorStoreUi;
+  tiktok: TikTokSyncState;
   onPatch: (patch: Partial<DesignerState>) => void;
   onPatchUi: (patch: Partial<CreatorStoreUi>) => void;
   onPublish: () => void;
   onDisconnect: () => void;
   onUndo: () => void;
   onRedo: () => void;
+  onSyncNow: () => void;
   canUndo: boolean;
   canRedo: boolean;
 }
 
-export function Designer({ designer, username, saveState, publishedAt, ui, onPatch, onPatchUi, onPublish, onUndo, onRedo, canUndo, canRedo }: DesignerProps) {
+export function Designer({ designer, username, saveState, publishedAt, ui, tiktok, onPatch, onPatchUi, onPublish, onUndo, onRedo, onSyncNow, canUndo, canRedo }: DesignerProps) {
   // The left panel is always exactly one box ("Editor Tools") whose body
   // follows whatever is picked in the phone preview.
   const focusKey = ui.focusKey;
@@ -148,23 +172,43 @@ export function Designer({ designer, username, saveState, publishedAt, ui, onPat
     patchProduct(blockId, productId, { title: 'New product', description: '', price: '$9', image: '', link: '', cta: 'Get it' });
   }
 
+  // Profile lock: index 0 is permanently reserved for the TikTok profile.
+  function profileIndex(): number {
+    return designer.blocks.findIndex((b) => b.type === 'profile');
+  }
+  function isProfileId(id: string): boolean {
+    return designer.blocks.some((b) => b.id === id && b.type === 'profile');
+  }
+  function minMovableIndex(): number {
+    return profileIndex() >= 0 ? 1 : 0;
+  }
+
   function moveBlockTo(dragId: string, targetId: string) {
+    // The locked profile can never be moved.
+    if (isProfileId(dragId)) return;
     const from = designer.blocks.findIndex((b) => b.id === dragId);
     const to = designer.blocks.findIndex((b) => b.id === targetId);
     if (from < 0 || to < 0 || from === to) return;
-    const blocks = [...designer.blocks];
-    const [moved] = blocks.splice(from, 1);
-    blocks.splice(to, 0, moved);
-    onPatch({ blocks });
+    // Legacy path inserts before target. Convert to a post-removal index,
+    // then clamp so nothing can land above or on the locked profile.
+    const targetIsProfile = designer.blocks[to]?.type === 'profile';
+    const toPost = targetIsProfile ? minMovableIndex() : from < to ? to - 1 : to;
+    const safe = Math.max(minMovableIndex(), Math.min(toPost, designer.blocks.length - 1));
+    const fresh = [...designer.blocks];
+    const [moved] = fresh.splice(from, 1);
+    fresh.splice(safe, 0, moved);
+    onPatch({ blocks: fresh });
   }
 
   /** Exact reorder: drop the dragged block at toIndex in the post-removal
-      list (0 = top). Supports moving up, down, between, and to the ends. */
+      list. Index 0 is reserved for the locked profile — movable sections
+      clamp to >= 1 so nothing lands above or overlapping it. */
   function moveBlockToIndex(dragId: string, toIndex: number) {
+    if (isProfileId(dragId)) return;
     const from = designer.blocks.findIndex((b) => b.id === dragId);
     if (from < 0) return;
     const without = designer.blocks.filter((b) => b.id !== dragId);
-    const clamped = Math.max(0, Math.min(toIndex, without.length));
+    const clamped = Math.max(minMovableIndex(), Math.min(toIndex, without.length));
     const next = [...without];
     next.splice(clamped, 0, designer.blocks[from]);
     if (next.map((b) => b.id).join('|') === designer.blocks.map((b) => b.id).join('|')) return;
@@ -173,10 +217,8 @@ export function Designer({ designer, username, saveState, publishedAt, ui, onPat
     setFocusKey(`block:${dragId}`);
   }
 
-  /** Section types currently missing from the page — the only ones the
-      Add Section box offers by default, so duplicates never appear unless
-      the user explicitly asks for them. */
-  const missingTypes = ADDABLE_TYPES.filter((t) => !designer.blocks.some((b) => b.type === t));
+  /** Section types not currently on the page (drives the "add" hint). */
+  const missingTypes = PALETTE_TYPES.filter((t) => !designer.blocks.some((b) => b.type === t));
 
   /** Empty-space clicks return to the overview so the left box never looks empty. */
   function handleEmptyClick() {
@@ -188,32 +230,63 @@ export function Designer({ designer, username, saveState, publishedAt, ui, onPat
     pick(`block:${id}`);
   }
 
-  /** Default overview shown when nothing is selected — sections to edit + quick add. */
+  /**
+   * Creates a section at an explicit index. Never duplicates a singleton
+   * (the pinned TikTok profile), which is restored/kept rather than recreated.
+   */
+  function createSectionAt(type: BlockType, toIndex: number) {
+    if (SINGLETON.includes(type)) {
+      const existing = designer.blocks.find((b) => b.type === type);
+      if (existing) {
+        setSelectedKey(`block:${existing.id}`);
+        setFocusKey(`block:${existing.id}`);
+        flash(`${ADD_META[type].label} already exists — showing it`);
+        return;
+      }
+    }
+    const block = blankBlock(type);
+    const blocks = [...designer.blocks];
+    // New sections always stay below the locked profile. A restored profile
+    // is the only block allowed at index 0.
+    const at = type === 'profile' && profileIndex() < 0
+      ? 0
+      : Math.max(minMovableIndex(), Math.min(toIndex, blocks.length));
+    blocks.splice(at, 0, block);
+    onPatch({ blocks });
+    setShowAllTypes(false);
+    setSelectedKey(`block:${block.id}`);
+    setFocusKey(`block:${block.id}`);
+    flash(`${ADD_META[type]?.label ?? 'Section'} added below your profile`);
+  }
+
+  /** Default overview: sections list + drag-from-here palette. */
   function renderDefaultTools() {
-    const visibleTypes = showAllTypes ? ADDABLE_TYPES : missingTypes;
     return (
       <div className="cs-overview">
-        <p className="cs-card__hint">Click anything in the phone preview to edit it here.</p>
+        <p className="cs-card__hint">
+          Click a section in the phone to edit it, or drag one from below into the phone to place it below your profile.
+        </p>
         {designer.blocks.length > 0 && (
           <>
             <p className="cs-overview__label">Your sections · {designer.blocks.length}</p>
             <div className="cs-picklist">
               {designer.blocks.map((b) => {
                 const meta = ADD_META[b.type];
-                const Icon = meta.Icon;
+                const Icon = b.type === 'profile' ? Lock : meta.Icon;
                 const title = b.title || meta.label;
+                const locked = b.type === 'profile';
                 return (
                   <button
                     key={b.id}
                     type="button"
                     className={selectedKey === `block:${b.id}` ? 'is-on' : ''}
                     onClick={() => pickBlock(b.id)}
-                    title={`Edit ${title}`}
+                    title={locked ? `${title} · locked at the top` : `Edit ${title}`}
                   >
                     <span className="cs-overview__row">
                       <Icon size={13} aria-hidden="true" />
                       <span className="cs-overview__name">{title}</span>
-                      <span className="cs-overview__tag">{meta.label}</span>
+                      <span className="cs-overview__tag">{locked ? 'Locked' : meta.label}</span>
                     </span>
                   </button>
                 );
@@ -221,55 +294,44 @@ export function Designer({ designer, username, saveState, publishedAt, ui, onPat
             </div>
           </>
         )}
-        {visibleTypes.length > 0 && (
-          <>
-            <p className="cs-overview__label">{missingTypes.length > 0 ? 'Add a section' : 'Add more'}</p>
-            <div className="cs-addgrid">
-              {visibleTypes.map((t) => {
-                const meta = ADD_META[t];
-                const Icon = meta.Icon;
-                return (
-                  <button
-                    key={t}
-                    type="button"
-                    className="cs-kindbtn cs-addcard"
-                    onClick={() => addSection(t)}
-                    aria-label={`Add ${meta.label} section`}
-                    title={`Add ${meta.label}`}
-                  >
-                    <Icon size={15} aria-hidden="true" />
-                    <span className="cs-addcard__label">{meta.label}</span>
-                    <small>{meta.desc}</small>
-                  </button>
-                );
-              })}
-            </div>
-          </>
-        )}
-        {!showAllTypes && missingTypes.length === 0 && (
-          <button type="button" className="cs-btn-quiet" onClick={() => setShowAllTypes(true)}>
-            <Plus size={13} /> Show all types
-          </button>
-        )}
-        {showAllTypes && missingTypes.length === 0 && (
-          <button type="button" className="cs-btn-quiet" onClick={() => setShowAllTypes(false)}>
-            Show overview
-          </button>
-        )}
+        <p className="cs-overview__label">Add a section · drag into the phone</p>
+        <div className="cs-addgrid">
+          {PALETTE_TYPES.map((t) => {
+            const meta = ADD_META[t];
+            const Icon = meta.Icon;
+            const present = designer.blocks.some((b) => b.type === t);
+            return (
+              <button
+                key={t}
+                type="button"
+                className="cs-kindbtn cs-addcard"
+                data-palette-type={t}
+                data-palette-label={meta.label}
+                onClick={() => createSectionAt(t, designer.blocks.length)}
+                onKeyDown={(e) => {
+                  // Keyboard/tap fallback: Enter or Space places at the end.
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    createSectionAt(t, designer.blocks.length);
+                  }
+                }}
+                aria-label={`Add ${meta.label} section`}
+                title={present ? `Drag to add another ${meta.label}` : `Drag ${meta.label} into the phone`}
+              >
+                <Icon size={15} aria-hidden="true" />
+                <span className="cs-addcard__label">{meta.label}</span>
+                <small>{present ? 'Add another' : meta.desc}</small>
+              </button>
+            );
+          })}
+        </div>
       </div>
     );
   }
 
-  function addSection(type: BlockType) {
-    const block = blankBlock(type);
-    onPatch({ blocks: [...designer.blocks, block] });
-    setShowAllTypes(false);
-    setSelectedKey(`block:${block.id}`);
-    setFocusKey(`block:${block.id}`);
-    flash(`${ADD_META[type]?.label ?? 'Section'} added — drag it anywhere`);
-  }
-
   function deleteBlock(id: string) {
+    // The TikTok profile is permanent — it can never be removed.
+    if (isProfileId(id)) return;
     onPatch({ blocks: designer.blocks.filter((b) => b.id !== id) });
   }
 
@@ -359,46 +421,6 @@ export function Designer({ designer, username, saveState, publishedAt, ui, onPat
   /** Body of the single Editor Tools box for whatever is picked in the preview. */
   function renderEditorBody(): { eyebrow: string; body: React.ReactNode } | null {
     if (!focusKey) return null;
-    if (focusKey === ADD_SECTION_KEY) {
-      if (missingTypes.length === 0) return null;
-      const visible = showAllTypes ? ADDABLE_TYPES : missingTypes;
-      return {
-        eyebrow: 'Add section',
-        body: (
-          <div className="cs-addwrap">
-            <p className="cs-card__hint">
-              {designer.blocks.length === 0 || designer.blocks.every((b) => b.type === 'profile')
-                ? 'Your page is empty — pick a section to add it to the phone preview.'
-                : 'Pick a removed section to restore it. It appears instantly and you can drag it anywhere.'}
-            </p>
-            <div className="cs-addgrid">
-              {visible.map((t) => {
-                const meta = ADD_META[t];
-                const already = !missingTypes.includes(t);
-                const Icon = meta.Icon;
-                return (
-                  <button key={t} type="button" className="cs-kindbtn cs-addcard" onClick={() => addSection(t)}>
-                    <Icon size={15} />
-                    <span className="cs-addcard__label">{meta.label}</span>
-                    <small>{already ? 'Add another' : meta.desc}</small>
-                  </button>
-                );
-              })}
-            </div>
-            {!showAllTypes && ADDABLE_TYPES.length > missingTypes.length && (
-              <button type="button" className="cs-btn-quiet" onClick={() => setShowAllTypes(true)}>
-                <Plus size={13} /> Show all types (add duplicates)
-              </button>
-            )}
-            {showAllTypes && (
-              <button type="button" className="cs-btn-quiet" onClick={() => setShowAllTypes(false)}>
-                Show missing only
-              </button>
-            )}
-          </div>
-        ),
-      };
-    }
     const [kind, id] = focusKey.split(':');
     if (kind === 'product') {
       const block = designer.blocks.find((b) => (b.products ?? []).some((p) => p.id === id));
@@ -468,12 +490,13 @@ export function Designer({ designer, username, saveState, publishedAt, ui, onPat
     const block = designer.blocks.find((b) => b.id === id);
     if (!block) return null;
     return {
-      eyebrow: `${BLOCK_LABEL[block.type]} block`,
+      eyebrow: block.type === 'profile' ? 'Profile · synced' : `${BLOCK_LABEL[block.type]} block`,
       body: (
         <BlockEditor
           block={block}
           designer={designer}
-          usernamePlaceholder={username}
+          tiktok={tiktok}
+          onSyncNow={onSyncNow}
           selectedKey={selectedKey}
           onPatchBlock={(patch) => patchBlock(block.id, patch)}
           onPatchDesigner={onPatch}
@@ -561,10 +584,10 @@ export function Designer({ designer, username, saveState, publishedAt, ui, onPat
               onClear={handleEmptyClick}
               onMoveBlock={moveBlockTo}
               onMoveBlockAt={moveBlockToIndex}
+              onInsertBlock={createSectionAt}
             />
             <p className="cs-preview__cap">
-              <Link2 size={12} /> Live preview · {storeShareUrl(handle || username)}
-              {missingTypes.length === 0 ? '' : ' · drag sections anywhere'}
+              <Link2 size={12} /> Live preview · {storeShareUrl(handle || username)} · drag sections into the phone
             </p>
           </div>
         </div>
@@ -626,7 +649,8 @@ export function Designer({ designer, username, saveState, publishedAt, ui, onPat
 function BlockEditor({
   block: b,
   designer,
-  usernamePlaceholder,
+  tiktok,
+  onSyncNow,
   selectedKey,
   onPatchBlock,
   onPatchDesigner,
@@ -639,7 +663,8 @@ function BlockEditor({
 }: {
   block: Block;
   designer: DesignerState;
-  usernamePlaceholder: string;
+  tiktok: TikTokSyncState;
+  onSyncNow: () => void;
   selectedKey: string | null;
   onPatchBlock: (patch: Partial<Block>) => void;
   onPatchDesigner: (patch: Partial<DesignerState>) => void;
@@ -650,6 +675,7 @@ function BlockEditor({
   onResetBlock: () => void;
   onOpenProduct: (productId: string) => void;
 }) {
+  void onPatchDesigner;
   return (
     <>
       {b.type !== 'profile' && (
@@ -659,7 +685,7 @@ function BlockEditor({
         </label>
       )}
       {b.type === 'profile' && (
-        <ProfileFields designer={designer} usernamePlaceholder={usernamePlaceholder} onPatch={onPatchDesigner} />
+        <TikTokLockedProfile designer={designer} tiktok={tiktok} onSyncNow={onSyncNow} />
       )}
       {b.type === 'products' && (
         <>
@@ -748,51 +774,80 @@ function BlockEditor({
           </div>
         </>
       )}
-      <div className="cs-card__row">
-        <button type="button" className="cs-chipbtn" onClick={onResetBlock}><RotateCcw size={13} /> Reset</button>
-        {b.type !== 'profile' && (
+      {b.type === 'divider' && (
+        <label className="cs-label">
+          Spacer height · {b.height ?? 24}px
+          <input type="range" min={4} max={160} value={b.height ?? 24} onChange={(e) => onPatchBlock({ height: Number(e.target.value) })} />
+        </label>
+      )}
+      {b.type !== 'profile' && (
+        <div className="cs-card__row">
+          <button type="button" className="cs-chipbtn" onClick={onResetBlock}><RotateCcw size={13} /> Reset</button>
           <button type="button" className="cs-danger" onClick={onDeleteBlock}><Trash2 size={13} /> Remove</button>
-        )}
-      </div>
+        </div>
+      )}
     </>
   );
 }
 
-function ProfileFields({
+/**
+ * TikTok is the single source of truth for profile identity.
+ * Read-only by design: the section stays movable, but identity fields
+ * can only change on TikTok and then sync here. Never editable locally.
+ */
+function TikTokLockedProfile({
   designer,
-  usernamePlaceholder,
-  onPatch,
+  tiktok,
+  onSyncNow,
 }: {
   designer: DesignerState;
-  usernamePlaceholder: string;
-  onPatch: (p: Partial<DesignerState>) => void;
+  tiktok: TikTokSyncState;
+  onSyncNow: () => void;
 }) {
+  const handle = (designer.username || '').replace(/^@+/, '');
+  const initial = (designer.displayName || 'S').replace(/^@/, '').charAt(0).toUpperCase();
   return (
-    <>
-      <label className="cs-label">
-        Profile photo URL
-        <input value={designer.avatar} placeholder="https://…" inputMode="url" onChange={(e) => onPatch({ avatar: e.target.value })} />
-      </label>
-      <div className="cs-grid2">
-        <label className="cs-label">
-          Display name
-          <input value={designer.displayName} maxLength={40} onChange={(e) => onPatch({ displayName: e.target.value })} />
-        </label>
-        <label className="cs-label">
-          Username
-          <input
-            value={designer.username}
-            maxLength={24}
-            placeholder={usernamePlaceholder}
-            onChange={(e) => onPatch({ username: e.target.value.replace(/[^a-zA-Z0-9_.]/g, '') })}
-          />
-        </label>
+    <div className="cs-sync">
+      <div className="cs-sync__profile">
+        {designer.avatar ? (
+          <img className="cs-sync__avatar" src={designer.avatar} alt="" draggable={false} />
+        ) : (
+          <span className="cs-sync__avatar cs-sync__avatar--fallback" style={{ background: designer.avatarColor }}>
+            {initial}
+          </span>
+        )}
+        <div className="cs-sync__id">
+          <strong>{designer.displayName || 'Your Studio'}</strong>
+          {handle && <span>@{handle}</span>}
+        </div>
+        <span className="cs-sync__badge" title="Profile identity mirrors TikTok">
+          <Lock size={11} aria-hidden="true" /> Synced with TikTok
+        </span>
       </div>
-      <label className="cs-label">
-        Bio
-        <textarea value={designer.bio} rows={3} maxLength={140} onChange={(e) => onPatch({ bio: e.target.value })} />
-      </label>
-    </>
+      {designer.bio && <p className="cs-sync__bio">{designer.bio}</p>}
+      <p className="cs-sync__note">
+        To change your photo, name or bio, edit your TikTok profile — then sync here.
+        This section is locked at the top of your store and cannot be moved.
+      </p>
+      <div className="cs-sync__row">
+        <button
+          type="button"
+          className="cs-chipbtn"
+          onClick={onSyncNow}
+          disabled={tiktok.syncing}
+          aria-label="Sync now with TikTok"
+        >
+          {tiktok.syncing ? <LoaderCircle size={13} className="cs-spin" /> : <RefreshCw size={13} />}
+          {tiktok.syncing ? 'Syncing…' : 'Sync Now'}
+        </button>
+        <span className="cs-sync__time">{formatLastSync(tiktok.lastSyncAt)}</span>
+      </div>
+      {tiktok.syncError && (
+        <p className="cs-sync__warn" role="alert">
+          <AlertTriangle size={13} aria-hidden="true" /> {tiktok.syncError} — showing last synced profile.
+        </p>
+      )}
+    </div>
   );
 }
 
