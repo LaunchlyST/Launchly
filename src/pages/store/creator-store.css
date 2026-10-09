@@ -503,25 +503,28 @@
 }
 .cs-designer {
   display: grid;
-  grid-template-columns: minmax(290px, 340px) minmax(0, 1fr) 1px auto;
+  grid-template-columns: minmax(290px, 340px) minmax(0, 1fr) auto;
   gap: 24px;
   align-items: start;
   width: 100%;
   animation: cs-designer-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .cs-controls { grid-column: 1; }
-/* Vertical divider out in the open middle: full row height (just below the
-   top bar down to the bottom), between the empty space and the phone. */
+/* Vertical divider just left of the top-bar undo button, running from the
+   very top edge of the box to the very bottom edge. Absolutely positioned
+   against the centred .cs-builder; the `right` offset matches the width of
+   the top-bar button group so it stays aligned under the undo button. */
 .cs-divider {
-  grid-column: 3;
-  align-self: stretch;
-  min-height: 240px;
+  position: absolute;
+  top: -40px;
+  bottom: -40px;
+  right: 505px;
   width: 1px;
   background: rgba(15, 23, 42, 0.1);
   border-radius: 1px;
   pointer-events: none;
 }
-.cs-preview { grid-column: 4; }
+.cs-preview { grid-column: 3; }
 @keyframes cs-designer-in {
   from { opacity: 0; transform: scale(0.97) translateY(12px); }
   to { opacity: 1; transform: scale(1) translateY(0); }
@@ -1445,7 +1448,7 @@
 
 /* ---------- responsive ---------- */
 @media (max-width: 1080px) {
-  .cs-designer { grid-template-columns: minmax(270px, 320px) minmax(0, 1fr) 1px auto; gap: 18px; }
+  .cs-designer { grid-template-columns: minmax(270px, 320px) minmax(0, 1fr) auto; gap: 18px; }
 }
 @media (max-width: 860px) {
   .cs-page { padding: 24px 12px; border-radius: 18px; }
