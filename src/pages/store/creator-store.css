@@ -13,9 +13,12 @@
   --cs-ice-soft: rgba(63, 110, 166, 0.35);
   position: relative;
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
-  min-height: 100vh;
+  /* Sized to the space the dashboard actually leaves: its 75px topbar plus the
+     content column's padding. Using 100vh here made the page taller than the
+     dashboard viewport and added a page scrollbar. */
+  min-height: calc(100vh - 190px);
   padding: clamp(12px, 1.6vw, 22px);
   border-radius: 24px;
   overflow: hidden;
@@ -475,28 +478,10 @@
 .cs-spin { animation: cs-spin 1s linear infinite; }
 @keyframes cs-spin { to { transform: rotate(360deg); } }
 
-/* Designer phase: the workspace takes over the entire viewport, edge to edge.
-   Lifted out of the dashboard's centred column (max-width 1440px + 42px
-   padding), so it is genuinely full screen and its layout no longer depends on
-   how much room the dashboard happens to leave it — resize the window and the
-   workspace simply fills whatever the screen is. Stretching means the divider
-   runs the full height of the screen rather than the height of the panels. */
-.cs-page.is-fullscreen {
-  position: fixed;
-  inset: 0;
-  z-index: 80;
-  height: 100vh;
-  min-height: 0;
-  margin: 0;
-  border-radius: 0;
-  padding: clamp(12px, 1.6vw, 22px);
-  align-items: stretch;
-  overflow: auto;
-}
-/* `margin: auto` is what centres and shrink-wraps the builder in the dashboard
-   column; in full screen it has to be neutral or the workspace would never
-   actually grow to the height of the screen. */
-.cs-page.is-fullscreen .cs-builder { margin: 0; }
+/* The Creator Store is a section INSIDE the dashboard, not a takeover of it.
+   It must never be promoted to a fixed, full-viewport layer: doing that covers
+   the sidebar, the navigation and the header, which are the only way back out.
+   The workspace simply stretches to fill the height the dashboard leaves it. */
 
 /* ---------- designer workspace (step 6, no step nav) ---------- */
 /* One grid owns the whole workspace. The title, the action buttons, the Editor
@@ -520,24 +505,20 @@
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  margin: auto;
+  /* Fills the height the dashboard leaves, so the divider runs the full depth
+     of the section. `margin: auto` would shrink-wrap it back to content height. */
+  margin: 0;
   animation: cs-designer-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 /* Both wrappers are layout-transparent now: their children join the grid above. */
 .cs-topbar,
 .cs-designer { display: contents; }
-/* Column 1: the title plus the history controls. They live here, rather than
-   with the actions on the right, so nothing ever sits on top of the divider. */
-.cs-topbar__lead {
+/* Column 1 holds the title; the action buttons sit in column 3, above the
+   phone, so Publish lines up with the device it publishes. */
+.cs-topbar > strong {
   grid-column: 1;
   grid-row: 1;
   align-self: center;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-.cs-topbar__lead > strong {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2068,7 +2049,6 @@ color: var(--cs-ink);
   }
   .pv-phone { width: min(184px, 100%); height: 440px; }
   .cs-divider { min-height: 240px; }
-  .cs-topbar__lead { gap: 6px; }
   .cs-topbar__right { gap: 4px; }
   .cs-toolbtn { padding: 5px 8px; font-size: 10.5px; gap: 4px; }
   .cs-savestate { padding: 5px 8px; font-size: 10px; gap: 5px; }
@@ -2077,12 +2057,11 @@ color: var(--cs-ink);
    three columns genuinely cannot fit, so the workspace scrolls sideways rather
    than clipping a panel in half. */
 @media (max-width: 520px) {
-  .cs-page.is-fullscreen { padding: 6px; }
   .cs-builder {
-    grid-template-columns: minmax(92px, 126px) minmax(0, 1fr) minmax(292px, 1fr);
+    grid-template-columns: minmax(84px, 120px) minmax(0, 1fr) minmax(248px, 1fr);
     column-gap: 6px;
   }
-  .pv-phone { width: min(168px, 100%); height: 400px; }
+  .pv-phone { width: min(150px, 100%); height: 380px; }
   .cs-divider { min-height: 200px; }
   .cs-toolbtn { padding: 4px 7px; font-size: 9.5px; }
   .cs-savestate { padding: 4px 7px; font-size: 9px; }

@@ -371,7 +371,7 @@ export function CreatorStorePage() {
   const progressStep = phase === 'leaving' ? 6 : data.setup.step;
 
   return (
-    <div className={`cs-page${phase === 'designer' ? ' is-fullscreen' : ''}`}>
+    <div className="cs-page">
       <div className="cs-orbs" aria-hidden="true">
         <i className="cs-orb cs-orb--a" />
         <i className="cs-orb cs-orb--b" />

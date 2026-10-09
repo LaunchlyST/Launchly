@@ -1,4 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { CreatorStorePage } from '../CreatorStorePage';
 import { STORAGE_KEY, defaultPersisted } from '../store';
@@ -18,6 +20,29 @@ function seedConnected() {
 }
 
 describe('CreatorStorePage', () => {
+  /* Regression guard: the store is a section of the dashboard, so its page must
+     stay an ordinary in-flow block. Promoting it to a fixed, full-viewport layer
+     silently covers the sidebar, navigation and header, and a DOM assertion
+     cannot catch that in jsdom - only the stylesheet can. */
+  it('never covers the dashboard chrome', async () => {
+    // import.meta.url is an http URL under jsdom, so resolve from the repo root.
+    const css = await readFile(resolve(process.cwd(), 'src/pages/store/creator-store.css'), 'utf8');
+    const pageRules = css.match(/\.cs-page[^{]*\{[^}]*\}/g) ?? [];
+    for (const rule of pageRules) {
+      expect(rule, `rule must not be a fixed overlay: ${rule}`).not.toMatch(/position:\s*fixed/);
+      expect(rule, `rule must not pin to the viewport: ${rule}`).not.toMatch(/inset:\s*0\b/);
+      expect(rule, `rule must not jump above the dashboard: ${rule}`).not.toMatch(/z-index:\s*\d/);
+    }
+  });
+
+  it('renders the store inside the dashboard flow, not as a takeover', () => {
+    seedConnected();
+    const { container } = render(<CreatorStorePage />);
+    const page = container.querySelector('.cs-page') as HTMLElement;
+    expect(page).toBeTruthy();
+    // The takeover was driven by a modifier class; it must not come back.
+    expect(page.className).not.toMatch(/is-fullscreen/);
+  });
   it('starts the setup flow at step 1 with the progress bar', () => {
     render(<CreatorStorePage />);
     expect(screen.getByRole('navigation', { name: /setup progress/i })).toBeTruthy();
