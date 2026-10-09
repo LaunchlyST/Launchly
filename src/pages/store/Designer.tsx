@@ -43,6 +43,7 @@ import type {
 } from './store';
 import { blankBlock, newId, storeShareUrl } from './store';
 import { PhonePreview } from './PhonePreview';
+import { StorePreview } from './StorePreview';
 import { formatLastSync } from './tiktok';
 
 const BLOCK_LABEL: Record<BlockType, string> = {
@@ -512,6 +513,13 @@ export function Designer({ designer, username, saveState, publishedAt, ui, tikto
 
   const editorSelection = renderEditorBody();
 
+  // Preview replaces the editor outright rather than layering on top of it:
+  // no panel, grip, overlay or second device can show through, and the phone
+  // body is the same component the editor uses, so the design can't drift.
+  if (previewOpen) {
+    return <StorePreview designer={designer} username={handle || username} onBack={() => setPreviewOpen(false)} />;
+  }
+
   return (
     <div className="cs-builder">
       {/* Top bar */}
@@ -583,54 +591,10 @@ export function Designer({ designer, username, saveState, publishedAt, ui, tikto
               onInsertBlock={createSectionAt}
             />
             <p className="cs-preview__cap">
-              <Link2 size={12} /> Live preview · {storeShareUrl(handle || username)} · drag sections into the phone
+              <Link2 size={12} /> Live preview · {storeShareUrl(handle || username)}
             </p>
           </div>
         </div>
-
-        {previewOpen && (
-          <div
-            className="cs-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Live store preview"
-            onClick={() => setPreviewOpen(false)}
-            onKeyDown={(e) => {
-              if (e.key === 'Escape') setPreviewOpen(false);
-            }}
-          >
-            <div className="cs-modal__inner cs-modal__card" onClick={(e) => e.stopPropagation()}>
-              <div className="cs-modal__head">
-                <div className="cs-modal__titlewrap">
-                  <p className="cs-modal__eyebrow">
-                    <Eye size={12} aria-hidden="true" /> Live preview
-                  </p>
-                  <p className="cs-modal__url" title={storeShareUrl(handle || username)}>
-                    @{handle || username} · {storeShareUrl(handle || username)}
-                  </p>
-                </div>
-                <button type="button" className="cs-modal__close" aria-label="Close preview" onClick={() => setPreviewOpen(false)}>
-                  <X size={16} />
-                </button>
-              </div>
-              <div className="cs-modal__phone">
-                <PhonePreview designer={designer} username={handle || username} selectedKey={null} hoverKey={null} interactive={false} />
-              </div>
-              <div className="cs-modal__actions">
-                <span className={`cs-savestate cs-savestate--${saveState}`} role="status">
-                  <i aria-hidden="true" />
-                  {saveState === 'saved' ? 'Saved ✓' : 'Saving…'}
-                </span>
-                <button type="button" className="cs-toolbtn" onClick={share}>
-                  <Share2 size={14} /> Share
-                </button>
-                <button type="button" className="cs-toolbtn cs-toolbtn--primary" onClick={publish}>
-                  <Globe size={14} /> {published || publishedAt ? 'Published ✓' : 'Publish'}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
         {toast && (
           <p className="cs-toast" role="status">

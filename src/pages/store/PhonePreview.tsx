@@ -37,28 +37,42 @@ function ShowcaseCard({
 }) {
   const [side, setSide] = useState<'video' | 'buy'>('video');
   const [owned, setOwned] = useState(false);
-  const touchX = useRef<number | null>(null);
+  const swipe = useRef<{ x: number; y: number } | null>(null);
 
-  function onTouchStart(e: React.TouchEvent) {
-    touchX.current = e.touches[0]?.clientX ?? null;
+  function flip(dx: number) {
+    if (dx < -24) setSide('buy');
+    else if (dx > 24) setSide('video');
   }
-  function onTouchEnd(e: React.TouchEvent) {
-    if (touchX.current == null) return;
-    const endX = e.changedTouches[0]?.clientX ?? touchX.current;
-    const dx = endX - touchX.current;
-    touchX.current = null;
-    if (dx < -32) setSide('buy');
-    else if (dx > 32) setSide('video');
+
+  /**
+   * Swipe zone: left/right flips between video and price panes.
+   * stopPropagation keeps this gesture from starting a block reorder
+   * (the grip still moves the section, click still opens its editor).
+   */
+  function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    if (!e.isPrimary) return;
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    swipe.current = { x: e.clientX, y: e.clientY };
   }
-  function onPointerDown(e: React.PointerEvent) {
-    if (e.pointerType === 'mouse') touchX.current = e.clientX;
+  function onPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    const s = swipe.current;
+    if (!s) return;
+    const dx = e.clientX - s.x;
+    const dy = e.clientY - s.y;
+    if (Math.abs(dx) > 24 && Math.abs(dx) > Math.abs(dy)) {
+      flip(dx);
+      swipe.current = null;
+    }
   }
-  function onPointerUp(e: React.PointerEvent) {
-    if (touchX.current == null || e.pointerType !== 'mouse') return;
-    const dx = e.clientX - touchX.current;
-    touchX.current = null;
-    if (dx < -32) setSide('buy');
-    else if (dx > 32) setSide('video');
+  function onPointerUp(e: React.PointerEvent<HTMLDivElement>) {
+    const s = swipe.current;
+    swipe.current = null;
+    if (!s) return;
+    flip(e.clientX - s.x);
+  }
+  function onPointerCancel() {
+    swipe.current = null;
   }
 
   const isVideo = block.url?.match(/\.(mp4|webm|mov)(\?|#|$)/i);
@@ -66,10 +80,10 @@ function ShowcaseCard({
     <div
       className="pv-showcase"
       style={cardStyle}
-      onTouchStart={onTouchStart}
-      onTouchEnd={onTouchEnd}
       onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
+      onPointerCancel={onPointerCancel}
     >
       {block.title && <p className="pv-caption">{block.title}</p>}
       <div className={`pv-showcase__track${side === 'buy' ? ' is-buy' : ''}`}>
@@ -120,9 +134,19 @@ function ShowcaseCard({
           )}
         </div>
       </div>
-      <div className="pv-showcase__dots" aria-hidden="true">
-        <i className={side === 'video' ? 'is-on' : ''} />
-        <i className={side === 'buy' ? 'is-on' : ''} />
+      <div className="pv-showcase__dots">
+        {(['video', 'buy'] as const).map((s) => (
+          <button
+            key={s}
+            type="button"
+            aria-label={s === 'video' ? 'Show video' : 'Show price and Buy Now'}
+            className={side === s ? 'is-on' : ''}
+            onClick={(e) => {
+              e.stopPropagation();
+              setSide(s);
+            }}
+          />
+        ))}
       </div>
     </div>
   );
@@ -147,6 +171,9 @@ interface PhonePreviewProps {
   onMoveBlockAt?: (dragId: string, toIndex: number) => void;
   /** Create a section dropped from the left palette at this index. */
   onInsertBlock?: (type: BlockType, toIndex: number) => void;
+  /** Outer chrome: 'phone' = device bezel + notch (editor & mobile preview),
+      'bare' = just the page, for desktop-width preview. Same markup inside. */
+  frame?: 'phone' | 'bare';
 }
 
 export function PhonePreview({
@@ -163,6 +190,7 @@ export function PhonePreview({
   onMoveBlock,
   onMoveBlockAt,
   onInsertBlock,
+  frame = 'phone',
 }: PhonePreviewProps) {
   const t = designer.theme;
   const font = FONTS[t.font];
@@ -865,6 +893,48 @@ export function PhonePreview({
     return designer.blocks.map(renderBlock);
   }
 
+  // The page body is identical in every frame mode — only the outer chrome
+  // differs, so the preview can never diverge from the real store.
+  const page = (
+    <div
+      ref={screenRef}
+      className={`pv-screen${t.bgAnimated && t.bgMode === 'gradient' ? ' is-animated' : ''}`}
+      style={{ fontFamily: font, color: t.textColor }}
+    >
+      <div className="pv-bg" style={bgLayerStyle} aria-hidden="true" />
+      {paletteDrag && (
+        <div className="pv-dropzone" aria-hidden="true">
+          <span>
+            <Plus size={15} />
+            {overPhone ? `Release to place “${paletteDrag.label}”` : `Drag “${paletteDrag.label}” into the phone`}
+          </span>
+        </div>
+      )}
+      <div
+        ref={contentRef}
+        className={`pv-content${paletteDrag ? ' is-receiving' : ''}`}
+        onClick={() => {
+          if (suppressPick.current) return;
+          if (dragId) return;
+          if (paletteDrag) return;
+          if (interactive) onClear?.();
+        }}
+      >
+        {renderBlocksInFlow()}
+        <p className="pv-powered">Made with Launchly</p>
+      </div>
+    </div>
+  );
+
+  if (frame === 'bare') {
+    // Desktop preview: no device, no notch — just the page filling the window.
+    return (
+      <div ref={phoneRef} className="pv-page" aria-label="Live preview of your public page" style={width ? { width } : undefined}>
+        {page}
+      </div>
+    );
+  }
+
   return (
     <div
       ref={phoneRef}
@@ -873,40 +943,14 @@ export function PhonePreview({
       style={width ? { width } : undefined}
     >
       <div className="pv-notch" aria-hidden="true" />
-      <div
-        ref={screenRef}
-        className={`pv-screen${t.bgAnimated && t.bgMode === 'gradient' ? ' is-animated' : ''}`}
-        style={{ fontFamily: font, color: t.textColor }}
-      >
-        <div className="pv-bg" style={bgLayerStyle} aria-hidden="true" />
-        {paletteDrag && (
-          <div className="pv-dropzone" aria-hidden="true">
-            <span>
-              <Plus size={15} />
-              {overPhone ? `Release to place “${paletteDrag.label}”` : `Drag “${paletteDrag.label}” into the phone`}
-            </span>
-          </div>
-        )}
-        <div
-          ref={contentRef}
-          className={`pv-content${paletteDrag ? ' is-receiving' : ''}`}
-          onClick={() => {
-            if (suppressPick.current) return;
-            if (dragId) return;
-            if (paletteDrag) return;
-            if (interactive) onClear?.();
-          }}
-        >
-          {renderBlocksInFlow()}
-          <p className="pv-powered">Made with Launchly</p>
-        </div>
-      </div>
+      {page}
       {dragId && ghost && (
         <div className="pv-ghost" style={{ left: ghost.x, top: ghost.y, width: ghost.w }} aria-hidden="true">
           <GripVertical size={13} />
           <span>{ghost.label}</span>
         </div>
-      )}      {interactive && (
+      )}
+      {interactive && (
         <span
           className="pv-resize"
           title="Drag left or right to resize"

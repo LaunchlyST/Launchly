@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { CreatorStorePage } from '../CreatorStorePage';
 import { STORAGE_KEY, defaultPersisted } from '../store';
 
@@ -136,6 +136,77 @@ describe('CreatorStorePage', () => {
     fireEvent.pointerMove(handleEl, { clientX: 2000, clientY: 100, pointerId: 2 });
     fireEvent.pointerUp(handleEl, { pointerId: 2 });
     expect(phone.style.width).toBe('360px');
+  });
+
+  describe('preview', () => {
+    function openPreview() {
+      seedConnected();
+      const utils = render(<CreatorStorePage />);
+      fireEvent.click(screen.getByRole('button', { name: /^Preview$/ }));
+      return utils;
+    }
+
+    it('replaces the editor with a full-screen preview showing exactly one phone', () => {
+      const { container } = openPreview();
+      expect(container.querySelectorAll('.cs-pv')).toHaveLength(1);
+      // Exactly one device, and it is the only phone in the whole preview.
+      expect(container.querySelectorAll('.pv-phone')).toHaveLength(1);
+      // No editor chrome, no drag affordances, no dark scrim or blur layer.
+      expect(screen.queryByText('Editor Tools')).toBeNull();
+      expect(container.querySelector('.cs-modal')).toBeNull();
+      expect(container.querySelector('.pv-resize')).toBeNull();
+      expect(container.querySelector('.pv-grip')).toBeNull();
+      expect(container.querySelector('.cs-divider')).toBeNull();
+      expect(container.querySelector('.cs-editor-tools')).toBeNull();
+      expect(container.querySelector('.pv-dropzone')).toBeNull();
+    });
+
+    it('offers Back to Editor plus Desktop and Mobile preview options', () => {
+      openPreview();
+      expect(screen.getByRole('button', { name: /Back to Editor/ })).toBeTruthy();
+      const group = screen.getByRole('group', { name: /Preview size/i });
+      const desktop = within(group).getByRole('button', { name: /Desktop/ });
+      const mobile = within(group).getByRole('button', { name: /Mobile/ });
+      expect(desktop).toBeTruthy();
+      expect(mobile).toBeTruthy();
+      // Mobile (a real phone) is the default view.
+      expect(mobile.getAttribute('aria-pressed')).toBe('true');
+      expect(desktop.getAttribute('aria-pressed')).toBe('false');
+    });
+
+    it('switches between a single phone and a frameless desktop page', () => {
+      const { container } = openPreview();
+      const group = screen.getByRole('group', { name: /Preview size/i });
+
+      fireEvent.click(within(group).getByRole('button', { name: /Desktop/ }));
+      // Desktop drops the device frame entirely — still only one page, no phone.
+      expect(container.querySelectorAll('.pv-phone')).toHaveLength(0);
+      expect(container.querySelectorAll('.pv-page')).toHaveLength(1);
+      expect(container.querySelector('.cs-pv__browser')).toBeTruthy();
+
+      fireEvent.click(within(group).getByRole('button', { name: /Mobile/ }));
+      expect(container.querySelectorAll('.pv-phone')).toHaveLength(1);
+      expect(container.querySelectorAll('.pv-page')).toHaveLength(0);
+      expect(container.querySelector('.cs-pv__browser')).toBeNull();
+    });
+
+    it('returns to the untouched editor from the preview', () => {
+      const { container } = openPreview();
+      fireEvent.click(screen.getByRole('button', { name: /Back to Editor/ }));
+      expect(container.querySelector('.cs-pv')).toBeNull();
+      expect(screen.getByText('Editor Tools')).toBeTruthy();
+      expect(container.querySelectorAll('.pv-phone')).toHaveLength(1);
+      // Entering and leaving preview must not alter the saved design.
+      expect(screen.getByText('Viral Preset Pack')).toBeTruthy();
+      expect(screen.getByText('Your Studio')).toBeTruthy();
+    });
+
+    it('leaves the preview on Escape', () => {
+      const { container } = openPreview();
+      fireEvent.keyDown(window, { key: 'Escape' });
+      expect(container.querySelector('.cs-pv')).toBeNull();
+      expect(screen.getByText('Editor Tools')).toBeTruthy();
+    });
   });
 
   describe('palette drag-and-drop', () => {

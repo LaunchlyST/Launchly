@@ -484,11 +484,12 @@
   min-width: 0;
   margin: auto;
 }
-/* Top bar mirrors the designer grid so the title sits over the Editor
-   Tools panel and the action buttons sit over the phone preview. */
+/* Top bar: the title takes only as much room as it needs, and the action
+   buttons span the remaining columns so they always stay on one row. They
+   stay right-aligned, which keeps Publish directly above the phone preview. */
 .cs-topbar {
   display: grid;
-  grid-template-columns: minmax(280px, 360px) 1px minmax(0, 1fr);
+  grid-template-columns: minmax(200px, 240px) 1px minmax(0, 1fr);
   gap: clamp(16px, 2.5vw, 32px);
   align-items: center;
   width: 100%;
@@ -506,19 +507,19 @@
   letter-spacing: -0.01em;
 }
 .cs-topbar__right {
-  grid-column: 3;
+  grid-column: 2 / -1;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
   justify-content: flex-end;
   min-width: 0;
 }
-/* Flexible two-panel grid: Editor Tools left, divider centre, phone
-   preview centred in the right section. No fixed pixel offsets. */
+/* Flexible two-panel grid: Editor Tools left, a fluid middle track that
+   centres the divider between the panels, phone preview flush right. */
 .cs-designer {
   display: grid;
-  grid-template-columns: minmax(280px, 360px) 1px minmax(0, 1fr);
+  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr) minmax(0, 1fr);
   gap: clamp(16px, 2.5vw, 32px);
   align-items: start;
   width: 100%;
@@ -1003,61 +1004,54 @@
 }
 .cs-danger:hover { color: #b42318; border-color: rgba(180, 35, 24, 0.3); background: rgba(180, 35, 24, 0.06); }
 
-/* ---------- right phone preview — centred in the right section ---------- */
+/* ---------- right phone preview — flush right, under the Publish button ---------- */
 .cs-preview {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-end;
   justify-content: flex-start;
   gap: 12px;
   min-width: 0;
   width: 100%;
   position: sticky;
   top: 12px;
-  /* Locked placement: the phone stays centred in its own column and never
-     shifts when sections are added, removed or reordered on the left. */
-  align-self: start;
-  justify-self: stretch;
-  margin: 0 auto;
-  padding-top: 2px;
   animation: cs-phone-in 0.55s cubic-bezier(0.22, 1.25, 0.36, 1) 0.1s both;
 }
 @keyframes cs-phone-in {
   from { opacity: 0; transform: translateX(60px) scale(0.96); }
   to { opacity: 1; transform: translateX(0) scale(1); }
 }
+/* Block, not flex: text-overflow ellipsis has no effect on a flex container,
+   so an inline-flex caption with overflow spills text off both edges instead
+   of truncating. The icon stays inline so the label stays one tidy line. */
 .cs-preview__cap {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  margin: 0 auto;
+  display: block;
+  max-width: 100%;
+  margin: 0 0 0 auto;
   font-size: 11px;
   color: var(--cs-faint);
   font-family: ui-monospace, Menlo, monospace;
-  max-width: min(340px, 100%);
-  text-align: center;
-  white-space: normal;
-  overflow-wrap: anywhere;
-  line-height: 1.5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
 }
-.cs-preview__cap svg { flex-shrink: 0; }
+.cs-preview__cap svg { vertical-align: -2px; margin-right: 5px; }
 
 /* Fixed preview: the phone itself never moves — only the page inside pans.
-   Centred within the right grid column with fluid scaling. The frame keeps a
-   fixed height so adding/removing sections only scrolls the page inside. */
+   The wrapper is pushed to the right edge of its column so the device sits
+   directly underneath the Publish button; the phone and the caption are both
+   right-aligned inside it, so neither can overflow. */
 .cs-preview__fixed {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-end;
   justify-content: flex-start;
   gap: 12px;
   width: 100%;
   max-width: 420px;
   min-width: 0;
-  margin: 0 auto;
-  /* Balanced spacing directly below the top action buttons. */
-  padding-bottom: 8px;
+  margin-left: auto;
 }
 
 .pv-phone {
@@ -1492,119 +1486,232 @@
 .cs-addcard__label { font-size: 12px; font-weight: 700; }
 .cs-addcard small { font-size: 10.5px; font-weight: 400; color: var(--cs-muted); line-height: 1.4; }
 
-/* ---------- preview modal + toast ---------- */
-.cs-modal {
+/* ---------- full-screen live preview (no overlay, no blur, no clutter) ---------- */
+.cs-pv {
   position: fixed;
   inset: 0;
-  z-index: 60;
-  display: grid;
-  place-items: center;
-  padding: clamp(12px, 3vw, 28px);
-  background: rgba(15, 23, 42, 0.5);
-  backdrop-filter: blur(18px) saturate(1.2);
-  -webkit-backdrop-filter: blur(18px) saturate(1.2);
-  animation: cs-modal-in 0.3s ease both;
-  overflow-y: auto;
-}
-@keyframes cs-modal-in { from { opacity: 0; } to { opacity: 1; } }
-.cs-modal__inner {
-  position: relative;
-  animation: cs-modal-card-in 0.45s cubic-bezier(0.22, 1.25, 0.36, 1) both;
-}
-@keyframes cs-modal-card-in {
-  from { opacity: 0; transform: translateY(24px) scale(0.96); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-.cs-modal__inner--left {
+  z-index: 90;
   display: flex;
   flex-direction: column;
+  min-height: 0;
+  color: var(--cs-ink);
+  /* Calm, minimal light backdrop — never a dark scrim. */
+  background:
+    radial-gradient(900px 620px at 50% -8%, #ffffff 0%, rgba(255, 255, 255, 0) 62%),
+    linear-gradient(180deg, #f7f8fa 0%, #eef1f5 100%);
+  animation: cs-pv-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes cs-pv-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Top bar: Back to Editor + device toggle only. */
+.cs-pv__bar {
+  flex: 0 0 auto;
+  display: flex;
   align-items: center;
-  gap: 14px;
-}
-/* Premium centred glass card for the live preview. */
-.cs-modal__card {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 14px;
-  width: min(380px, calc(100vw - 32px));
-  max-height: min(92vh, 860px);
-  overflow-y: auto;
-  padding: 18px 18px 16px;
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(24px) saturate(1.25);
-  -webkit-backdrop-filter: blur(24px) saturate(1.25);
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  outline: 1px solid rgba(15, 23, 42, 0.08);
-  box-shadow:
-    0 32px 80px rgba(15, 23, 42, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
-  scrollbar-width: thin;
-  scrollbar-color: rgba(15, 23, 42, 0.2) transparent;
-}
-.cs-modal__head {
-  display: flex;
-  align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
+  gap: 14px;
+  height: 60px;
+  padding: 0 clamp(12px, 2.5vw, 24px);
+  background: rgba(255, 255, 255, 0.86);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
 }
-.cs-modal__titlewrap { min-width: 0; display: grid; gap: 4px; }
-.cs-modal__eyebrow {
+.cs-pv__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: #fff;
+  color: var(--cs-ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.cs-pv__back:hover { transform: translateX(-2px); border-color: rgba(15, 23, 42, 0.22); box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12); }
+.cs-pv__back:focus-visible { outline: 2px solid var(--cs-ice); outline-offset: 2px; }
+
+.cs-pv__url {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  margin: 0;
+  padding: 5px 13px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.045);
+  border: 1px solid rgba(15, 23, 42, 0.07);
+  color: var(--cs-muted);
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 11.5px;
+}
+.cs-pv__url svg { color: #059669; flex-shrink: 0; }
+.cs-pv__handle { color: var(--cs-ink); font-weight: 700; flex-shrink: 0; }
+.cs-pv__host { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.cs-pv__devices {
+  flex: 0 0 auto;
+  display: flex;
+  padding: 3px;
+  gap: 2px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.06);
+  border: 1px solid rgba(15, 23, 42, 0.07);
+}
+.cs-pv__devices button {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin: 0;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  height: 30px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
   color: var(--cs-muted);
-}
-.cs-modal__url {
-  margin: 0;
-  font-size: 11.5px;
-  color: var(--cs-faint);
-  font-family: ui-monospace, Menlo, monospace;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
   white-space: nowrap;
-  max-width: 100%;
+  transition: background 0.22s ease, color 0.22s ease, box-shadow 0.22s ease;
 }
-.cs-modal__phone {
-  display: grid;
-  place-items: center;
-  min-width: 0;
+.cs-pv__devices button.is-on {
+  background: #fff;
+  color: var(--cs-ink);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
 }
-.cs-modal__phone .pv-phone {
-  width: min(292px, 100%);
-  height: min(620px, calc(92vh - 220px));
-  min-height: 480px;
-}
-.cs-modal__actions {
+
+/* Stage holds the single centred device and owns all remaining space. */
+.cs-pv__stage {
+  flex: 1 1 auto;
+  min-height: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  border-top: 1px solid rgba(15, 23, 42, 0.08);
-  padding-top: 14px;
+  padding: 22px;
+  overflow: hidden;
 }
-.cs-modal__close {
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  border: 1px solid rgba(15, 23, 42, 0.14);
-  background: rgba(255, 255, 255, 0.9);
-  color: var(--cs-ink);
-  cursor: pointer;
-  transition: transform 0.25s ease, background 0.25s ease;
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.15);
+.cs-pv__device {
+  display: flex;
+  animation: cs-pv-device-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-.cs-modal__close:hover { transform: scale(1.08); background: #fff; }
+/* Scale layer is separate from the entrance animation so the two transforms
+   never fight over the same property. */
+.cs-pv__scale {
+  width: 390px;
+  height: 844px;
+  transform-origin: center center;
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes cs-pv-device-in {
+  from { opacity: 0; transform: translateY(18px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* One phone at true device proportions, always fully visible top to bottom. */
+.cs-pv .pv-phone {
+  width: 390px;
+  height: 844px;
+  max-width: none;
+  max-height: none;
+  border-radius: 46px;
+  padding: 12px;
+  background: #0b0e13;
+  border: 1px solid rgba(15, 23, 42, 0.5);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.2),
+    0 18px 40px rgba(15, 23, 42, 0.16),
+    0 48px 110px rgba(15, 23, 42, 0.18);
+}
+.cs-pv .pv-screen { border-radius: 34px; }
+.cs-pv .pv-notch {
+  top: 25px;
+  width: 104px;
+  height: 26px;
+  background: #0b0e13;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+/* Scroll the page itself, not the device — the frame must never scroll away. */
+.cs-pv .pv-screen { scrollbar-width: none; }
+.cs-pv .pv-screen::-webkit-scrollbar { width: 0; }
+.cs-pv .pv-block { cursor: auto; }
+.cs-pv .pv-block:hover { outline-color: transparent; box-shadow: inherit; }
+
+/* Desktop preview: a plain browser window, no device chrome. */
+.cs-pv__browser {
+  display: flex;
+  flex-direction: column;
+  width: min(1180px, 100%);
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.06),
+    0 24px 60px rgba(15, 23, 42, 0.14);
+  animation: cs-pv-device-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.cs-pv__chrome {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 40px;
+  padding: 0 14px;
+  background: #f3f4f6;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+.cs-pv__dots { display: inline-flex; gap: 6px; }
+.cs-pv__dots i { width: 10px; height: 10px; border-radius: 50%; background: #d8dce2; }
+.cs-pv__addr {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+  max-width: 460px;
+  margin: 0 auto;
+  padding: 4px 14px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  color: var(--cs-muted);
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 11.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cs-pv__addr svg { color: #059669; flex-shrink: 0; }
+.cs-pv__viewport { flex: 1 1 auto; min-height: 0; overflow: hidden; background: #fff; }
+/* Frameless page: full-width column, centred like a real desktop page. */
+.cs-pv .pv-page { width: 100%; height: 100%; background: #fff; }
+.cs-pv .pv-page .pv-screen { border-radius: 0; }
+.cs-pv .pv-page .pv-content {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 44px 20px 24px;
+}
+
+.cs-pv__hint {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0 16px 14px;
+  text-align: center;
+  font-size: 11.5px;
+  color: var(--cs-faint);
+}
+
 .cs-toast {
   position: fixed;
   bottom: 28px;
@@ -1826,18 +1933,18 @@
   .cs-builder { max-width: 100%; }
   .cs-topbar,
   .cs-designer { gap: clamp(14px, 2vw, 24px); }
-  .cs-topbar { grid-template-columns: minmax(260px, 320px) 1px minmax(0, 1fr); }
-  .cs-designer { grid-template-columns: minmax(260px, 320px) 1px minmax(0, 1fr); }
+  .cs-topbar { grid-template-columns: minmax(190px, 240px) 1px minmax(0, 1fr); }
+  .cs-designer { grid-template-columns: minmax(260px, 320px) minmax(0, 1fr) minmax(0, 1fr); }
   .pv-phone { width: min(280px, 100%); }
 }
 /* Medium windows: narrower panels, compact pills, slightly smaller phone. */
 @media (max-width: 1020px) {
-  .cs-topbar { grid-template-columns: minmax(240px, 300px) 1px minmax(0, 1fr); }
-  .cs-designer { grid-template-columns: minmax(240px, 300px) 1px minmax(0, 1fr); }
+  .cs-topbar { grid-template-columns: minmax(170px, 220px) 1px minmax(0, 1fr); }
+  .cs-designer { grid-template-columns: minmax(240px, 300px) minmax(0, 1fr) minmax(0, 1fr); }
   .cs-toolbtn { padding: 6px 10px; font-size: 11.5px; }
   .cs-savestate { padding: 6px 10px; font-size: 11px; }
   .pv-phone { width: min(264px, 100%); height: 580px; }
-  .cs-preview__cap { max-width: min(300px, 100%); justify-content: center; }
+  .cs-preview__cap { max-width: 100%; }
 }
 /* Narrow windows: allow the top bar to wrap neatly over the preview. */
 @media (max-width: 920px) {
@@ -1848,21 +1955,12 @@
     row-gap: 10px;
   }
   .cs-topbar__right { flex: 1 1 auto; justify-content: flex-end; row-gap: 8px; }
-  .cs-designer { grid-template-columns: minmax(230px, 290px) 1px minmax(0, 1fr); gap: 16px; }
+  .cs-designer { grid-template-columns: minmax(230px, 290px) minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
   .pv-phone { width: min(252px, 100%); height: 560px; }
-  .cs-preview__cap { max-width: min(300px, 100%); }
+  .cs-preview__cap { max-width: 100%; }
 }
-/* Small-but-still-side-by-side: keep the phone beside the editor with the
-   divider line visible instead of stacking early. */
-@media (max-width: 760px) {
-  .cs-designer { grid-template-columns: minmax(210px, 260px) 1px minmax(0, 1fr); gap: 12px; }
-  .pv-phone { width: min(240px, 100%); height: 540px; }
-  .cs-preview__cap { max-width: min(280px, 100%); font-size: 10.5px; }
-}
-/* Too narrow for side-by-side: clean stacked layout, no squeezing.
-   Kept at a small width so the phone stays beside the editor with the
-   divider visible for as long as possible (like the reference layout). */
-@media (max-width: 700px) {
+/* Too narrow for side-by-side: clean stacked layout, no squeezing. */
+@media (max-width: 860px) {
   .cs-page { padding: 24px 12px; border-radius: 18px; }
   .cs-setup__body { padding: 36px 20px 32px; }
   .cs-progress { padding: 12px 14px 0; }
@@ -1875,13 +1973,13 @@
   .cs-designer { grid-template-columns: 1fr; gap: 20px; }
   .cs-controls { grid-column: 1; position: static; max-height: none; overflow: visible; }
   .cs-divider { display: none; }
-  .cs-preview { grid-column: 1; position: static; }
-  .cs-preview__fixed { max-width: 340px; }
+  .cs-preview { grid-column: 1; position: static; align-items: center; }
+  .cs-preview__fixed { max-width: 340px; margin-left: 0; align-items: center; }
   .pv-phone { width: min(292px, 100%); height: 600px; }
-  .cs-preview__cap { max-width: 100%; justify-content: center; text-align: center; white-space: normal; }
-  .cs-modal { padding: 12px; place-items: start center; }
-  .cs-modal__card { width: min(380px, calc(100vw - 24px)); padding: 14px 14px 12px; border-radius: 20px; }
-  .cs-modal__phone .pv-phone { height: min(600px, calc(100vh - 260px)); min-height: 440px; }
+  .cs-preview__cap { max-width: 100%; margin: 0 auto; justify-content: center; text-align: center; white-space: normal; }
+  .cs-pv__bar { height: 54px; }
+  .cs-pv__url { display: none; }
+  .cs-pv__hint { display: none; }
 }
 @media (max-width: 420px) {
   .cs-topbar__right { justify-content: stretch; }
@@ -1896,20 +1994,7 @@
   }
 }
 
-/* ---------- three Creator Store sections (same glass language) ---------- */
-.cs-addgrid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-.cs-addgrid .cs-addcard {
-  min-height: 118px;
-  justify-content: flex-start;
-}
-.cs-addgrid .cs-addcard__label {
-  line-height: 1.3;
-  overflow-wrap: break-word;
-}
-
-/* Digital Product Video Preview — swipeable video / buy panes. */
+/* ---------- Digital Product Video Preview — swipeable video / buy panes. ---------- */
 .pv-showcase {
   overflow: hidden;
   border-radius: 16px;
@@ -1982,13 +2067,16 @@
   justify-content: center;
   gap: 5px;
 }
-.pv-showcase__dots i {
+.pv-showcase__dots button {
   width: 14px;
   height: 4px;
+  border: 0;
+  padding: 0;
   border-radius: 999px;
   background: rgba(15, 23, 42, 0.15);
+  cursor: pointer;
 }
-.pv-showcase__dots i.is-on {
+.pv-showcase__dots button.is-on {
   background: #2f7cf6;
 }
 
