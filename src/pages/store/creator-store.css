@@ -475,17 +475,44 @@
 .cs-spin { animation: cs-spin 1s linear infinite; }
 @keyframes cs-spin { to { transform: rotate(360deg); } }
 
+/* Designer phase: the workspace takes over the entire viewport, edge to edge.
+   Lifted out of the dashboard's centred column (max-width 1440px + 42px
+   padding), so it is genuinely full screen and its layout no longer depends on
+   how much room the dashboard happens to leave it — resize the window and the
+   workspace simply fills whatever the screen is. Stretching means the divider
+   runs the full height of the screen rather than the height of the panels. */
+.cs-page.is-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  height: 100vh;
+  min-height: 0;
+  margin: 0;
+  border-radius: 0;
+  padding: clamp(12px, 1.6vw, 22px);
+  align-items: stretch;
+  overflow: hidden auto;
+}
+/* `margin: auto` is what centres and shrink-wraps the builder in the dashboard
+   column; in full screen it has to be neutral or the workspace would never
+   actually grow to the height of the screen. */
+.cs-page.is-fullscreen .cs-builder { margin: 0; }
+
 /* ---------- designer workspace (step 6, no step nav) ---------- */
 /* One grid owns the whole workspace. The title, the action buttons, the Editor
    Tools panel and the phone are all placed into these three tracks directly, so
    the divider's column is identical for the toolbar and the panels below it and
    can never drift out from under a control. The divider spans both rows, which
    is what makes it run unbroken from the top of the workspace to the bottom. */
+/* Column 2 is a flexible track rather than a 1px sliver, so the divider can sit
+   out in the open gap between Editor Tools and the phone instead of hugging the
+   panel. Column 3 keeps a floor wide enough for the whole action row, so the
+   line can never creep so far right that a button would have to cross it. */
 .cs-builder {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: minmax(280px, 360px) 1px minmax(0, 1fr);
+  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr) minmax(420px, 1fr);
   grid-template-rows: auto 1fr;
   column-gap: clamp(16px, 2.5vw, 32px);
   row-gap: 16px;
@@ -1990,13 +2017,13 @@ color: var(--cs-ink);
   .cs-builder {
     max-width: 100%;
     column-gap: clamp(14px, 2vw, 24px);
-    grid-template-columns: minmax(260px, 320px) 1px minmax(0, 1fr);
+    grid-template-columns: minmax(260px, 320px) minmax(0, 1fr) minmax(400px, 1fr);
   }
   .pv-phone { width: min(280px, 100%); }
 }
 /* Medium windows: narrower panels, compact pills, slightly smaller phone. */
 @media (max-width: 1020px) {
-  .cs-builder { grid-template-columns: minmax(240px, 300px) 1px minmax(0, 1fr); }
+  .cs-builder { grid-template-columns: minmax(240px, 300px) minmax(0, 1fr) minmax(390px, 1fr); }
   .cs-toolbtn { padding: 6px 10px; font-size: 11.5px; }
   .cs-savestate { padding: 6px 10px; font-size: 11px; }
   .pv-phone { width: min(264px, 100%); height: 580px; }
@@ -2005,7 +2032,7 @@ color: var(--cs-ink);
 /* Narrow windows: keep the phone beside the editor, divider still visible. */
 @media (max-width: 920px) {
   .cs-builder {
-    grid-template-columns: minmax(230px, 290px) 1px minmax(0, 1fr);
+    grid-template-columns: minmax(230px, 290px) minmax(0, 1fr) minmax(370px, 1fr);
     column-gap: 16px;
   }
   .cs-topbar__right { justify-content: flex-end; row-gap: 8px; }
