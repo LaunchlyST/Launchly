@@ -503,18 +503,25 @@
 }
 .cs-designer {
   display: grid;
-  grid-template-columns: minmax(290px, 340px) 1px minmax(0, 1fr);
+  grid-template-columns: minmax(290px, 340px) minmax(0, 1fr);
   gap: 24px;
   align-items: start;
   width: 100%;
   animation: cs-designer-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-/* Vertical divider from top to bottom, separating editor (left) from preview (right). */
+/* Full-height vertical divider spanning the whole box top-to-bottom,
+   centred in the gap between the editor (left) and the preview (right).
+   Absolutely positioned against the centred .cs-builder, so it is not
+   limited to the content row height. */
 .cs-divider {
-  align-self: stretch;
-  min-height: 240px;
+  position: absolute;
+  top: -40px;
+  bottom: -40px;
+  left: 351.5px;
+  width: 1px;
   background: rgba(15, 23, 42, 0.1);
   border-radius: 1px;
+  pointer-events: none;
 }
 @keyframes cs-designer-in {
   from { opacity: 0; transform: scale(0.97) translateY(12px); }
@@ -1439,7 +1446,8 @@
 
 /* ---------- responsive ---------- */
 @media (max-width: 1080px) {
-  .cs-designer { grid-template-columns: minmax(270px, 320px) 1px minmax(0, 1fr); gap: 18px; }
+  .cs-designer { grid-template-columns: minmax(270px, 320px) minmax(0, 1fr); gap: 18px; }
+  .cs-divider { left: 328.5px; }
 }
 @media (max-width: 860px) {
   .cs-page { padding: 24px 12px; border-radius: 18px; }
