@@ -226,6 +226,11 @@ export function PhonePreview({
     w: number;
   } | null>(null);
   const insertPosRef = useRef<number | null>(null);
+  // Block positions snapshotted when a drag starts, stored relative to the top
+  // of .pv-content so they survive scrolling. See indexFromPoint.
+  const cleanRectsRef = useRef<{ rel: number; h: number }[] | null>(null);
+  // Continuous edge auto-scroll, shared by the palette and reorder gestures.
+  const autoScrollRef = useRef<{ dir: number; raf: number }>({ dir: 0, raf: 0 });
   const moveAtRef = useRef(onMoveBlockAt);
   moveAtRef.current = onMoveBlockAt;
   const moveRef = useRef(onMoveBlock);
@@ -265,8 +270,12 @@ export function PhonePreview({
       if (!inside) {
         palIndexRef.current = null;
         setPaletteIndex(null);
+        stopAutoScroll();
         return;
       }
+      // Reaching the bottom of a long page must not require a drop target the
+      // pointer can physically get to, so the page scrolls under the drag.
+      autoScrollScreen(ev.clientY);
       const idx = indexFromPoint(ev.clientY, '');
       if (idx !== palIndexRef.current) {
         palIndexRef.current = idx;
@@ -284,6 +293,8 @@ export function PhonePreview({
       setPaletteDrag(null);
       setOverPhone(false);
       setPaletteIndex(null);
+      stopAutoScroll();
+      cleanRectsRef.current = null;
       // Only create when released inside the phone — never above the locked profile.
       if (inside && insertBlockRef.current) insertBlockRef.current(p.type, Math.max(lockedTopRef.current, idx ?? designer.blocks.length));
     };
@@ -312,6 +323,8 @@ export function PhonePreview({
       setPaletteDrag({ type, label });
       setOverPhone(false);
       setPaletteIndex(null);
+      // Snapshot the clean layout before the indicator can enter the flow.
+      captureCleanRects('');
     };
     window.addEventListener('pointerdown', onDown);
     return () => window.removeEventListener('pointerdown', onDown);
@@ -354,7 +367,9 @@ export function PhonePreview({
     : { background: '#fff', border: '1px solid rgba(15,23,42,.08)' };
 
   const cls = (key: string, extra = '', locked = false) =>
-    `pv-block ${extra}${hoverKey === key ? ' is-hover' : ''}${selectedKey === key ? ' is-selected' : ''}${locked ? ' is-locked' : ''}`.trim();
+    // A locked block is never hoverable or selectable: it must not show the
+    // blue outline that would imply it can be opened.
+    `pv-block ${extra}${!locked && hoverKey === key ? ' is-hover' : ''}${!locked && selectedKey === key ? ' is-selected' : ''}${locked ? ' is-locked' : ''}`.trim();
 
   const canReorder = interactive && (!!onMoveBlockAt || !!onMoveBlock);
 
@@ -363,6 +378,23 @@ export function PhonePreview({
   function setInsert(v: number | null) {
     insertPosRef.current = v;
     setInsertIndex(v);
+  }
+
+  /** Snapshot block geometry at the start of a drag, relative to the top of
+      .pv-content so the numbers stay valid while the page scrolls. */
+  function captureCleanRects(excludeId: string) {
+    const root = contentRef.current;
+    if (!root) {
+      cleanRectsRef.current = null;
+      return;
+    }
+    const base = root.getBoundingClientRect().top;
+    cleanRectsRef.current = Array.from(root.querySelectorAll<HTMLElement>('[data-block-id]'))
+      .filter((el) => el.dataset.blockId !== excludeId)
+      .map((el) => {
+        const r = el.getBoundingClientRect();
+        return { rel: r.top - base, h: r.height };
+      });
   }
 
   function indexFromPoint(clientY: number, draggedId: string): number {
@@ -375,9 +407,21 @@ export function PhonePreview({
     const els = Array.from(root.querySelectorAll<HTMLElement>('[data-block-id]')).filter(
       (el) => el.dataset.blockId !== draggedId
     );
+    // The drop indicator is a real flex child of .pv-content, so every block
+    // below it is pushed down by its height while it is on screen. Measuring
+    // those shifted rects is a feedback loop: each move re-reads a layout the
+    // previous move disturbed, and the computed index ratchets toward the
+    // profile — which is why a section could only ever land near the top.
+    // The snapshot taken at drag start is the layout the pointer is actually
+    // aiming at, so prefer it and fall back to live rects if it is missing.
+    const base = root.getBoundingClientRect().top;
+    const snap = cleanRectsRef.current;
     for (let i = 0; i < els.length; i++) {
+      const c = snap?.[i];
       const r = els[i].getBoundingClientRect();
-      if (clientY < r.top + r.height / 2) return Math.max(minIndex, i);
+      const top = c ? base + c.rel : r.top;
+      const h = c ? c.h : r.height;
+      if (clientY < top + h / 2) return Math.max(minIndex, i);
     }
     return Math.max(minIndex, els.length);
   }
@@ -396,12 +440,44 @@ export function PhonePreview({
     setGhost({ x, y, w: gw, label });
   }
 
+  function stopAutoScroll() {
+    const st = autoScrollRef.current;
+    st.dir = 0;
+    if (st.raf) cancelAnimationFrame(st.raf);
+    st.raf = 0;
+  }
+
+  /** Edge auto-scroll. Runs on rAF while the pointer rests near the top or
+      bottom of the frame, so a long page can be reached without ever leaving
+      the drag — stepping per pointermove stalls whenever the pointer is still. */
   function autoScrollScreen(clientY: number) {
     const sc = screenRef.current;
     if (!sc) return;
     const r = sc.getBoundingClientRect();
-    if (clientY < r.top + 56) sc.scrollTop -= 10;
-    else if (clientY > r.bottom - 56) sc.scrollTop += 10;
+    const edge = 56;
+    const dir = clientY < r.top + edge ? -1 : clientY > r.bottom - edge ? 1 : 0;
+    const st = autoScrollRef.current;
+    if (dir === st.dir) return;
+    stopAutoScroll();
+    if (!dir) return;
+    st.dir = dir;
+    const step = () => {
+      const el = screenRef.current;
+      const s = autoScrollRef.current;
+      if (!el || s.dir !== dir) {
+        s.raf = 0;
+        return;
+      }
+      const before = el.scrollTop;
+      el.scrollTop = before + dir * 12;
+      if (el.scrollTop === before) {
+        s.dir = 0;
+        s.raf = 0;
+        return;
+      }
+      s.raf = requestAnimationFrame(step);
+    };
+    st.raf = requestAnimationFrame(step);
   }
 
   /** Pointer-based reorder: any section except the locked profile can be
@@ -438,6 +514,8 @@ export function PhonePreview({
         d.active = true;
         suppressPick.current = true;
         setDragId(d.id);
+        // Snapshot before the block leaves the flow and the indicator enters it.
+        captureCleanRects(d.id);
         setInsert(indexFromPoint(ev.clientY, d.id));
         updateGhost(ev.clientX, ev.clientY, d.label, d.w);
         return;
@@ -452,6 +530,8 @@ export function PhonePreview({
       window.removeEventListener('pointerup', up);
       window.removeEventListener('pointercancel', up);
       dragRef.current = null;
+      stopAutoScroll();
+      cleanRectsRef.current = null;
       if (!d || ev.pointerId !== d.pointerId) {
         setDragId(null);
         setInsertIndex(null);
@@ -545,6 +625,18 @@ export function PhonePreview({
         }
       : {};
 
+  /**
+   * The locked TikTok profile is read-only and synced from TikTok, so it must
+   * never open an editor panel. Swallow the click (and stop it bubbling to the
+   * content column, which would otherwise clear the current selection), while
+   * keeping the block visible and unchanged.
+   */
+  const inertProps = {
+    onClick: (e: React.MouseEvent) => {
+      e.stopPropagation();
+    },
+  };
+
   function blockLabel(b: Block): string {
     return b.title || b.type;
   }
@@ -556,9 +648,9 @@ export function PhonePreview({
       <div
         data-block-id={id}
         data-locked={isLocked ? 'true' : undefined}
-        title={isLocked ? 'Profile is locked at the top' : undefined}
+        title={isLocked ? 'Profile is locked — synced with TikTok' : undefined}
         className={cls(blockKey, extra ?? '', isLocked)}
-        {...bind(blockKey)}
+        {...(isLocked ? inertProps : bind(blockKey))}
         style={canReorder && !isLocked ? { touchAction: 'pan-y' } : undefined}
         onPointerDown={isLocked ? undefined : (e) => beginPotentialDrag(e, id, dragLabel)}
       >

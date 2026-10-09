@@ -1183,10 +1183,20 @@
 }
 .pv-grip:active { cursor: grabbing; }
 .pv-block.is-hover .pv-grip, .pv-block.is-selected .pv-grip { display: grid; }
-/* Locked TikTok profile: pinned to the top, never draggable. Still clickable
-   to edit, but shows a default cursor and never a drag grip. */
+/* Locked TikTok profile: pinned to the top, never draggable and never
+   clickable. Identity is owned by TikTok, so it must not open an editor.
+   pointer-events:none on the inner elements guarantees the avatar image and
+   text cannot start an interaction that bubbles up. */
 .pv-block.is-locked { cursor: default; }
 .pv-block.is-locked .pv-grip { display: none !important; }
+.pv-block.is-locked .pv-avatar,
+.pv-block.is-locked .pv-name,
+.pv-block.is-locked .pv-handle,
+.pv-block.is-locked .pv-bio {
+  pointer-events: none;
+  -webkit-user-drag: none;
+  user-select: none;
+}
 
 /* ---------- flexible drag-and-drop: insertion line + floating ghost ---------- */
 .pv-drop-line {

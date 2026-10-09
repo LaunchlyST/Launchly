@@ -95,15 +95,55 @@ describe('CreatorStorePage', () => {
     expect(container.querySelectorAll('.cs-editor-tools').length).toBe(1);
   });
 
-  it('locks the TikTok profile as read-only with sync controls', () => {
-    seedConnected();
-    render(<CreatorStorePage />);
-    // Profile block opens the synced read-only panel — never editable inputs.
-    fireEvent.click(screen.getByText('Your Studio'));
-    expect(screen.getByText('Synced with TikTok')).toBeTruthy();
-    expect(screen.queryByLabelText('Display name')).toBeNull();
-    expect(screen.queryByLabelText('Profile photo URL')).toBeNull();
-    expect(screen.getByRole('button', { name: /Sync now/i })).toBeTruthy();
+  describe('locked TikTok profile', () => {
+    it('never opens an editor panel when the profile in the phone is clicked', () => {
+      seedConnected();
+      const { container } = render(<CreatorStorePage />);
+      const profile = container.querySelector('.pv-profile') as HTMLElement;
+      expect(profile).toBeTruthy();
+      expect(profile.dataset.locked).toBe('true');
+
+      // Click the avatar, the handle and the bio — no panel may appear.
+      const targets = [
+        container.querySelector('.pv-avatar'),
+        container.querySelector('.pv-handle'),
+        container.querySelector('.pv-bio'),
+        profile,
+      ];
+      for (const el of targets) {
+        fireEvent.click(el as Element);
+        expect(screen.queryByText('Synced with TikTok')).toBeNull();
+        expect(screen.queryByRole('button', { name: /Sync now/i })).toBeNull();
+        expect(container.querySelector('.pv-profile.is-selected')).toBeNull();
+        expect(container.querySelector('.pv-profile.is-hover')).toBeNull();
+      }
+      // The overview stays on screen and the profile is still rendered.
+      expect(screen.getByText('Editor Tools')).toBeTruthy();
+      expect(container.querySelectorAll('.pv-profile')).toHaveLength(1);
+      expect(container.querySelector('.pv-profile .pv-name')?.textContent).toBeTruthy();
+      expect(container.querySelector('.pv-profile .pv-bio')?.textContent).toBeTruthy();
+    });
+
+    it('keeps clicking other sections working', () => {
+      seedConnected();
+      const { container } = render(<CreatorStorePage />);
+      fireEvent.click(screen.getByText('Viral Preset Pack'));
+      expect(screen.getByLabelText('Product image URL')).toBeTruthy();
+      // A click on the locked profile must not clear the open editor either.
+      fireEvent.click(container.querySelector('.pv-profile') as Element);
+      expect(screen.getByLabelText('Product image URL')).toBeTruthy();
+    });
+
+    it('offers the synced read-only profile panel without editable fields', () => {
+      seedConnected();
+      render(<CreatorStorePage />);
+      // Reachable only from the Editor Tools section list, never from the phone.
+      fireEvent.click(screen.getByTitle(/Profile · locked at the top/));
+      expect(screen.getByText('Synced with TikTok')).toBeTruthy();
+      expect(screen.queryByLabelText('Display name')).toBeNull();
+      expect(screen.queryByLabelText('Profile photo URL')).toBeNull();
+      expect(screen.getByRole('button', { name: /Sync now/i })).toBeTruthy();
+    });
   });
 
   it('adds a TikTok video from the preview block editor', () => {
@@ -226,6 +266,10 @@ describe('CreatorStorePage', () => {
      * *current* DOM order, so the boxes survive the re-render that happens
      * mid-drag (per-element stubs would be thrown away with the old nodes).
      */
+    /** Synthesises the phone's layout, including the reflow the drop indicator
+        causes: it is a real flex child of .pv-content, so every block below it
+        is pushed down by its height. Without that shift modelled here, the old
+        measurement feedback loop cannot show up in jsdom at all. */
     function stubLiveLayout(content: HTMLElement) {
       const original = Element.prototype.getBoundingClientRect;
       Element.prototype.getBoundingClientRect = function (this: Element) {
@@ -234,9 +278,12 @@ describe('CreatorStorePage', () => {
         }
         const el = this as HTMLElement;
         if (el.dataset && el.dataset.blockId) {
-          const root = content.querySelectorAll('[data-block-id]');
-          const i = Array.from(root).indexOf(el);
-          const top = 100 + Math.max(0, i) * 100;
+          const kids = Array.from(content.children);
+          const lineAt = kids.findIndex((k) => k.classList.contains('pv-drop-line'));
+          const blocks = kids.filter((k) => (k as HTMLElement).dataset && (k as HTMLElement).dataset.blockId);
+          const i = blocks.indexOf(el);
+          const pushed = lineAt >= 0 && kids.indexOf(el) > lineAt ? 30 : 0;
+          const top = 100 + Math.max(0, i) * 100 + pushed;
           return { top, left: 100, width: 260, height: 90, right: 360, bottom: top + 90, x: 100, y: top, toJSON: () => ({}) } as DOMRect;
         }
         return original.call(this);
@@ -245,6 +292,53 @@ describe('CreatorStorePage', () => {
         Element.prototype.getBoundingClientRect = original;
       };
     }
+
+    it('drops a section where the pointer is, not just under the profile', () => {
+      seedConnected();
+      const { container } = render(<CreatorStorePage />);
+      const content = container.querySelector('.pv-content') as HTMLElement;
+      stubContentBox(content);
+      const restore = stubLiveLayout(content);
+      const before = container.querySelectorAll('[data-block-id]').length;
+
+      const card = screen.getByLabelText('Add Email Support section');
+      fireEvent.pointerDown(card, { button: 0, pointerId: 21, clientX: 20, clientY: 20 });
+      // Drag to the very bottom, then hold there across several moves: the
+      // target must not creep back up toward the profile between events.
+      for (const y of [660, 655, 650]) {
+        fireEvent.pointerMove(window, { pointerId: 21, clientX: 200, clientY: y });
+      }
+      fireEvent.pointerUp(window, { pointerId: 21, clientX: 200, clientY: 650 });
+      restore();
+
+      const blocks = container.querySelectorAll('[data-block-id]');
+      expect(blocks.length).toBe(before + 1);
+      expect(blocks[0].classList.contains('pv-profile')).toBe(true);
+      // Released at the bottom, so it belongs last - not tucked under the profile.
+      expect(blocks[blocks.length - 1].querySelector('.pv-support')).toBeTruthy();
+    });
+
+    it('scrolls the page under a palette drag so lower positions are reachable', async () => {
+      seedConnected();
+      const { container } = render(<CreatorStorePage />);
+      const content = container.querySelector('.pv-content') as HTMLElement;
+      stubContentBox(content);
+      const phoneScreen = container.querySelector('.pv-screen') as HTMLElement;
+      // jsdom has no layout, so scrolling is inert unless these are faked.
+      Object.defineProperty(phoneScreen, 'scrollHeight', { configurable: true, value: 3000 });
+      Object.defineProperty(phoneScreen, 'clientHeight', { configurable: true, value: 600 });
+      Object.defineProperty(phoneScreen, 'scrollTop', { configurable: true, writable: true, value: 0 });
+
+      const card = screen.getByLabelText('Add Email Support section');
+      fireEvent.pointerDown(card, { button: 0, pointerId: 31, clientX: 20, clientY: 20 });
+      // Hold at the bottom edge of the frame. Without auto-scroll on the
+      // palette gesture, anything past the fold is simply unreachable.
+      fireEvent.pointerMove(window, { pointerId: 31, clientX: 200, clientY: 690 });
+      await new Promise((r) => { requestAnimationFrame(() => r(null)); });
+      await new Promise((r) => { requestAnimationFrame(() => r(null)); });
+      expect(phoneScreen.scrollTop).toBeGreaterThan(0);
+      fireEvent.pointerUp(window, { pointerId: 31, clientX: 200, clientY: 690 });
+    });
 
     it('creates a section only when the palette drag is released inside the phone', () => {
       seedConnected();
