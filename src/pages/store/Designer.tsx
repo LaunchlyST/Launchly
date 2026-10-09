@@ -524,14 +524,18 @@ export function Designer({ designer, username, saveState, publishedAt, ui, tikto
     <div className="cs-builder">
       {/* Top bar */}
       <div className="cs-topbar">
-        <strong>Creator Store</strong>
-        <div className="cs-topbar__right">
+        {/* Title and history controls share column 1, so they always sit on
+            the Editor Tools side of the divider. */}
+        <div className="cs-topbar__lead">
+          <strong>Creator Store</strong>
           <button type="button" className="cs-toolbtn cs-toolbtn--icon" aria-label="Undo" title="Undo" disabled={!canUndo} onClick={onUndo}>
             <Undo2 size={14} />
           </button>
           <button type="button" className="cs-toolbtn cs-toolbtn--icon" aria-label="Redo" title="Redo" disabled={!canRedo} onClick={onRedo}>
             <Redo2 size={14} />
           </button>
+        </div>
+        <div className="cs-topbar__right">
           <span className={`cs-savestate cs-savestate--${saveState}`} role="status">
             <i aria-hidden="true" />
             {saveState === 'saved' ? 'Saved ✓' : 'Saving…'}
