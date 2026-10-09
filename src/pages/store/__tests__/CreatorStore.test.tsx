@@ -116,7 +116,7 @@ describe('CreatorStorePage', () => {
     expect(screen.getByLabelText('TikTok URL')).toBeTruthy();
   });
 
-  it('resizes the phone preview by dragging the corner handle', () => {
+  it('resizes the phone preview width only by dragging the edge handle', () => {
     seedConnected();
     const { container } = render(<CreatorStorePage />);
     const phone = container.querySelector('.pv-phone') as HTMLElement;
@@ -125,9 +125,10 @@ describe('CreatorStorePage', () => {
     expect(handleEl).toBeTruthy();
     expect(phone.style.width).toBe('');
     fireEvent.pointerDown(handleEl, { button: 0, clientX: 100, clientY: 100, pointerId: 1 });
-    fireEvent.pointerMove(handleEl, { clientX: 150, clientY: 150, pointerId: 1 });
+    fireEvent.pointerMove(handleEl, { clientX: 150, clientY: 250, pointerId: 1 });
     fireEvent.pointerUp(handleEl, { pointerId: 1 });
+    // Width follows the horizontal drag; height never changes.
     expect(phone.style.width).toBe('342px');
-    expect(phone.style.height).toBe('670px');
+    expect(phone.style.height).toBe('');
   });
 });
