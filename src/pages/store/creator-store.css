@@ -1508,11 +1508,14 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
-  color: var(--cs-ink);
-  /* Calm, minimal light backdrop — never a dark scrim. */
+color: var(--cs-ink);
+  /* Soft studio backdrop: bright behind the device, cooling off toward the
+     edges so the white phone reads as the focal point instead of floating
+     on a flat white sheet. */
   background:
-    radial-gradient(900px 620px at 50% -8%, #ffffff 0%, rgba(255, 255, 255, 0) 62%),
-    linear-gradient(180deg, #f7f8fa 0%, #eef1f5 100%);
+    radial-gradient(1100px 760px at 50% -6%, #ffffff 0%, rgba(255, 255, 255, 0) 58%),
+    radial-gradient(860px 620px at 50% 112%, rgba(199, 210, 226, 0.55) 0%, rgba(199, 210, 226, 0) 62%),
+    linear-gradient(180deg, #f3f5f9 0%, #e7ebf1 58%, #dde3ea 100%);
   animation: cs-pv-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 @keyframes cs-pv-in {
@@ -1646,6 +1649,35 @@
     0 48px 110px rgba(15, 23, 42, 0.18);
 }
 .cs-pv .pv-screen { border-radius: 34px; }
+/* Customer-mode scrolling. The editor hides this bar because the page pans
+   under a fixed frame; in the preview it is the other way round, so the bar
+   stays visible as the affordance that tells you the store scrolls. Momentum
+   scrolling plus `contain` keeps a flick inside the phone from ever chaining
+   out to the page behind it. */
+.cs-pv .pv-screen {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(15, 23, 42, 0.3) transparent;
+}
+.cs-pv .pv-screen::-webkit-scrollbar { width: 5px; }
+.cs-pv .pv-screen::-webkit-scrollbar-track { background: transparent; }
+.cs-pv .pv-screen::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.28);
+  border-radius: 999px;
+}
+.cs-pv .pv-screen::-webkit-scrollbar-thumb:hover { background: rgba(15, 23, 42, 0.42); }
+/* Fades top and bottom so content reads as continuing past the frame, the
+   way it does on a real handset. */
+.cs-pv .pv-screen {
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 22px, #000 calc(100% - 22px), transparent 100%);
+  mask-image: linear-gradient(180deg, transparent 0, #000 22px, #000 calc(100% - 22px), transparent 100%);
+}
+/* Drag-to-scroll: grab the page like a touchscreen would. Added by
+   StorePreview, which owns this read-only surface. */
+.cs-pv .pv-screen.is-grabbable { cursor: grab; }
+.cs-pv .pv-screen.is-grabbing { cursor: grabbing; scroll-behavior: auto; user-select: none; }
 .cs-pv .pv-notch {
   top: 25px;
   width: 104px;
@@ -1654,8 +1686,6 @@
   border-color: rgba(255, 255, 255, 0.08);
 }
 /* Scroll the page itself, not the device — the frame must never scroll away. */
-.cs-pv .pv-screen { scrollbar-width: none; }
-.cs-pv .pv-screen::-webkit-scrollbar { width: 0; }
 .cs-pv .pv-block { cursor: auto; }
 .cs-pv .pv-block:hover { outline-color: transparent; box-shadow: inherit; }
 

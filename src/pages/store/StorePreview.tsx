@@ -69,6 +69,67 @@ export function StorePreview({ designer, username, onBack }: StorePreviewProps) 
   const url = storeShareUrl(username);
   const handle = username.replace(/^@+/, '');
 
+  /* Drag-to-scroll inside the device.
+   *
+   * A mouse has no touch screen, so wheel-scrolling a phone mock-up feels
+   * unlike a real handset. Grabbing the page and dragging it does. Only the
+   * primary button drags, and only when the content is actually taller than
+   * the frame, so a short store still scrolls normally instead of sticking.
+   */
+  useEffect(() => {
+    const root = stageRef.current;
+    if (!root) return;
+    const screen = root.querySelector<HTMLElement>('.pv-screen');
+    if (!screen) return;
+
+    let dragging = false;
+    let startY = 0;
+    let startScroll = 0;
+
+    const canDrag = () => screen.scrollHeight - screen.clientHeight > 1;
+
+    const onDown = (e: PointerEvent) => {
+      if (e.button !== 0 || !canDrag()) return;
+      dragging = true;
+      startY = e.clientY;
+      startScroll = screen.scrollTop;
+      screen.classList.add('is-grabbing');
+      screen.setPointerCapture(e.pointerId);
+    };
+    const onMove = (e: PointerEvent) => {
+      if (!dragging) return;
+      const next = startScroll - (e.clientY - startY);
+      // Clamp by hand: smooth scrolling plus pointer capture can otherwise
+      // let the page drift past either end.
+      screen.scrollTop = Math.max(0, Math.min(next, screen.scrollHeight - screen.clientHeight));
+    };
+    const onUp = (e: PointerEvent) => {
+      if (!dragging) return;
+      dragging = false;
+      screen.classList.remove('is-grabbing');
+      if (screen.hasPointerCapture(e.pointerId)) screen.releasePointerCapture(e.pointerId);
+    };
+
+    const sync = () => screen.classList.toggle('is-grabbable', canDrag());
+    sync();
+    screen.addEventListener('pointerdown', onDown);
+    screen.addEventListener('pointermove', onMove);
+    screen.addEventListener('pointerup', onUp);
+    screen.addEventListener('pointercancel', onUp);
+    // Absent in jsdom, and the grab cursor is cosmetic anyway.
+    const observer =
+      typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(sync);
+    observer?.observe(screen);
+
+    return () => {
+      observer?.disconnect();
+      screen.removeEventListener('pointerdown', onDown);
+      screen.removeEventListener('pointermove', onMove);
+      screen.removeEventListener('pointerup', onUp);
+      screen.removeEventListener('pointercancel', onUp);
+    };
+  }, [device]);
+
   return (
     <div className="cs-pv" role="dialog" aria-modal="true" aria-label="Live store preview">
       <header className="cs-pv__bar">
