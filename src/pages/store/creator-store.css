@@ -476,31 +476,35 @@
 @keyframes cs-spin { to { transform: rotate(360deg); } }
 
 /* ---------- designer workspace (step 6, no step nav) ---------- */
+/* One grid owns the whole workspace. The title, the action buttons, the Editor
+   Tools panel and the phone are all placed into these three tracks directly, so
+   the divider's column is identical for the toolbar and the panels below it and
+   can never drift out from under a control. The divider spans both rows, which
+   is what makes it run unbroken from the top of the workspace to the bottom. */
 .cs-builder {
   position: relative;
   z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(280px, 360px) 1px minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+  column-gap: clamp(16px, 2.5vw, 32px);
+  row-gap: 16px;
+  align-items: start;
   width: 100%;
   max-width: 100%;
   min-width: 0;
   margin: auto;
+  animation: cs-designer-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-/* Top bar mirrors the .cs-designer grid exactly (same three tracks) so the
-   divider and the phone line up with the title and the buttons. The buttons
-   live in column 3 only — never column 2 — so they can never straddle the
-   divider line. */
-.cs-topbar {
-  display: grid;
-  grid-template-columns: minmax(280px, 360px) 1px minmax(0, 1fr);
-  gap: clamp(16px, 2.5vw, 32px);
-  align-items: center;
-  width: 100%;
-  min-width: 0;
-  margin-bottom: 16px;
-}
+/* Both wrappers are layout-transparent now: their children join the grid above. */
+.cs-topbar,
+.cs-designer { display: contents; }
 /* Column 1: the title plus the history controls. They live here, rather than
    with the actions on the right, so nothing ever sits on top of the divider. */
 .cs-topbar__lead {
   grid-column: 1;
+  grid-row: 1;
+  align-self: center;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -517,6 +521,8 @@
 }
 .cs-topbar__right {
   grid-column: 3;
+  grid-row: 1;
+  align-self: center;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -529,35 +535,32 @@
   min-width: 0;
 }
 /* Flexible two-panel grid: Editor Tools left, the divider immediately after
-   it, phone preview flush right. The divider's track stays 1px so it can never
-   end up underneath the top-bar button row, which is anchored to its right. */
-.cs-designer {
-  display: grid;
-  grid-template-columns: minmax(280px, 360px) 1px minmax(0, 1fr);
-  gap: clamp(16px, 2.5vw, 32px);
-  align-items: start;
-  width: 100%;
-  min-width: 0;
-  animation: cs-designer-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
+   it, phone preview flush right. The wrapper is layout-transparent (see
+   .cs-topbar/.cs-designer above); these children are placed by .cs-builder. */
 .cs-controls {
   grid-column: 1;
+  grid-row: 2;
   min-width: 0;
   width: 100%;
 }
-/* Centre divider: a normal grid item so it always stays between the
-   panels and stretches with the content — never absolutely positioned. */
+/* The divider: a normal grid item, never absolutely positioned. It spans both
+   rows so the rule runs unbroken from the top of the workspace down past the
+   panels, and it carries the highest stacking order in the workspace so a
+   button, the phone or the status pill can never paint over it. */
 .cs-divider {
   grid-column: 2;
+  grid-row: 1 / -1;
   justify-self: center;
   align-self: stretch;
+  position: relative;
+  z-index: 4;
   width: 1px;
   min-height: 480px;
   background: rgba(15, 23, 42, 0.1);
   border-radius: 1px;
   pointer-events: none;
 }
-.cs-preview { grid-column: 3; min-width: 0; width: 100%; }
+.cs-preview { grid-column: 3; grid-row: 2; min-width: 0; width: 100%; }
 @keyframes cs-designer-in {
   from { opacity: 0; transform: scale(0.97) translateY(12px); }
   to { opacity: 1; transform: scale(1) translateY(0); }
@@ -1984,32 +1987,28 @@ color: var(--cs-ink);
 /* ---------- responsive: smooth scaling at every desktop width ---------- */
 /* Large-but-not-maximized windows: tighten spacing, keep proportions. */
 @media (max-width: 1180px) {
-  .cs-builder { max-width: 100%; }
-  .cs-topbar,
-  .cs-designer { gap: clamp(14px, 2vw, 24px); }
-  .cs-topbar { grid-template-columns: minmax(260px, 320px) 1px minmax(0, 1fr); }
-  .cs-designer { grid-template-columns: minmax(260px, 320px) 1px minmax(0, 1fr); }
+  .cs-builder {
+    max-width: 100%;
+    column-gap: clamp(14px, 2vw, 24px);
+    grid-template-columns: minmax(260px, 320px) 1px minmax(0, 1fr);
+  }
   .pv-phone { width: min(280px, 100%); }
 }
 /* Medium windows: narrower panels, compact pills, slightly smaller phone. */
 @media (max-width: 1020px) {
-  .cs-topbar { grid-template-columns: minmax(240px, 300px) 1px minmax(0, 1fr); }
-  .cs-designer { grid-template-columns: minmax(240px, 300px) 1px minmax(0, 1fr); }
+  .cs-builder { grid-template-columns: minmax(240px, 300px) 1px minmax(0, 1fr); }
   .cs-toolbtn { padding: 6px 10px; font-size: 11.5px; }
   .cs-savestate { padding: 6px 10px; font-size: 11px; }
   .pv-phone { width: min(264px, 100%); height: 580px; }
   .cs-preview__cap { max-width: 100%; }
 }
-/* Narrow windows: allow the top bar to wrap neatly over the preview. */
+/* Narrow windows: keep the phone beside the editor, divider still visible. */
 @media (max-width: 920px) {
-  .cs-topbar {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    row-gap: 10px;
+  .cs-builder {
+    grid-template-columns: minmax(230px, 290px) 1px minmax(0, 1fr);
+    column-gap: 16px;
   }
-  .cs-topbar__right { flex: 1 1 auto; justify-content: flex-end; row-gap: 8px; }
-  .cs-designer { grid-template-columns: minmax(230px, 290px) 1px minmax(0, 1fr); gap: 16px; }
+  .cs-topbar__right { justify-content: flex-end; row-gap: 8px; }
   .pv-phone { width: min(252px, 100%); height: 560px; }
   .cs-preview__cap { max-width: 100%; }
 }
@@ -2020,14 +2019,13 @@ color: var(--cs-ink);
   .cs-progress { padding: 12px 14px 0; }
   .cs-progress__track { top: 25px; left: 34px; right: 34px; }
   .cs-progress__label { font-size: 8px; }
-  .cs-builder { max-width: 560px; }
-  .cs-topbar { display: flex; flex-direction: column; align-items: stretch; text-align: left; }
-  .cs-topbar__lead > strong { text-align: left; }
+  .cs-builder { max-width: 560px; grid-template-columns: 1fr; row-gap: 20px; }
+  .cs-topbar__lead,
+  .cs-topbar__right { grid-column: 1; text-align: left; }
   .cs-topbar__right { justify-content: flex-start; }
-  .cs-designer { grid-template-columns: 1fr; gap: 20px; }
-  .cs-controls { grid-column: 1; position: static; max-height: none; overflow: visible; }
+  .cs-controls { grid-column: 1; grid-row: auto; position: static; max-height: none; overflow: visible; }
   .cs-divider { display: none; }
-  .cs-preview { grid-column: 1; position: static; align-items: center; }
+  .cs-preview { grid-column: 1; grid-row: auto; position: static; align-items: center; }
   .cs-preview__fixed { max-width: 340px; margin-left: 0; align-items: center; }
   .pv-phone { width: min(292px, 100%); height: 600px; }
   .cs-preview__cap { max-width: 100%; margin: 0 auto; justify-content: center; text-align: center; white-space: normal; }
