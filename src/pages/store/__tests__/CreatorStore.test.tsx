@@ -182,8 +182,7 @@ describe('CreatorStorePage', () => {
       stubContentBox(content);
       const before = container.querySelectorAll('[data-block-id]').length;
 
-      const card = screen.getByLabelText('Add Text section');
-      // Drag starts outside the phone and is released outside → nothing added.
+      const card = screen.getByLabelText('Add Email Support section');
       fireEvent.pointerDown(card, { button: 0, pointerId: 7, clientX: 20, clientY: 20 });
       fireEvent.pointerMove(window, { pointerId: 7, clientX: 20, clientY: 20 });
       fireEvent.pointerUp(window, { pointerId: 7, clientX: 20, clientY: 20 });
@@ -202,7 +201,7 @@ describe('CreatorStorePage', () => {
       const content = container.querySelector('.pv-content') as HTMLElement;
       stubContentBox(content);
       const phone = container.querySelector('.pv-phone') as HTMLElement;
-      const card = screen.getByLabelText('Add Image section');
+      const card = screen.getByLabelText('Add Upload Digital Product section');
 
       fireEvent.pointerDown(card, { button: 0, pointerId: 9, clientX: 10, clientY: 10 });
       expect(phone.classList.contains('is-palette-drag')).toBe(true);
@@ -221,7 +220,7 @@ describe('CreatorStorePage', () => {
       const { container } = render(<CreatorStorePage />);
       const before = container.querySelectorAll('[data-block-id]').length;
       // A bare pointerdown/up on the card (no move into the phone) must not add.
-      fireEvent.pointerDown(screen.getByLabelText('Add Video section'), { button: 0, pointerId: 11, clientX: 5, clientY: 5 });
+      fireEvent.pointerDown(screen.getByLabelText('Add Digital Product Video Preview section'), { button: 0, pointerId: 11, clientX: 5, clientY: 5 });
       fireEvent.pointerUp(window, { pointerId: 11, clientX: 5, clientY: 5 });
       expect(container.querySelectorAll('[data-block-id]').length).toBe(before);
     });
@@ -235,7 +234,7 @@ describe('CreatorStorePage', () => {
       expect(container.querySelectorAll('.pv-profile').length).toBe(1);
 
       const before = container.querySelectorAll('[data-block-id]').length;
-      const card = screen.getByLabelText('Add Text section');
+      const card = screen.getByLabelText('Add Email Support section');
       // Drop far above the profile block → must not land above/over it.
       fireEvent.pointerDown(card, { button: 0, pointerId: 12, clientX: 20, clientY: 20 });
       fireEvent.pointerMove(window, { pointerId: 12, clientX: 200, clientY: 110 });
@@ -278,7 +277,7 @@ describe('CreatorStorePage', () => {
       const content = first.container.querySelector('.pv-content') as HTMLElement;
       stubContentBox(content);
       const before = first.container.querySelectorAll('[data-block-id]').length;
-      fireEvent.pointerDown(screen.getByLabelText('Add Newsletter section'), { button: 0, pointerId: 31, clientX: 10, clientY: 10 });
+      fireEvent.pointerDown(screen.getByLabelText('Add Email Support section'), { button: 0, pointerId: 31, clientX: 10, clientY: 10 });
       fireEvent.pointerMove(window, { pointerId: 31, clientX: 200, clientY: 400 });
       fireEvent.pointerUp(window, { pointerId: 31, clientX: 200, clientY: 400 });
       expect(first.container.querySelectorAll('[data-block-id]').length).toBe(before + 1);
@@ -296,7 +295,7 @@ describe('CreatorStorePage', () => {
       stubContentBox(content);
       const before = container.querySelectorAll('[data-block-id]').length;
 
-      fireEvent.pointerDown(screen.getByLabelText('Add Text section'), { button: 0, pointerId: 41, clientX: 10, clientY: 10 });
+      fireEvent.pointerDown(screen.getByLabelText('Add Upload Digital Product section'), { button: 0, pointerId: 41, clientX: 10, clientY: 10 });
       fireEvent.pointerMove(window, { pointerId: 41, clientX: 200, clientY: 400 });
       fireEvent.pointerUp(window, { pointerId: 41, clientX: 200, clientY: 400 });
       expect(container.querySelectorAll('[data-block-id]').length).toBe(before + 1);
@@ -307,16 +306,32 @@ describe('CreatorStorePage', () => {
       expect(container.querySelectorAll('[data-block-id]').length).toBe(before + 1);
     });
 
-    it('offers a Divider / Spacer palette card that creates a divider block', () => {
+    it('offers only the three Creator Store sections, including Email Support', () => {
       seedConnected();
       const { container } = render(<CreatorStorePage />);
       const content = container.querySelector('.pv-content') as HTMLElement;
       stubContentBox(content);
-      expect(screen.getByLabelText('Add Divider / Spacer section')).toBeTruthy();
-      fireEvent.pointerDown(screen.getByLabelText('Add Divider / Spacer section'), { button: 0, pointerId: 51, clientX: 10, clientY: 10 });
+      expect(screen.getByLabelText('Add Upload Digital Product section')).toBeTruthy();
+      expect(screen.getByLabelText('Add Digital Product Video Preview section')).toBeTruthy();
+      expect(screen.getByLabelText('Add Email Support section')).toBeTruthy();
+      expect(screen.queryByLabelText('Add Text section')).toBeNull();
+      expect(screen.queryByLabelText('Add Divider / Spacer section')).toBeNull();
+      fireEvent.pointerDown(screen.getByLabelText('Add Email Support section'), { button: 0, pointerId: 51, clientX: 10, clientY: 10 });
       fireEvent.pointerMove(window, { pointerId: 51, clientX: 200, clientY: 400 });
       fireEvent.pointerUp(window, { pointerId: 51, clientX: 200, clientY: 400 });
-      expect(container.querySelectorAll('.pv-divider').length).toBe(1);
+      expect(container.querySelectorAll('.pv-support').length).toBe(1);
+    });
+
+    it('creates a Digital Product Video Preview with swipe buy panes', () => {
+      seedConnected();
+      const { container } = render(<CreatorStorePage />);
+      const content = container.querySelector('.pv-content') as HTMLElement;
+      stubContentBox(content);
+      fireEvent.pointerDown(screen.getByLabelText('Add Digital Product Video Preview section'), { button: 0, pointerId: 52, clientX: 10, clientY: 10 });
+      fireEvent.pointerMove(window, { pointerId: 52, clientX: 200, clientY: 400 });
+      fireEvent.pointerUp(window, { pointerId: 52, clientX: 200, clientY: 400 });
+      expect(container.querySelectorAll('.pv-showcase').length).toBe(1);
+      expect(container.querySelector('.pv-showcase__buybtn')?.textContent).toMatch(/Buy Now/);
     });
   });
 });

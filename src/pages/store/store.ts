@@ -8,7 +8,9 @@ export type BlockType =
   | 'image'
   | 'text'
   | 'newsletter'
-  | 'divider';
+  | 'divider'
+  | 'showcase'
+  | 'support';
 
 /** Only one of each may exist on a page (no duplicates). */
 export const SINGLETON_TYPES: BlockType[] = ['profile'];
@@ -51,6 +53,11 @@ export interface Block {
   color?: string;
   /** Divider / spacer height in px. */
   height?: number;
+  /** Showcase (video preview + buy) + support + digital-file extras. */
+  price?: string;
+  email?: string;
+  fileUrl?: string;
+  fileName?: string;
 }
 
 export interface Product {
@@ -61,6 +68,9 @@ export interface Product {
   image: string;
   link: string;
   cta: string;
+  /** Uploaded digital file (object URL / remote URL) + original name. */
+  fileUrl?: string;
+  fileName?: string;
 }
 
 export interface LinkItem {
@@ -322,6 +332,17 @@ export function blankBlock(type: BlockType): Block {
       };
     case 'divider':
       return { ...base, title: 'Divider', height: 24 };
+    case 'showcase':
+      return { ...base, title: 'Product video', url: '', image: '', caption: '', price: '$19' };
+    case 'support':
+      return {
+        ...base,
+        title: 'Email support',
+        heading: 'Need help with your order?',
+        subtext: 'Email me about purchases, missing downloads or other problems.',
+        buttonLabel: 'Email support',
+        email: '',
+      };
   }
 }
 

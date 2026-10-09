@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowUpRight, AtSign, Camera, Check, GripVertical, Music2, Play, Plus } from 'lucide-react';
+import { ArrowUpRight, AtSign, Camera, Check, GripVertical, Mail, Music2, Play, Plus } from 'lucide-react';
 import type { Block, BlockType, DesignerState, SocialNetwork } from './store';
 import { FONTS } from './store';
 
@@ -19,6 +19,113 @@ function onColor(hex: string): string {
   const b = parseInt(m.slice(4, 6), 16) / 255;
   const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
   return luminance > 0.6 ? '#0f172a' : '#ffffff';
+}
+
+/**
+ * Digital Product Video Preview: swipe left reveals price + Buy Now,
+ * swipe right returns to the video. After (simulated) payment the buyer
+ * gets access to the purchased digital product.
+ */
+function ShowcaseCard({
+  block,
+  cardStyle,
+  btnStyle,
+}: {
+  block: Block;
+  cardStyle: React.CSSProperties;
+  btnStyle: (primary: boolean) => React.CSSProperties;
+}) {
+  const [side, setSide] = useState<'video' | 'buy'>('video');
+  const [owned, setOwned] = useState(false);
+  const touchX = useRef<number | null>(null);
+
+  function onTouchStart(e: React.TouchEvent) {
+    touchX.current = e.touches[0]?.clientX ?? null;
+  }
+  function onTouchEnd(e: React.TouchEvent) {
+    if (touchX.current == null) return;
+    const endX = e.changedTouches[0]?.clientX ?? touchX.current;
+    const dx = endX - touchX.current;
+    touchX.current = null;
+    if (dx < -32) setSide('buy');
+    else if (dx > 32) setSide('video');
+  }
+  function onPointerDown(e: React.PointerEvent) {
+    if (e.pointerType === 'mouse') touchX.current = e.clientX;
+  }
+  function onPointerUp(e: React.PointerEvent) {
+    if (touchX.current == null || e.pointerType !== 'mouse') return;
+    const dx = e.clientX - touchX.current;
+    touchX.current = null;
+    if (dx < -32) setSide('buy');
+    else if (dx > 32) setSide('video');
+  }
+
+  const isVideo = block.url?.match(/\.(mp4|webm|mov)(\?|#|$)/i);
+  return (
+    <div
+      className="pv-showcase"
+      style={cardStyle}
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
+      onPointerDown={onPointerDown}
+      onPointerUp={onPointerUp}
+    >
+      {block.title && <p className="pv-caption">{block.title}</p>}
+      <div className={`pv-showcase__track${side === 'buy' ? ' is-buy' : ''}`}>
+        <div className="pv-showcase__pane">
+          <div className="pv-video" style={{ boxShadow: 'none' }}>
+            {isVideo ? (
+              <video src={block.url} poster={block.image || undefined} controls preload="metadata" onClick={(e) => e.stopPropagation()} />
+            ) : block.image ? (
+              <img draggable={false} src={block.image} alt="" />
+            ) : (
+              <span className="pv-video__blank" aria-hidden="true">
+                <Play size={22} />
+              </span>
+            )}
+            {block.caption && <small>{block.caption}</small>}
+          </div>
+          <span className="pv-showcase__hint" aria-hidden="true">‹ Swipe left for price ›</span>
+        </div>
+        <div className="pv-showcase__pane pv-showcase__buy">
+          {owned ? (
+            <>
+              <span className="pv-news__done">
+                <Check size={14} /> Payment successful
+              </span>
+              <strong>Your download is ready</strong>
+              <small>Access your purchased digital product below.</small>
+              <span className="pv-product__cta" style={btnStyle(true)} onClick={(e) => e.stopPropagation()}>
+                Access product
+              </span>
+            </>
+          ) : (
+            <>
+              <small className="pv-showcase__label">Digital product</small>
+              <strong className="pv-showcase__price">{block.price || '$19'}</strong>
+              <button
+                type="button"
+                className="pv-showcase__buybtn"
+                style={btnStyle(true)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setOwned(true);
+                }}
+              >
+                Buy Now
+              </button>
+              <small>Swipe right to return to the video</small>
+            </>
+          )}
+        </div>
+      </div>
+      <div className="pv-showcase__dots" aria-hidden="true">
+        <i className={side === 'video' ? 'is-on' : ''} />
+        <i className={side === 'buy' ? 'is-on' : ''} />
+      </div>
+    </div>
+  );
 }
 
 interface PhonePreviewProps {
@@ -497,6 +604,9 @@ export function PhonePreview({
                     <div className="pv-product__body">
                       <strong>{p.title}</strong>
                       {p.description && <small>{p.description}</small>}
+                      {(p.fileName || p.fileUrl) && (
+                        <small className="pv-product__file">↧ {p.fileName || 'Digital download included'}</small>
+                      )}
                       <span className="pv-product__cta" style={btnStyle(true)}>
                         {p.cta || 'Get it'} · {p.price}
                       </span>
@@ -661,6 +771,33 @@ export function PhonePreview({
                   </button>
                 </span>
               )}
+            </div>
+          </BlockWrap>
+        );
+      case 'showcase':
+        return (
+          <BlockWrap key={block.id} id={block.id} blockKey={key}>
+            <ShowcaseCard block={block} cardStyle={cardStyle} btnStyle={btnStyle} />
+          </BlockWrap>
+        );
+      case 'support':
+        return (
+          <BlockWrap key={block.id} id={block.id} blockKey={key}>
+            <div className="pv-news pv-support" style={cardStyle}>
+              <span className="pv-support__icon" aria-hidden="true">
+                <Mail size={18} />
+              </span>
+              {block.heading && <strong>{block.heading}</strong>}
+              {block.subtext && <small>{block.subtext}</small>}
+              <a
+                className="pv-support__btn"
+                style={btnStyle(true)}
+                href={`mailto:${(block.email || '').trim() || 'hello@example.com'}?subject=${encodeURIComponent(`Order help — ${block.title || 'Creator Store'}`)}`}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Mail size={13} aria-hidden="true" /> {block.buttonLabel || 'Email support'}
+              </a>
+              {(block.email || '').trim() && <small className="pv-support__email">{block.email}</small>}
             </div>
           </BlockWrap>
         );

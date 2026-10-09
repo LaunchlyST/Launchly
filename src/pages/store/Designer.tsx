@@ -13,6 +13,7 @@ import {
   Lock,
   Mail,
   Minus,
+  MonitorPlay,
   Music2,
   Play,
   Plus,
@@ -24,6 +25,7 @@ import {
   Trash2,
   Type,
   Undo2,
+  Upload,
   Users,
   X,
 } from 'lucide-react';
@@ -45,7 +47,7 @@ import { formatLastSync } from './tiktok';
 
 const BLOCK_LABEL: Record<BlockType, string> = {
   profile: 'Profile',
-  products: 'Products',
+  products: 'Upload Digital Product',
   links: 'Links',
   social: 'Social',
   tiktok: 'TikTok videos',
@@ -54,27 +56,19 @@ const BLOCK_LABEL: Record<BlockType, string> = {
   text: 'Text',
   newsletter: 'Newsletter',
   divider: 'Divider',
+  showcase: 'Digital Product Video Preview',
+  support: 'Email Support',
 };
 
 /** Singleton sections can never be duplicated. */
 const SINGLETON: BlockType[] = ['profile'];
 
-/** Every section type offered in the palette, in display order. */
-const PALETTE_TYPES: BlockType[] = [
-  'text',
-  'image',
-  'products',
-  'links',
-  'video',
-  'tiktok',
-  'social',
-  'newsletter',
-  'divider',
-];
+/** Only the three Creator Store sections offered in the palette. */
+const PALETTE_TYPES: BlockType[] = ['products', 'showcase', 'support'];
 
 const ADD_META: Record<BlockType, { label: string; desc: string; Icon: typeof ShoppingBag }> = {
   profile: { label: 'Profile', desc: 'Name, photo & bio', Icon: Users },
-  products: { label: 'Products', desc: 'Sell presets & orders', Icon: ShoppingBag },
+  products: { label: 'Upload Digital Product', desc: 'Files, image, title & price', Icon: Upload },
   links: { label: 'Buttons / Links', desc: 'Link buttons stack', Icon: Link2 },
   image: { label: 'Image', desc: 'Photo with caption', Icon: ImageIcon },
   text: { label: 'Text', desc: 'Heading + paragraph', Icon: Type },
@@ -83,6 +77,8 @@ const ADD_META: Record<BlockType, { label: string; desc: string; Icon: typeof Sh
   social: { label: 'Social icons', desc: 'Profile row', Icon: Users },
   newsletter: { label: 'Newsletter', desc: 'Email capture', Icon: Mail },
   divider: { label: 'Divider / Spacer', desc: 'Add breathing room', Icon: Minus},
+  showcase: { label: 'Digital Product Video Preview', desc: 'Swipe video → price & Buy', Icon: MonitorPlay },
+  support: { label: 'Email Support', desc: 'Contact about orders', Icon: Mail },
 };
 
 export const ADD_SECTION_KEY = '__add__';
@@ -169,7 +165,7 @@ export function Designer({ designer, username, saveState, publishedAt, ui, tikto
   }
 
   function resetProduct(blockId: string, productId: string) {
-    patchProduct(blockId, productId, { title: 'New product', description: '', price: '$9', image: '', link: '', cta: 'Get it' });
+    patchProduct(blockId, productId, { title: 'New product', description: '', price: '$9', image: '', link: '', cta: 'Get it', fileUrl: '', fileName: '' });
   }
 
   // Profile lock: index 0 is permanently reserved for the TikTok profile.
@@ -780,6 +776,25 @@ function BlockEditor({
           <input type="range" min={4} max={160} value={b.height ?? 24} onChange={(e) => onPatchBlock({ height: Number(e.target.value) })} />
         </label>
       )}
+      {b.type === 'showcase' && (
+        <>
+          <label className="cs-label">Video URL<input value={b.url ?? ''} placeholder="https://… (mp4 or embed)" inputMode="url" onChange={(e) => onPatchBlock({ url: e.target.value })} /></label>
+          <label className="cs-label">Thumbnail URL<input value={b.image ?? ''} placeholder="https://…" inputMode="url" onChange={(e) => onPatchBlock({ image: e.target.value })} /></label>
+          <div className="cs-grid2">
+            <label className="cs-label">Price<input value={b.price ?? ''} maxLength={12} placeholder="$19" onChange={(e) => onPatchBlock({ price: e.target.value })} /></label>
+            <label className="cs-label">Caption<input value={b.caption ?? ''} maxLength={80} placeholder="Demo caption" onChange={(e) => onPatchBlock({ caption: e.target.value })} /></label>
+          </div>
+          <p className="cs-card__hint">Customers swipe left for price &amp; Buy Now, swipe right to return to the video.</p>
+        </>
+      )}
+      {b.type === 'support' && (
+        <>
+          <label className="cs-label">Support email<input value={b.email ?? ''} placeholder="you@example.com" inputMode="email" onChange={(e) => onPatchBlock({ email: e.target.value })} /></label>
+          <label className="cs-label">Heading<input value={b.heading ?? ''} maxLength={60} onChange={(e) => onPatchBlock({ heading: e.target.value })} /></label>
+          <label className="cs-label">Subtext<textarea value={b.subtext ?? ''} rows={2} maxLength={140} onChange={(e) => onPatchBlock({ subtext: e.target.value })} /></label>
+          <label className="cs-label">Button label<input value={b.buttonLabel ?? ''} maxLength={24} onChange={(e) => onPatchBlock({ buttonLabel: e.target.value })} /></label>
+        </>
+      )}
       {b.type !== 'profile' && (
         <div className="cs-card__row">
           <button type="button" className="cs-chipbtn" onClick={onResetBlock}><RotateCcw size={13} /> Reset</button>
@@ -905,6 +920,45 @@ function ProductFields({
 }) {
   return (
     <div className="cs-subform">
+      <label className="cs-label">
+        Digital file
+        <input
+          type="file"
+          aria-label="Digital file"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (!f) return;
+            try {
+              const url = URL.createObjectURL(f);
+              onPatch({ fileUrl: url, fileName: f.name });
+            } catch {
+              onPatch({ fileName: f.name });
+            }
+          }}
+        />
+      </label>
+      {(p.fileName || p.fileUrl) && (
+        <p className="cs-card__hint">
+          {p.fileName ? `Attached: ${p.fileName}` : 'File attached'} — buyers get access after payment.
+        </p>
+      )}
+      <label className="cs-label">
+        Product image
+        <input
+          type="file"
+          accept="image/*"
+          aria-label="Product image file"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (!f) return;
+            try {
+              onPatch({ image: URL.createObjectURL(f) });
+            } catch {
+              /* session-only preview */
+            }
+          }}
+        />
+      </label>
       <label className="cs-label">Product image URL<input value={p.image} placeholder="https://…" inputMode="url" onChange={(e) => onPatch({ image: e.target.value })} /></label>
       <label className="cs-label">Product name<input value={p.title} maxLength={50} onChange={(e) => onPatch({ title: e.target.value })} /></label>
       <div className="cs-grid2">
