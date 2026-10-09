@@ -5,6 +5,7 @@ import type { CreatorProviderEnv } from './services/creator-provider';
 import { creatorPlanFields, isLaunchlyCreatorPrice } from './services/creator-plan';
 import { handleBusinessConnect, isBusinessRoute } from './business/businessRoutes';
 import { handleMonitor, isMonitorRoute } from './monitor/monitorRoutes';
+import { handleTikTok, isTikTokRoute, scheduledTikTokSync } from './tiktok';
 import { DeviceSession } from './monitor/deviceSession';
 
 export { DeviceSession };
@@ -30,6 +31,10 @@ export interface Env extends CreatorProviderEnv {
   GITHUB_CLIENT_SECRET?: string;
   /** One Durable Object per paired computer running the local agent. */
   DEVICE_SESSION: DurableObjectNamespace;
+  /** TikTok Login Kit (Creator Store profile sync). Set via `wrangler secret put`. */
+  TIKTOK_CLIENT_KEY?: string;
+  TIKTOK_CLIENT_SECRET?: string;
+  TIKTOK_REDIRECT_URI?: string;
 }
 
 const corsHeaders: Record<string, string> = {
@@ -39,6 +44,10 @@ const corsHeaders: Record<string, string> = {
 };
 
 export default {
+  async scheduled(_event: ScheduledEvent, env: Env): Promise<void> {
+    // Background TikTok profile refresh — every 15 minutes via cron.
+    await scheduledTikTokSync(env);
+  },
   async fetch(request: Request, env: Env): Promise<Response> {
     if (request.method === "OPTIONS") {
       return new Response(null, { headers: corsHeaders });
@@ -56,6 +65,10 @@ export default {
 
     if (isBusinessRoute(url.pathname)) {
       return handleBusinessConnect(request, env);
+    }
+
+    if (isTikTokRoute(url.pathname)) {
+      return handleTikTok(request, env, corsHeaders);
     }
 
     try {

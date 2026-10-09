@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, ArrowRight, Check, Copy, LoaderCircle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Copy, LoaderCircle, Music2 } from 'lucide-react';
 import type { SetupState } from './store';
 import { storeShareUrl } from './store';
 
@@ -10,11 +10,28 @@ interface SetupFlowProps {
   onBack: () => void;
   onVerify: () => void;
   onRegenerate: () => void;
+  onConnectTikTok?: () => Promise<boolean>;
 }
 
-export function SetupFlow({ setup, onPatch, onNext, onBack, onVerify, onRegenerate }: SetupFlowProps) {
+export function SetupFlow({ setup, onPatch, onNext, onBack, onVerify, onRegenerate, onConnectTikTok }: SetupFlowProps) {
   const [copied, setCopied] = useState(false);
+  const [connecting, setConnecting] = useState(false);
+  const [connectHint, setConnectHint] = useState('');
   const canContinue = setup.username.trim().replace(/^@+/, '').length >= 2;
+
+  async function connectTikTok() {
+    if (!onConnectTikTok || connecting) return;
+    setConnecting(true);
+    setConnectHint('');
+    try {
+      const started = await onConnectTikTok();
+      if (!started) {
+        setConnectHint('TikTok Login Kit is not configured yet — continue with the verification code.');
+      }
+    } finally {
+      setConnecting(false);
+    }
+  }
 
   async function copyCode() {
     try {
@@ -134,6 +151,25 @@ export function SetupFlow({ setup, onPatch, onNext, onBack, onVerify, onRegenera
               <>Verify now</>
             )}
           </button>
+          <p className="cs-step__hint">or connect officially — profile imports automatically</p>
+          <button
+            type="button"
+            className="cs-btn-ghost"
+            disabled={connecting || setup.verifying}
+            onClick={connectTikTok}
+            title="Connect with TikTok Login Kit (user.info.basic + user.info.profile)"
+          >
+            {connecting ? (
+              <>
+                <LoaderCircle size={15} className="cs-spin" /> Opening TikTok…
+              </>
+            ) : (
+              <>
+                <Music2 size={15} /> Connect with TikTok
+              </>
+            )}
+          </button>
+          {connectHint && <p className="cs-step__hint">{connectHint}</p>}
           <div className="cs-step__actions cs-step__actions--single">
             <button type="button" className="cs-btn-quiet" disabled={setup.verifying} onClick={onBack}>
               <ArrowLeft size={14} /> Back

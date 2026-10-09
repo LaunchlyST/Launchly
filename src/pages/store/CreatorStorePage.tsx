@@ -1,17 +1,28 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ProgressBar } from './ProgressBar';
 import { SetupFlow } from './SetupFlow';
 import { Designer } from './Designer';
 import './creator-store.css';
+import { useAuthStore } from '../../auth-store';
 import {
   STORAGE_KEY,
+  applyTikTokProfile,
   defaultPersisted,
+  ensureProfileFirst,
   loadPersisted,
   makeCode,
   type CreatorStorePersisted,
   type DesignerState,
   type SetupState,
+  type TikTokProfile,
 } from './store';
+import {
+  SYNC_INTERVAL_MS,
+  canManualSync,
+  fetchTikTokProfile,
+  getTikTokAuthUrl,
+  shouldAutoSync,
+} from './tiktok';
 
 type Phase = 'setup' | 'leaving' | 'designer';
 
@@ -68,15 +79,20 @@ export function CreatorStorePage() {
     persistQuiet({ ...dataRef.current, ui: { ...dataRef.current.ui, ...patch } });
   }
 
+  const authUserId = useAuthStore((s) => s.user?.id ?? null);
+
   // Undo/redo history over designer snapshots (coalesces rapid keystrokes).
   const history = useRef<{ past: DesignerState[]; future: DesignerState[] }>({ past: [], future: [] });
   const lastPush = useRef(0);
+  const syncingRef = useRef(false);
 
   function patchSetup(patch: Partial<SetupState>) {
     persist({ ...data, setup: { ...data.setup, ...patch } });
   }
 
   function patchDesigner(patch: Partial<DesignerState>) {
+    // Permanent lock: no write path may ever leave the profile off the top.
+    if (patch.blocks) patch = { ...patch, blocks: ensureProfileFirst(patch.blocks) };
     const prev = dataRef.current.designer;
     const now = Date.now();
     // Structural edits (add / delete / reorder sections) always get their own
@@ -100,7 +116,7 @@ export function CreatorStorePage() {
     if (!prev) return;
     h.future.push(dataRef.current.designer);
     lastPush.current = 0;
-    persist({ ...dataRef.current, designer: prev });
+    persist({ ...dataRef.current, designer: { ...prev, blocks: ensureProfileFirst(prev.blocks) } });
   }
 
   function redo() {
@@ -109,7 +125,7 @@ export function CreatorStorePage() {
     if (!next) return;
     h.past.push(dataRef.current.designer);
     lastPush.current = 0;
-    persist({ ...dataRef.current, designer: next });
+    persist({ ...dataRef.current, designer: { ...next, blocks: ensureProfileFirst(next.blocks) } });
   }
 
   function next() {
@@ -136,16 +152,186 @@ export function CreatorStorePage() {
     if (step > 1 && step < 6) patchSetup({ step: (step - 1) as SetupState['step'] });
   }
 
+  /**
+   * Apply a TikTok profile to the editor + published store. Only real
+   * values win — failures keep the last good profile (never placeholders).
+   */
+  const applySyncProfile = useCallback((profile: TikTokProfile, nowIso: string) => {
+    const latest = dataRef.current;
+    const designer = applyTikTokProfile(latest.designer, profile);
+    const usernameChanged = profile.username && profile.username !== latest.setup.username;
+    persist({
+      ...latest,
+      designer,
+      setup: usernameChanged ? { ...latest.setup, username: profile.username } : latest.setup,
+      tiktok: {
+        connected: true,
+        openId: profile.openId,
+        profile,
+        lastSyncAt: nowIso,
+        syncing: false,
+        syncError: null,
+      },
+    });
+  }, []);
+
+  /**
+   * Sync TikTok identity: backend Display API when configured, otherwise a
+   * local auto-import from the connected username so the store still mirrors
+   * the connected account. Never wipes real identity on failure.
+   */
+  const syncTikTok = useCallback(
+    async (manual = false) => {
+      const latest = dataRef.current;
+      if (!latest.setup.connected || latest.setup.step !== 6) return;
+      if (syncingRef.current) return;
+      if (manual && !canManualSync(latest.tiktok.lastSyncAt)) return;
+      syncingRef.current = true;
+      persistQuiet({
+        ...latest,
+        tiktok: { ...latest.tiktok, syncing: true, syncError: null },
+      });
+      const userKey = authUserId ?? `local:${latest.setup.username}`;
+      try {
+        const result = await fetchTikTokProfile(userKey);
+        const nowIso = new Date().toISOString();
+        if (result.ok && result.profile) {
+          applySyncProfile(result.profile, nowIso);
+        } else if (result.profile) {
+          // Stale backend profile — still fresher than nothing. Merge it,
+          // keep last success time, surface the warning.
+          const cur = dataRef.current;
+          const designer = applyTikTokProfile(cur.designer, result.profile);
+          persist({
+            ...cur,
+            designer,
+            tiktok: {
+              connected: true,
+              openId: result.profile.openId || cur.tiktok.openId,
+              profile: result.profile,
+              lastSyncAt: cur.tiktok.lastSyncAt,
+              syncing: false,
+              syncError: result.error,
+            },
+          });
+        } else if (!result.configured) {
+          // Backend not configured yet: mirror the connected TikTok account
+          // locally (stable local open_id per username) — no placeholders.
+          const cur = dataRef.current;
+          const username = cur.setup.username.replace(/^@+/, '');
+          const openId = cur.tiktok.openId ?? `local:${username.toLowerCase()}`;
+          const local: TikTokProfile = {
+            openId,
+            username,
+            displayName: cur.designer.displayName || (username ? `@${username}` : ''),
+            avatar: cur.designer.avatar,
+            bio: cur.designer.bio,
+          };
+          persist({
+            ...cur,
+            tiktok: {
+              connected: true,
+              openId,
+              profile: local,
+              lastSyncAt: cur.tiktok.lastSyncAt ?? nowIso,
+              syncing: false,
+              syncError: 'TikTok API not configured yet — showing connected account',
+            },
+          });
+        } else {
+          const cur = dataRef.current;
+          persistQuiet({
+            ...cur,
+            tiktok: { ...cur.tiktok, syncing: false, syncError: result.error },
+          });
+        }
+      } finally {
+        syncingRef.current = false;
+        const cur = dataRef.current;
+        if (cur.tiktok.syncing) {
+          persistQuiet({ ...cur, tiktok: { ...cur.tiktok, syncing: false } });
+        }
+      }
+    },
+    [applySyncProfile, authUserId]
+  );
+
+  const syncNow = useCallback(() => {
+    void syncTikTok(true);
+  }, [syncTikTok]);
+
+  /** Start TikTok Login Kit OAuth; falls back to code verify when unconfigured. */
+  const connectWithTikTok = useCallback(async () => {
+    const userKey = authUserId ?? `local:${dataRef.current.setup.username || 'pending'}`;
+    const { url } = await getTikTokAuthUrl(userKey);
+    if (url) window.location.href = url;
+    return !!url;
+  }, [authUserId]);
+
+  // Handle OAuth return (?store=connected) without a reconnect dance.
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('store') === 'connected' && dataRef.current.setup.connected) {
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState(null, '', cleanUrl);
+        void syncTikTok(true);
+      }
+    } catch {
+      /* non-browser / test env */
+    }
+  }, [syncTikTok, phase]);
+
+  // Refresh on editor open + every 15 minutes in the background.
+  useEffect(() => {
+    if (phase !== 'designer') return;
+    const latest = dataRef.current;
+    if (latest.setup.connected && shouldAutoSync(latest.tiktok.lastSyncAt)) {
+      void syncTikTok(false);
+    }
+    const timer = window.setInterval(() => {
+      const cur = dataRef.current;
+      if (cur.setup.connected && shouldAutoSync(cur.tiktok.lastSyncAt)) {
+        void syncTikTok(false);
+      }
+    }, SYNC_INTERVAL_MS);
+    return () => window.clearInterval(timer);
+  }, [phase, syncTikTok]);
+
   function verify() {
     if (data.setup.verifying) return;
     patchSetup({ verifying: true });
     flowTimer.current = window.setTimeout(() => {
       const latest = dataRef.current;
+      const username = latest.setup.username.replace(/^@+/, '');
+      // Automatic TikTok profile import on connect — real account becomes
+      // the store identity immediately (stable local open_id until OAuth
+      // links the official open_id).
+      const openId = latest.tiktok.openId ?? `local:${username.toLowerCase()}`;
+      const imported: TikTokProfile = {
+        openId,
+        username,
+        displayName: latest.designer.displayName || (username ? `@${username}` : ''),
+        avatar: latest.designer.avatar,
+        bio: latest.designer.bio,
+      };
+      const designer = applyTikTokProfile(latest.designer, imported);
       persist({
         ...latest,
+        designer,
         setup: { ...latest.setup, verifying: false, connected: true, step: 5 },
+        tiktok: {
+          connected: true,
+          openId,
+          profile: imported,
+          lastSyncAt: latest.tiktok.lastSyncAt ?? new Date().toISOString(),
+          syncing: false,
+          syncError: latest.tiktok.syncError,
+        },
       });
       flowTimer.current = window.setTimeout(() => enterDesigner(), 2000);
+      // Then try a live Display API refresh (no-op until backend configured).
+      window.setTimeout(() => void syncTikTok(false), 2500);
     }, 1600);
   }
 
@@ -158,12 +344,21 @@ export function CreatorStorePage() {
     }, 420);
   }
 
-  /** Switch account: back to setup, designer content is kept. */
+  /** Switch account: back to setup, designer content is kept, TikTok link cleared. */
   function disconnect() {
     if (flowTimer.current) window.clearTimeout(flowTimer.current);
+    const latest = dataRef.current;
     persist({
-      ...dataRef.current,
+      ...latest,
       setup: { step: 1, username: '', code: '', verifying: false, connected: false },
+      tiktok: {
+        connected: false,
+        openId: null,
+        profile: latest.tiktok.profile,
+        lastSyncAt: latest.tiktok.lastSyncAt,
+        syncing: false,
+        syncError: null,
+      },
     });
     setPhase('setup');
   }
@@ -194,6 +389,7 @@ export function CreatorStorePage() {
                 onBack={back}
                 onVerify={verify}
                 onRegenerate={() => patchSetup({ code: makeCode() })}
+                onConnectTikTok={connectWithTikTok}
               />
             )}
           </div>
@@ -206,12 +402,14 @@ export function CreatorStorePage() {
           saveState={saveState}
           publishedAt={data.publishedAt}
           ui={data.ui}
+          tiktok={data.tiktok}
           onPatch={patchDesigner}
           onPatchUi={patchUi}
           onPublish={publish}
           onDisconnect={disconnect}
           onUndo={undo}
           onRedo={redo}
+          onSyncNow={syncNow}
           canUndo={history.current.past.length > 0}
           canRedo={history.current.future.length > 0}
         />
