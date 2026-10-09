@@ -503,26 +503,25 @@
 }
 .cs-designer {
   display: grid;
-  grid-template-columns: minmax(290px, 340px) minmax(0, 1fr);
+  grid-template-columns: minmax(290px, 340px) minmax(0, 1fr) 1px auto;
   gap: 24px;
   align-items: start;
   width: 100%;
   animation: cs-designer-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-/* Full-height vertical divider spanning the whole box top-to-bottom,
-   centred in the gap between the editor (left) and the preview (right).
-   Absolutely positioned against the centred .cs-builder, so it is not
-   limited to the content row height. */
+.cs-controls { grid-column: 1; }
+/* Vertical divider out in the open middle: full row height (just below the
+   top bar down to the bottom), between the empty space and the phone. */
 .cs-divider {
-  position: absolute;
-  top: -40px;
-  bottom: -40px;
-  left: 351.5px;
+  grid-column: 3;
+  align-self: stretch;
+  min-height: 240px;
   width: 1px;
   background: rgba(15, 23, 42, 0.1);
   border-radius: 1px;
   pointer-events: none;
 }
+.cs-preview { grid-column: 4; }
 @keyframes cs-designer-in {
   from { opacity: 0; transform: scale(0.97) translateY(12px); }
   to { opacity: 1; transform: scale(1) translateY(0); }
@@ -1180,8 +1179,8 @@
   font-weight: 700;
 }
 .pv-product__body { flex: 1; min-width: 0; display: grid; gap: 1px; }
-.pv-product__body strong { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pv-product__body small { font-size: 10px; opacity: 0.6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pv-product__body strong { font-size: 12px; overflow-wrap: break-word; }
+.pv-product__body small { font-size: 10px; opacity: 0.6; line-height: 1.45; overflow-wrap: break-word; }
 .pv-product .pv-price { font-size: 12px; }
 
 .pv-links { display: grid; gap: 8px; }
@@ -1246,7 +1245,7 @@
 .pv-news { padding: 15px 14px; border-radius: 16px; box-shadow: 0 10px 26px rgba(15, 23, 42, 0.13); display: grid; gap: 5px; text-align: center; }
 .pv-news strong { font-size: 13.5px; }
 .pv-news small { font-size: 11px; opacity: 0.65; line-height: 1.5; }
-.pv-news__row { display: flex; gap: 6px; margin-top: 7px; }
+.pv-news__row { display: flex; flex-direction: column; gap: 6px; margin-top: 7px; }
 .pv-news__row input {
   flex: 1;
   min-width: 0;
@@ -1259,7 +1258,7 @@
   color: #0f172a;
   outline: 0;
 }
-.pv-news__row button { border: 1px solid transparent; font: inherit; font-size: 12px; font-weight: 700; padding: 8px 13px; cursor: pointer; white-space: nowrap; }
+.pv-news__row button { border: 1px solid transparent; font: inherit; font-size: 12px; font-weight: 700; padding: 8px 13px; cursor: pointer; white-space: nowrap; width: 100%; }
 .pv-news__done { display: inline-flex; align-items: center; justify-content: center; gap: 6px; margin-top: 8px; font-size: 12.5px; font-weight: 700; color: #059669; }
 .pv-product__cta { margin-top: 7px; align-self: flex-start; font-size: 11px; font-weight: 700; padding: 6px 12px; }
 
@@ -1446,8 +1445,7 @@
 
 /* ---------- responsive ---------- */
 @media (max-width: 1080px) {
-  .cs-designer { grid-template-columns: minmax(270px, 320px) minmax(0, 1fr); gap: 18px; }
-  .cs-divider { left: 328.5px; }
+  .cs-designer { grid-template-columns: minmax(270px, 320px) minmax(0, 1fr) 1px auto; gap: 18px; }
 }
 @media (max-width: 860px) {
   .cs-page { padding: 24px 12px; border-radius: 18px; }
@@ -1456,7 +1454,9 @@
   .cs-progress__track { top: 25px; left: 34px; right: 34px; }
   .cs-progress__label { font-size: 8px; }
   .cs-designer { grid-template-columns: 1fr; }
+  .cs-controls { grid-column: auto; }
   .cs-divider { display: none; }
+  .cs-preview { grid-column: auto; }
   .cs-topbar { flex-wrap: wrap; }
   .cs-topbar__right { flex-wrap: wrap; }
   .cs-preview { position: static; order: -1; }

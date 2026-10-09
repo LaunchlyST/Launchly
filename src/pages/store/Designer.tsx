@@ -67,6 +67,9 @@ export function Designer({ designer, username, saveState, publishedAt, ui, onPat
   const [toast, setToast] = useState('');
   const [previewOpen, setPreviewOpen] = useState(false);
   const [published, setPublished] = useState(false);
+  // Phone frame width (null = default 292). Lives here so the divider
+  // can stay glued to the phone's left edge while resizing.
+  const [phoneWidth, setPhoneWidth] = useState<number | null>(null);
   const toastTimer = useRef<number | null>(null);
 
   const handle = (designer.username || username).replace(/^@+/, '');
@@ -373,6 +376,8 @@ export function Designer({ designer, username, saveState, publishedAt, ui, onPat
               username={handle || username}
               selectedKey={selectedKey}
               hoverKey={hoverKey}
+              width={phoneWidth}
+              onWidthChange={setPhoneWidth}
               onHover={setHoverKey}
               onPick={pick}
               onClear={exitFocus}

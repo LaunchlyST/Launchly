@@ -27,6 +27,10 @@ interface PhonePreviewProps {
   selectedKey: string | null;
   hoverKey: string | null;
   interactive?: boolean;
+  /** Controlled frame width (null = default 292). Owned by the parent so the
+      divider can stay glued to the phone while resizing. */
+  width?: number | null;
+  onWidthChange?: (w: number) => void;
   onHover?: (key: string | null) => void;
   onPick?: (key: string) => void;
   onClear?: () => void;
@@ -39,6 +43,8 @@ export function PhonePreview({
   selectedKey,
   hoverKey,
   interactive = true,
+  width = null,
+  onWidthChange,
   onHover,
   onPick,
   onClear,
@@ -53,7 +59,6 @@ export function PhonePreview({
   // Drag-to-resize the phone width (builder only) so more of the page fits.
   // Height stays fixed at 620 — the phone only ever grows left-to-right,
   // so the page and the boxes around it never get taller.
-  const [phoneWidth, setPhoneWidth] = useState<number | null>(null);
   const resizeRef = useRef<{ startX: number; baseW: number; pointerId: number } | null>(null);
   const dragMoved = useRef(false);
   const suppressPick = useRef(false);
@@ -122,13 +127,13 @@ export function PhonePreview({
     e.stopPropagation();
     e.preventDefault();
     (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
-    resizeRef.current = { startX: e.clientX, baseW: phoneWidth ?? 292, pointerId: e.pointerId };
+    resizeRef.current = { startX: e.clientX, baseW: width ?? 292, pointerId: e.pointerId };
   }
 
   function onResizeMove(e: React.PointerEvent<HTMLSpanElement>) {
     const r = resizeRef.current;
     if (!r || e.pointerId !== r.pointerId) return;
-    setPhoneWidth(Math.max(280, Math.min(560, r.baseW + (e.clientX - r.startX))));
+    onWidthChange?.(Math.max(280, Math.min(560, r.baseW + (e.clientX - r.startX))));
   }
 
   function endResize(e: React.PointerEvent<HTMLSpanElement>) {
@@ -399,7 +404,7 @@ export function PhonePreview({
     <div
       className={`pv-phone${dragId ? ' is-dragging' : ''}`}
       aria-label="Live preview of your public page"
-      style={phoneWidth ? { width: phoneWidth } : undefined}
+      style={width ? { width } : undefined}
     >
       <div className="pv-notch" aria-hidden="true" />
       <div

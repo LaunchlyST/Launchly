@@ -130,5 +130,7 @@ describe('CreatorStorePage', () => {
     // Width follows the horizontal drag; height never changes.
     expect(phone.style.width).toBe('342px');
     expect(phone.style.height).toBe('');
+    // The divider sits between the editor and the phone.
+    expect(container.querySelector('.cs-divider')).toBeTruthy();
   });
 });
