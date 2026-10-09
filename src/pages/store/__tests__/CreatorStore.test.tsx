@@ -132,5 +132,10 @@ describe('CreatorStorePage', () => {
     expect(phone.style.height).toBe('');
     // The divider sits between the editor and the phone.
     expect(container.querySelector('.cs-divider')).toBeTruthy();
+    // Dragging further stops at the divider line (505 - 12 = 493 max).
+    fireEvent.pointerDown(handleEl, { button: 0, clientX: 150, clientY: 100, pointerId: 2 });
+    fireEvent.pointerMove(handleEl, { clientX: 2000, clientY: 100, pointerId: 2 });
+    fireEvent.pointerUp(handleEl, { pointerId: 2 });
+    expect(phone.style.width).toBe('493px');
   });
 });

@@ -133,7 +133,10 @@ export function PhonePreview({
   function onResizeMove(e: React.PointerEvent<HTMLSpanElement>) {
     const r = resizeRef.current;
     if (!r || e.pointerId !== r.pointerId) return;
-    onWidthChange?.(Math.max(280, Math.min(560, r.baseW + (e.clientX - r.startX))));
+    // Max width stops 12px short of the full-height divider (which sits
+    // 505px from the builder's right edge): 505 - 12 = 493. The phone can
+    // grow until it reaches the line but never go over it.
+    onWidthChange?.(Math.max(280, Math.min(493, r.baseW + (e.clientX - r.startX))));
   }
 
   function endResize(e: React.PointerEvent<HTMLSpanElement>) {

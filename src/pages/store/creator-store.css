@@ -513,7 +513,9 @@
 /* Vertical divider just left of the top-bar undo button, running from the
    very top edge of the box to the very bottom edge. Absolutely positioned
    against the centred .cs-builder; the `right` offset matches the width of
-   the top-bar button group so it stays aligned under the undo button. */
+   the top-bar button group so it stays aligned under the undo button.
+   NOTE: phone resize max width (PhonePreview) = 505 - 12 = 493 so the phone
+   stops at this line and can never go over it. */
 .cs-divider {
   position: absolute;
   top: -40px;
