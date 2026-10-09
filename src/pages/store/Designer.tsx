@@ -6,13 +6,20 @@ import {
   Check,
   Eye,
   Globe,
+  Image as ImageIcon,
   Link2,
+  Mail,
+  Music2,
+  Play,
   Plus,
   Redo2,
   RotateCcw,
   Share2,
+  ShoppingBag,
   Trash2,
+  Type,
   Undo2,
+  Users,
   X,
 } from 'lucide-react';
 import type {
@@ -41,6 +48,23 @@ const BLOCK_LABEL: Record<BlockType, string> = {
   newsletter: 'Newsletter',
 };
 
+/** Sections a user can restore/add. Profile is permanent so it is excluded. */
+const ADDABLE_TYPES: BlockType[] = ['products', 'links', 'image', 'text', 'video', 'tiktok', 'social', 'newsletter'];
+
+const ADD_META: Record<BlockType, { label: string; desc: string; Icon: typeof ShoppingBag }> = {
+  profile: { label: 'Profile', desc: '', Icon: Users },
+  products: { label: 'Products', desc: 'Sell presets & orders', Icon: ShoppingBag },
+  links: { label: 'Buttons / Links', desc: 'Link buttons stack', Icon: Link2 },
+  image: { label: 'Image', desc: 'Photo with caption', Icon: ImageIcon },
+  text: { label: 'Text', desc: 'Heading + paragraph', Icon: Type },
+  video: { label: 'Video', desc: 'Embed with thumbnail', Icon: Play },
+  tiktok: { label: 'TikTok videos', desc: 'Grid of TikToks', Icon: Music2 },
+  social: { label: 'Social icons', desc: 'Profile row', Icon: Users },
+  newsletter: { label: 'Newsletter', desc: 'Email capture', Icon: Mail },
+};
+
+export const ADD_SECTION_KEY = '__add__';
+
 interface DesignerProps {
   designer: DesignerState;
   username: string;
@@ -67,9 +91,11 @@ export function Designer({ designer, username, saveState, publishedAt, ui, onPat
   const [toast, setToast] = useState('');
   const [previewOpen, setPreviewOpen] = useState(false);
   const [published, setPublished] = useState(false);
-  // Phone frame width (null = default 292). Lives here so the divider
-  // can stay glued to the phone's left edge while resizing.
+  // Phone frame width (null = default responsive size). The centre
+  // divider stays fixed between panels while the phone scales fluidly.
   const [phoneWidth, setPhoneWidth] = useState<number | null>(null);
+  // Reveals every section type so users can intentionally add duplicates.
+  const [showAllTypes, setShowAllTypes] = useState(false);
   const toastTimer = useRef<number | null>(null);
 
   const handle = (designer.username || username).replace(/^@+/, '');
@@ -102,6 +128,7 @@ export function Designer({ designer, username, saveState, publishedAt, ui, onPat
             ? designer.blocks.some((b) => (b.videos ?? []).some((v) => v.id === id))
             : designer.blocks.some((b) => b.id === id);
     if (!exists) return;
+    setShowAllTypes(false);
     setSelectedKey(key);
     setFocusKey(key);
   }
@@ -129,6 +156,117 @@ export function Designer({ designer, username, saveState, publishedAt, ui, onPat
     const [moved] = blocks.splice(from, 1);
     blocks.splice(to, 0, moved);
     onPatch({ blocks });
+  }
+
+  /** Exact reorder: drop the dragged block at toIndex in the post-removal
+      list (0 = top). Supports moving up, down, between, and to the ends. */
+  function moveBlockToIndex(dragId: string, toIndex: number) {
+    const from = designer.blocks.findIndex((b) => b.id === dragId);
+    if (from < 0) return;
+    const without = designer.blocks.filter((b) => b.id !== dragId);
+    const clamped = Math.max(0, Math.min(toIndex, without.length));
+    const next = [...without];
+    next.splice(clamped, 0, designer.blocks[from]);
+    if (next.map((b) => b.id).join('|') === designer.blocks.map((b) => b.id).join('|')) return;
+    onPatch({ blocks: next });
+    setSelectedKey(`block:${dragId}`);
+    setFocusKey(`block:${dragId}`);
+  }
+
+  /** Section types currently missing from the page — the only ones the
+      Add Section box offers by default, so duplicates never appear unless
+      the user explicitly asks for them. */
+  const missingTypes = ADDABLE_TYPES.filter((t) => !designer.blocks.some((b) => b.type === t));
+
+  /** Empty-space clicks return to the overview so the left box never looks empty. */
+  function handleEmptyClick() {
+    setShowAllTypes(false);
+    exitFocus();
+  }
+
+  function pickBlock(id: string) {
+    pick(`block:${id}`);
+  }
+
+  /** Default overview shown when nothing is selected — sections to edit + quick add. */
+  function renderDefaultTools() {
+    const visibleTypes = showAllTypes ? ADDABLE_TYPES : missingTypes;
+    return (
+      <div className="cs-overview">
+        <p className="cs-card__hint">Click anything in the phone preview to edit it here.</p>
+        {designer.blocks.length > 0 && (
+          <>
+            <p className="cs-overview__label">Your sections · {designer.blocks.length}</p>
+            <div className="cs-picklist">
+              {designer.blocks.map((b) => {
+                const meta = ADD_META[b.type];
+                const Icon = meta.Icon;
+                const title = b.title || meta.label;
+                return (
+                  <button
+                    key={b.id}
+                    type="button"
+                    className={selectedKey === `block:${b.id}` ? 'is-on' : ''}
+                    onClick={() => pickBlock(b.id)}
+                    title={`Edit ${title}`}
+                  >
+                    <span className="cs-overview__row">
+                      <Icon size={13} aria-hidden="true" />
+                      <span className="cs-overview__name">{title}</span>
+                      <span className="cs-overview__tag">{meta.label}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
+        {visibleTypes.length > 0 && (
+          <>
+            <p className="cs-overview__label">{missingTypes.length > 0 ? 'Add a section' : 'Add more'}</p>
+            <div className="cs-addgrid">
+              {visibleTypes.map((t) => {
+                const meta = ADD_META[t];
+                const Icon = meta.Icon;
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    className="cs-kindbtn cs-addcard"
+                    onClick={() => addSection(t)}
+                    aria-label={`Add ${meta.label} section`}
+                    title={`Add ${meta.label}`}
+                  >
+                    <Icon size={15} aria-hidden="true" />
+                    <span className="cs-addcard__label">{meta.label}</span>
+                    <small>{meta.desc}</small>
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
+        {!showAllTypes && missingTypes.length === 0 && (
+          <button type="button" className="cs-btn-quiet" onClick={() => setShowAllTypes(true)}>
+            <Plus size={13} /> Show all types
+          </button>
+        )}
+        {showAllTypes && missingTypes.length === 0 && (
+          <button type="button" className="cs-btn-quiet" onClick={() => setShowAllTypes(false)}>
+            Show overview
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  function addSection(type: BlockType) {
+    const block = blankBlock(type);
+    onPatch({ blocks: [...designer.blocks, block] });
+    setShowAllTypes(false);
+    setSelectedKey(`block:${block.id}`);
+    setFocusKey(`block:${block.id}`);
+    flash(`${ADD_META[type]?.label ?? 'Section'} added — drag it anywhere`);
   }
 
   function deleteBlock(id: string) {
@@ -221,6 +359,46 @@ export function Designer({ designer, username, saveState, publishedAt, ui, onPat
   /** Body of the single Editor Tools box for whatever is picked in the preview. */
   function renderEditorBody(): { eyebrow: string; body: React.ReactNode } | null {
     if (!focusKey) return null;
+    if (focusKey === ADD_SECTION_KEY) {
+      if (missingTypes.length === 0) return null;
+      const visible = showAllTypes ? ADDABLE_TYPES : missingTypes;
+      return {
+        eyebrow: 'Add section',
+        body: (
+          <div className="cs-addwrap">
+            <p className="cs-card__hint">
+              {designer.blocks.length === 0 || designer.blocks.every((b) => b.type === 'profile')
+                ? 'Your page is empty — pick a section to add it to the phone preview.'
+                : 'Pick a removed section to restore it. It appears instantly and you can drag it anywhere.'}
+            </p>
+            <div className="cs-addgrid">
+              {visible.map((t) => {
+                const meta = ADD_META[t];
+                const already = !missingTypes.includes(t);
+                const Icon = meta.Icon;
+                return (
+                  <button key={t} type="button" className="cs-kindbtn cs-addcard" onClick={() => addSection(t)}>
+                    <Icon size={15} />
+                    <span className="cs-addcard__label">{meta.label}</span>
+                    <small>{already ? 'Add another' : meta.desc}</small>
+                  </button>
+                );
+              })}
+            </div>
+            {!showAllTypes && ADDABLE_TYPES.length > missingTypes.length && (
+              <button type="button" className="cs-btn-quiet" onClick={() => setShowAllTypes(true)}>
+                <Plus size={13} /> Show all types (add duplicates)
+              </button>
+            )}
+            {showAllTypes && (
+              <button type="button" className="cs-btn-quiet" onClick={() => setShowAllTypes(false)}>
+                Show missing only
+              </button>
+            )}
+          </div>
+        ),
+      };
+    }
     const [kind, id] = focusKey.split(':');
     if (kind === 'product') {
       const block = designer.blocks.find((b) => (b.products ?? []).some((p) => p.id === id));
@@ -361,7 +539,7 @@ export function Designer({ designer, username, saveState, publishedAt, ui, onPat
                 {editorSelection.body}
               </>
             ) : (
-              <p className="cs-card__hint">Click anything in the phone preview to edit it here.</p>
+              renderDefaultTools()
             )}
           </div>
         </div>
@@ -380,22 +558,45 @@ export function Designer({ designer, username, saveState, publishedAt, ui, onPat
               onWidthChange={setPhoneWidth}
               onHover={setHoverKey}
               onPick={pick}
-              onClear={exitFocus}
+              onClear={handleEmptyClick}
               onMoveBlock={moveBlockTo}
+              onMoveBlockAt={moveBlockToIndex}
             />
             <p className="cs-preview__cap">
               <Link2 size={12} /> Live preview · {storeShareUrl(handle || username)}
+              {missingTypes.length === 0 ? '' : ' · drag sections anywhere'}
             </p>
           </div>
         </div>
 
         {previewOpen && (
-          <div className="cs-modal" role="dialog" aria-label="Store preview" onClick={() => setPreviewOpen(false)}>
-            <div className="cs-modal__inner cs-modal__inner--left" onClick={(e) => e.stopPropagation()}>
-              <button type="button" className="cs-modal__close" aria-label="Close preview" onClick={() => setPreviewOpen(false)}>
-                <X size={16} />
-              </button>
-              <PhonePreview designer={designer} username={handle || username} selectedKey={null} hoverKey={null} interactive={false} />
+          <div
+            className="cs-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Live store preview"
+            onClick={() => setPreviewOpen(false)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') setPreviewOpen(false);
+            }}
+          >
+            <div className="cs-modal__inner cs-modal__card" onClick={(e) => e.stopPropagation()}>
+              <div className="cs-modal__head">
+                <div className="cs-modal__titlewrap">
+                  <p className="cs-modal__eyebrow">
+                    <Eye size={12} aria-hidden="true" /> Live preview
+                  </p>
+                  <p className="cs-modal__url" title={storeShareUrl(handle || username)}>
+                    @{handle || username} · {storeShareUrl(handle || username)}
+                  </p>
+                </div>
+                <button type="button" className="cs-modal__close" aria-label="Close preview" onClick={() => setPreviewOpen(false)}>
+                  <X size={16} />
+                </button>
+              </div>
+              <div className="cs-modal__phone">
+                <PhonePreview designer={designer} username={handle || username} selectedKey={null} hoverKey={null} interactive={false} />
+              </div>
               <div className="cs-modal__actions">
                 <span className={`cs-savestate cs-savestate--${saveState}`} role="status">
                   <i aria-hidden="true" />

@@ -79,7 +79,13 @@ export function CreatorStorePage() {
   function patchDesigner(patch: Partial<DesignerState>) {
     const prev = dataRef.current.designer;
     const now = Date.now();
-    if (now - lastPush.current > 1200 || history.current.past.length === 0) {
+    // Structural edits (add / delete / reorder sections) always get their own
+    // history entry so undo/redo works per action. Typing coalesces as before.
+    const structural =
+      patch.blocks !== undefined &&
+      (patch.blocks.length !== prev.blocks.length ||
+        patch.blocks.map((b) => b.id).join('|') !== prev.blocks.map((b) => b.id).join('|'));
+    if (structural || now - lastPush.current > 1200 || history.current.past.length === 0) {
       history.current.past.push(prev);
       if (history.current.past.length > 40) history.current.past.shift();
       lastPush.current = now;

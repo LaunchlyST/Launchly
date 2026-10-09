@@ -35,6 +35,9 @@ interface PhonePreviewProps {
   onPick?: (key: string) => void;
   onClear?: () => void;
   onMoveBlock?: (dragId: string, targetId: string) => void;
+  /** Preferred reorder path: move dragged block to this index in the
+      post-removal list (0 = top, length = bottom). */
+  onMoveBlockAt?: (dragId: string, toIndex: number) => void;
 }
 
 export function PhonePreview({
@@ -49,22 +52,42 @@ export function PhonePreview({
   onPick,
   onClear,
   onMoveBlock,
+  onMoveBlockAt,
 }: PhonePreviewProps) {
   const t = designer.theme;
   const font = FONTS[t.font];
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
+  // Flexible builder drag state: the dragged block leaves the flow (so the
+  // rest auto-rearranges) and a floating ghost follows the pointer while a
+  // line indicator marks the exact insertion index.
   const [dragId, setDragId] = useState<string | null>(null);
-  const [dropId, setDropId] = useState<string | null>(null);
+  const [insertIndex, setInsertIndex] = useState<number | null>(null);
+  const [ghost, setGhost] = useState<{ x: number; y: number; w: number; label: string } | null>(null);
   // Drag-to-resize the phone width (builder only) so more of the page fits.
   // Height stays fixed at 620 — the phone only ever grows left-to-right,
   // so the page and the boxes around it never get taller.
   const resizeRef = useRef<{ startX: number; baseW: number; pointerId: number } | null>(null);
-  const dragMoved = useRef(false);
   const suppressPick = useRef(false);
-  const dropRef = useRef<string | null>(null);
+  const phoneRef = useRef<HTMLDivElement | null>(null);
+  const screenRef = useRef<HTMLDivElement | null>(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const dragRef = useRef<{
+    id: string;
+    pointerId: number;
+    startX: number;
+    startY: number;
+    active: boolean;
+    label: string;
+    w: number;
+  } | null>(null);
+  const insertRef = useRef<number | null>(null);
+  const moveAtRef = useRef(onMoveBlockAt);
+  moveAtRef.current = onMoveBlockAt;
   const moveRef = useRef(onMoveBlock);
   moveRef.current = onMoveBlock;
+  const blocksRef = useRef<Block[]>(designer.blocks);
+  blocksRef.current = designer.blocks;
 
   const bgLayerStyle: React.CSSProperties =
     t.bgMode === 'image' && t.bgImage
@@ -103,22 +126,140 @@ export function PhonePreview({
   const cls = (key: string, extra = '') =>
     `pv-block ${extra}${hoverKey === key ? ' is-hover' : ''}${selectedKey === key ? ' is-selected' : ''}`.trim();
 
-  const bind = (key: string) =>
-    interactive
-      ? {
-          onMouseEnter: () => onHover?.(key),
-          onMouseLeave: () => onHover?.(null),
-          onClick: (e: React.MouseEvent) => {
-            e.stopPropagation();
-            if (suppressPick.current) return;
-            onPick?.(key);
-          },
-        }
-      : {};
+  const canReorder = interactive && (!!onMoveBlockAt || !!onMoveBlock);
 
-  function setDrop(v: string | null) {
-    dropRef.current = v;
-    setDropId(v);
+  /** Insertion index from the pointer position: first block (excluding the
+      dragged one) whose vertical midpoint sits below the pointer wins. */
+  function setInsert(v: number | null) {
+    insertRef.current = v;
+    setInsertIndex(v);
+  }
+
+  function indexFromPoint(clientY: number, draggedId: string): number {
+    const root = contentRef.current;
+    if (!root) return blocksRef.current.filter((b) => b.id !== draggedId).length;
+    const els = Array.from(root.querySelectorAll<HTMLElement>('[data-block-id]')).filter(
+      (el) => el.dataset.blockId !== draggedId
+    );
+    for (let i = 0; i < els.length; i++) {
+      const r = els[i].getBoundingClientRect();
+      if (clientY < r.top + r.height / 2) return i;
+    }
+    return els.length;
+  }
+
+  function updateGhost(clientX: number, clientY: number, label: string, w: number) {
+    const phone = phoneRef.current;
+    if (!phone) {
+      setGhost({ x: clientX, y: clientY, w, label });
+      return;
+    }
+    const r = phone.getBoundingClientRect();
+    const gw = Math.min(w, r.width - 24);
+    const gh = 44;
+    const x = Math.max(r.left + 12, Math.min(clientX - gw / 2, r.right - gw - 12));
+    const y = Math.max(r.top + 40, Math.min(clientY - gh / 2, r.bottom - gh - 12));
+    setGhost({ x, y, w: gw, label });
+  }
+
+  function autoScrollScreen(clientY: number) {
+    const sc = screenRef.current;
+    if (!sc) return;
+    const r = sc.getBoundingClientRect();
+    if (clientY < r.top + 56) sc.scrollTop -= 10;
+    else if (clientY > r.bottom - 56) sc.scrollTop += 10;
+  }
+
+  /** Pointer-based reorder: any section can be grabbed anywhere (mouse) and
+      dropped at any insertion index. Only the ghost follows the pointer —
+      the page itself never shifts with the mouse. */
+  function beginPotentialDrag(e: React.PointerEvent, id: string, label: string) {
+    if (!interactive || !canReorder || e.button !== 0) return;
+    const target = e.target as HTMLElement;
+    // Let form controls keep their native behaviour.
+    if (target.closest('input, textarea, select, button, a')) {
+      // The grip is an explicit drag affordance even over buttons.
+      if (!target.closest('.pv-grip')) return;
+    }
+    // On touch, require the grip so vertical scrolling still works.
+    if (e.pointerType !== 'mouse' && !target.closest('.pv-grip')) return;
+    const el = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    dragRef.current = {
+      id,
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      active: false,
+      label,
+      w: Math.max(160, el.width),
+    };
+    const move = (ev: PointerEvent) => {
+      const d = dragRef.current;
+      if (!d || ev.pointerId !== d.pointerId) return;
+      if (!d.active) {
+        if (Math.hypot(ev.clientX - d.startX, ev.clientY - d.startY) < 7) return;
+        d.active = true;
+        suppressPick.current = true;
+        setDragId(d.id);
+        setInsert(indexFromPoint(ev.clientY, d.id));
+        updateGhost(ev.clientX, ev.clientY, d.label, d.w);
+        return;
+      }
+      autoScrollScreen(ev.clientY);
+      setInsert(indexFromPoint(ev.clientY, d.id));
+      updateGhost(ev.clientX, ev.clientY, d.label, d.w);
+    };
+    const up = (ev: PointerEvent) => {
+      const d = dragRef.current;
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
+      dragRef.current = null;
+      if (!d || ev.pointerId !== d.pointerId) {
+        setDragId(null);
+        setInsertIndex(null);
+        setGhost(null);
+        return;
+      }
+      if (d.active) {
+        let to: number;
+        try {
+          to = indexFromPoint(ev.clientY, d.id);
+        } catch {
+          to = insertRef.current ?? blocksRef.current.filter((b) => b.id !== d.id).length;
+        }
+        const without = blocksRef.current.filter((b) => b.id !== d.id);
+        const clamped = Math.max(0, Math.min(to, without.length));
+        const before = blocksRef.current.map((b) => b.id).join('|');
+        const trial = without.map((b) => b.id);
+        trial.splice(clamped, 0, d.id);
+        if (trial.join('|') !== before) {
+          if (moveAtRef.current) moveAtRef.current(d.id, clamped);
+          else if (moveRef.current) {
+            if (clamped >= without.length) {
+              // Legacy path inserts before target: move to end by placing
+              // after the last block via two ordered moves is unnecessary —
+              // placing before last then relying on post-removal order still
+              // moves forward. Fall back to before-last for progress.
+              const last = without[without.length - 1];
+              if (last) moveRef.current(d.id, last.id);
+            } else {
+              const target = without[clamped];
+              if (target) moveRef.current(d.id, target.id);
+            }
+          }
+        }
+      }
+      setDragId(null);
+      setInsertIndex(null);
+      setGhost(null);
+      window.setTimeout(() => {
+        suppressPick.current = false;
+      }, 0);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
   }
 
   /** Edge-drag resizes the phone width only; height never changes. */
@@ -133,10 +274,9 @@ export function PhonePreview({
   function onResizeMove(e: React.PointerEvent<HTMLSpanElement>) {
     const r = resizeRef.current;
     if (!r || e.pointerId !== r.pointerId) return;
-    // Max width stops 12px short of the full-height divider (which sits
-    // 505px from the builder's right edge): 505 - 12 = 493. The phone can
-    // grow until it reaches the line but never go over it.
-    onWidthChange?.(Math.max(280, Math.min(493, r.baseW + (e.clientX - r.startX))));
+    // Keep the phone inside its centred right column so it never pushes
+    // into the divider or overflows at smaller window sizes.
+    onWidthChange?.(Math.max(240, Math.min(360, r.baseW + (e.clientX - r.startX))));
   }
 
   function endResize(e: React.PointerEvent<HTMLSpanElement>) {
@@ -145,46 +285,51 @@ export function PhonePreview({
     resizeRef.current = null;
   }
 
-  function gripDown(e: React.PointerEvent, id: string) {
-    if (!interactive || !moveRef.current || e.button !== 0) return;
-    e.stopPropagation();
-    e.preventDefault();
-    dragMoved.current = false;
-    setDragId(id);
-    setDrop(null);
-    const startY = e.clientY;
-    const move = (ev: PointerEvent) => {
-      if (Math.abs(ev.clientY - startY) > 6) dragMoved.current = true;
-      if (!dragMoved.current) return;
-      const el = document.elementFromPoint(ev.clientX, ev.clientY)?.closest?.('[data-block-id]');
-      setDrop(el ? ((el as HTMLElement).dataset.blockId ?? null) : null);
-    };
-    const up = () => {
-      window.removeEventListener('pointermove', move);
-      window.removeEventListener('pointerup', up);
-      const target = dropRef.current;
-      if (dragMoved.current && target && target !== id) moveRef.current?.(id, target);
-      setDragId(null);
-      setDrop(null);
-      dragMoved.current = false;
-      suppressPick.current = true;
-      window.setTimeout(() => {
-        suppressPick.current = false;
-      }, 0);
-    };
-    window.addEventListener('pointermove', move);
-    window.addEventListener('pointerup', up);
+  const bind = (key: string) =>
+    interactive
+      ? {
+          onMouseEnter: () => onHover?.(key),
+          onMouseLeave: () => onHover?.(null),
+          onClick: (e: React.MouseEvent) => {
+            e.stopPropagation();
+            if (suppressPick.current) return;
+            // A drag that just ended must not trigger an edit.
+            if (dragId) return;
+            onPick?.(key);
+          },
+        }
+      : {};
+
+  function blockLabel(b: Block): string {
+    return b.title || b.type;
   }
 
-  function BlockWrap({ id, blockKey, extra, children }: { id: string; blockKey: string; extra?: string; children: React.ReactNode }) {
+  function BlockWrap({ id, blockKey, extra, label, children }: { id: string; blockKey: string; extra?: string; label?: string; children: React.ReactNode }) {
+    const dragLabel = label || blockLabel(blocksRef.current.find((b) => b.id === id) ?? { id, type: 'text' as const, title: id });
     return (
-      <div data-block-id={id} className={`${cls(blockKey, extra ?? '')}${dropId === id ? ' is-drop' : ''}`} {...bind(blockKey)}>
-        {interactive && !!moveRef.current && (
+      <div
+        data-block-id={id}
+        className={cls(blockKey, extra ?? '')}
+        {...bind(blockKey)}
+        style={canReorder ? { touchAction: 'pan-y' } : undefined}
+        onPointerDown={(e) => beginPotentialDrag(e, id, dragLabel)}
+      >
+        {interactive && canReorder && (
           <span
             className="pv-grip"
             aria-hidden="true"
-            onPointerDown={(e) => gripDown(e, id)}
+            title="Drag to move section"
             onClick={(e) => e.stopPropagation()}
+            onPointerDown={(e) => {
+              // Let the root handler own the gesture; stop bubbling so a
+              // nested inner element doesn't start a second gesture.
+              e.stopPropagation();
+              const root = (e.currentTarget as HTMLElement).closest('[data-block-id]');
+              if (root) {
+                const evt = { ...e, currentTarget: root, target: e.target } as unknown as React.PointerEvent;
+                beginPotentialDrag(evt, id, dragLabel);
+              }
+            }}
           >
             <GripVertical size={12} />
           </span>
@@ -403,29 +548,65 @@ export function PhonePreview({
     }
   }
 
+  // Ordered render with a live insertion line while dragging. The dragged
+  // block leaves the flow so siblings collapse around the gap.
+  function renderBlocksInFlow(): React.ReactNode {
+    if (!dragId || insertIndex === null) return designer.blocks.map(renderBlock);
+    const rest = designer.blocks.filter((b) => b.id !== dragId);
+    const out: React.ReactNode[] = [];
+    const line = (
+      <div key="__drop-line__" className="pv-drop-line" aria-hidden="true">
+        <i />
+        <span>Drop here</span>
+      </div>
+    );
+    for (let i = 0; i <= rest.length; i++) {
+      if (i === insertIndex) out.push(line);
+      if (i < rest.length) out.push(renderBlock(rest[i]));
+    }
+    if (rest.length === 0) {
+      out.push(
+        <div key="__drop-empty__" className="pv-empty-drop">
+          Drag a section here
+        </div>
+      );
+    }
+    return out;
+  }
+
   return (
     <div
+      ref={phoneRef}
       className={`pv-phone${dragId ? ' is-dragging' : ''}`}
       aria-label="Live preview of your public page"
       style={width ? { width } : undefined}
     >
       <div className="pv-notch" aria-hidden="true" />
       <div
+        ref={screenRef}
         className={`pv-screen${t.bgAnimated && t.bgMode === 'gradient' ? ' is-animated' : ''}`}
         style={{ fontFamily: font, color: t.textColor }}
       >
         <div className="pv-bg" style={bgLayerStyle} aria-hidden="true" />
         <div
+          ref={contentRef}
           className="pv-content"
           onClick={() => {
             if (suppressPick.current) return;
+            if (dragId) return;
             if (interactive) onClear?.();
           }}
         >
-          {designer.blocks.map(renderBlock)}
+          {renderBlocksInFlow()}
           <p className="pv-powered">Made with Launchly</p>
         </div>
       </div>
+      {dragId && ghost && (
+        <div className="pv-ghost" style={{ left: ghost.x, top: ghost.y, width: ghost.w }} aria-hidden="true">
+          <GripVertical size={13} />
+          <span>{ghost.label}</span>
+        </div>
+      )}
       {interactive && (
         <span
           className="pv-resize"
